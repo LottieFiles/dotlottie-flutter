@@ -55,7 +55,7 @@ class DotLottieView extends StatelessWidget {
   }
 }
 
-class DotlottieFlutter {
+class DotLottieFlutter {
   void Function()? onLoad;
   void Function()? onLoadError;
   void Function()? onPlay;
@@ -65,9 +65,9 @@ class DotlottieFlutter {
   void Function()? onLoop;
   void Function(double frame)? onFrame;
 
-  DotlottieFlutter() {
+  DotLottieFlutter() {
     // Set up the event handlers from the platform interface
-    DotlottieFlutterPlatform.instance.setEventHandlers(
+    DotLottieFlutterPlatform.instance.setEventHandlers(
       onLoad: () => onLoad?.call(),
       onLoadError: () => onLoadError?.call(),
       onPlay: () => onPlay?.call(),
@@ -80,11 +80,11 @@ class DotlottieFlutter {
   }
 
   Future<String?> getPlatformVersion() {
-    return DotlottieFlutterPlatform.instance.getPlatformVersion();
+    return DotLottieFlutterPlatform.instance.getPlatformVersion();
   }
 
   Future<void> createPlayer() async {
-    return DotlottieFlutterPlatform.instance.createPlayer();
+    return DotLottieFlutterPlatform.instance.createPlayer();
   }
 
   Future<void> loadAnimation({
@@ -94,7 +94,7 @@ class DotlottieFlutter {
     bool loop = true,
     double speed = 1.0,
   }) {
-    return DotlottieFlutterPlatform.instance.loadAnimation(
+    return DotLottieFlutterPlatform.instance.loadAnimation(
       sourceType: sourceType,
       source: source,
       autoplay: autoplay,
@@ -104,38 +104,38 @@ class DotlottieFlutter {
   }
 
   Future<void> play() async {
-    return DotlottieFlutterPlatform.instance.play();
+    return DotLottieFlutterPlatform.instance.play();
   }
 
   Future<void> pause() async {
-    return DotlottieFlutterPlatform.instance.pause();
+    return DotLottieFlutterPlatform.instance.pause();
   }
 
   Future<void> stop() async {
-    return DotlottieFlutterPlatform.instance.stop();
+    return DotLottieFlutterPlatform.instance.stop();
   }
 
   Future<void> setSpeed(double speed) async {
-    return DotlottieFlutterPlatform.instance.setSpeed(speed);
+    return DotLottieFlutterPlatform.instance.setSpeed(speed);
   }
 
   Future<void> setLoop(bool loop) async {
-    return DotlottieFlutterPlatform.instance.setLoop(loop);
+    return DotLottieFlutterPlatform.instance.setLoop(loop);
   }
 
   Future<double?> getCurrentFrame() async {
-    return DotlottieFlutterPlatform.instance.getCurrentFrame();
+    return DotLottieFlutterPlatform.instance.getCurrentFrame();
   }
 
   Future<double?> getTotalFrames() async {
-    return DotlottieFlutterPlatform.instance.getTotalFrames();
+    return DotLottieFlutterPlatform.instance.getTotalFrames();
   }
 
   Future<bool?> isPlaying() async {
-    return DotlottieFlutterPlatform.instance.isPlaying();
+    return DotLottieFlutterPlatform.instance.isPlaying();
   }
 
   Future<bool?> isPaused() async {
-    return DotlottieFlutterPlatform.instance.isPaused();
+    return DotLottieFlutterPlatform.instance.isPaused();
   }
 }

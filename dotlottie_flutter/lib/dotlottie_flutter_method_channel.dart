@@ -3,13 +3,13 @@ import 'package:flutter/services.dart';
 
 import 'dotlottie_flutter_platform_interface.dart';
 
-/// An implementation of [DotlottieFlutterPlatform] that uses method channels.
-class MethodChannelDotlottieFlutter extends DotlottieFlutterPlatform {
+/// An implementation of [DotLottieFlutterPlatform] that uses method channels.
+class MethodChannelDotLottieFlutter extends DotLottieFlutterPlatform {
   /// The method channel used to interact with the native platform.
   @visibleForTesting
   final methodChannel = const MethodChannel('dotlottie_flutter');
 
-  MethodChannelDotlottieFlutter() {
+  MethodChannelDotLottieFlutter() {
     // THIS LINE IS CRITICAL - it connects _handleMethodCall to receive calls from native
     methodChannel.setMethodCallHandler(_handleMethodCall);
   }

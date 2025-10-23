@@ -5,7 +5,7 @@ homepage:
 
 environment:
   sdk: ^3.9.2
-  flutter: '>=3.3.0'
+  flutter: ">=3.3.0"
 
 dependencies:
   flutter:
@@ -39,13 +39,13 @@ flutter:
     platforms:
       android:
         package: com.lottiefiles.dotlottie_flutter
-        pluginClass: DotlottieFlutterPlugin
+        pluginClass: DotLottieFlutterPlugin
       ios:
-        pluginClass: DotlottieFlutterPlugin
+        pluginClass: DotLottieFlutterPlugin
       macos:
-        pluginClass: DotlottieFlutterPlugin
+        pluginClass: DotLottieFlutterPlugin
       web:
-        pluginClass: DotlottieFlutterWeb
+        pluginClass: DotLottieFlutterWeb
         fileName: dotlottie_flutter_web.dart
 
   # To add assets to your plugin package, add an assets section, like this:

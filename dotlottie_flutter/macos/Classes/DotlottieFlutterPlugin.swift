@@ -1,10 +1,10 @@
 import Cocoa
 import FlutterMacOS
 
-public class DotlottieFlutterPlugin: NSObject, FlutterPlugin {
+public class DotLottieFlutterPlugin: NSObject, FlutterPlugin {
   public static func register(with registrar: FlutterPluginRegistrar) {
     let channel = FlutterMethodChannel(name: "dotlottie_flutter", binaryMessenger: registrar.messenger)
-    let instance = DotlottieFlutterPlugin()
+    let instance = DotLottieFlutterPlugin()
     registrar.addMethodCallDelegate(instance, channel: channel)
   }
 

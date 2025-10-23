@@ -2,23 +2,23 @@ import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 import 'dotlottie_flutter_method_channel.dart';
 
-abstract class DotlottieFlutterPlatform extends PlatformInterface {
-  /// Constructs a DotlottieFlutterPlatform.
-  DotlottieFlutterPlatform() : super(token: _token);
+abstract class DotLottieFlutterPlatform extends PlatformInterface {
+  /// Constructs a DotLottieFlutterPlatform.
+  DotLottieFlutterPlatform() : super(token: _token);
 
   static final Object _token = Object();
 
-  static DotlottieFlutterPlatform _instance = MethodChannelDotlottieFlutter();
+  static DotLottieFlutterPlatform _instance = MethodChannelDotLottieFlutter();
 
-  /// The default instance of [DotlottieFlutterPlatform] to use.
+  /// The default instance of [DotLottieFlutterPlatform] to use.
   ///
-  /// Defaults to [MethodChannelDotlottieFlutter].
-  static DotlottieFlutterPlatform get instance => _instance;
+  /// Defaults to [MethodChannelDotLottieFlutter].
+  static DotLottieFlutterPlatform get instance => _instance;
 
   /// Platform-specific implementations should set this with their own
-  /// platform-specific class that extends [DotlottieFlutterPlatform] when
+  /// platform-specific class that extends [DotLottieFlutterPlatform] when
   /// they register themselves.
-  static set instance(DotlottieFlutterPlatform instance) {
+  static set instance(DotLottieFlutterPlatform instance) {
     PlatformInterface.verifyToken(instance, _token);
     _instance = instance;
   }

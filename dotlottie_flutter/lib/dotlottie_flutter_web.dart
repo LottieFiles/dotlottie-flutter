@@ -8,13 +8,13 @@ import 'package:web/web.dart' as web;
 
 import 'dotlottie_flutter_platform_interface.dart';
 
-/// A web implementation of the DotlottieFlutterPlatform of the DotlottieFlutter plugin.
-class DotlottieFlutterWeb extends DotlottieFlutterPlatform {
+/// A web implementation of the DotLottieFlutterPlatform of the DotlottieFlutter plugin.
+class DotlottieFlutterWeb extends DotLottieFlutterPlatform {
   /// Constructs a DotlottieFlutterWeb
   DotlottieFlutterWeb();
 
   static void registerWith(Registrar registrar) {
-    DotlottieFlutterPlatform.instance = DotlottieFlutterWeb();
+    DotLottieFlutterPlatform.instance = DotlottieFlutterWeb();
   }
 
   /// Returns a [String] containing the version of the platform.

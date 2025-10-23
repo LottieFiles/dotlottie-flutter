@@ -16,30 +16,11 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   String _platformVersion = 'Unknown';
-  final _dotlottieFlutterPlugin = DotlottieFlutter();
+  final _dotLottieFlutterPlugin = DotLottieFlutter();
 
   @override
   void initState() {
     super.initState();
-    initPlatformState();
-    // Remove initPlayer() call - we don't need it anymore!
-  }
-
-  Future<void> initPlatformState() async {
-    String platformVersion;
-    try {
-      platformVersion =
-          await _dotlottieFlutterPlugin.getPlatformVersion() ??
-          'Unknown platform version';
-    } on PlatformException {
-      platformVersion = 'Failed to get platform version.';
-    }
-
-    if (!mounted) return;
-
-    setState(() {
-      _platformVersion = platformVersion;
-    });
   }
 
   @override
@@ -66,7 +47,7 @@ class _MyAppState extends State<MyApp> {
                   autoplay: true,
                   loop: true,
                   speed: 1.0,
-                )
+                ),
               ),
 
               const SizedBox(height: 20),

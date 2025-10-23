@@ -1,19 +1,12 @@
 import Flutter
 import UIKit
 
-public class DotlottieFlutterPlugin: NSObject, FlutterPlugin {
-  public static func register(with registrar: FlutterPluginRegistrar) {
-    let channel = FlutterMethodChannel(name: "dotlottie_flutter", binaryMessenger: registrar.messenger())
-    let instance = DotlottieFlutterPlugin()
-    registrar.addMethodCallDelegate(instance, channel: channel)
-  }
-
-  public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
-    switch call.method {
-    case "getPlatformVersion":
-      result("iOS " + UIDevice.current.systemVersion)
-    default:
-      result(FlutterMethodNotImplemented)
+public class DotLottieFlutterPlugin: NSObject, FlutterPlugin {
+    public static func register(with registrar: FlutterPluginRegistrar) {
+        print("🔴 DotLottie iOS: Plugin attached to engine")
+        let factory = DotLottieFlutterFactory(messenger: registrar.messenger())
+        // Register with "dotlottie_view" to match Android
+        registrar.register(factory, withId: "dotlottie_view")
+        print("🔴 DotLottie iOS: ✅ View factory registered with ID: dotlottie_view")
     }
-  }
 }
