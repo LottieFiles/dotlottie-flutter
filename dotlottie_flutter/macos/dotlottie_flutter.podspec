@@ -23,8 +23,10 @@ A new Flutter plugin project.
   # s.resource_bundles = {'dotlottie_flutter_privacy' => ['Resources/PrivacyInfo.xcprivacy']}
 
   s.dependency 'FlutterMacOS'
+  s.dependency 'LottieFiles-dotLottie-iOS', '0.9.2'
 
-  s.platform = :osx, '10.11'
+  s.platform = :osx, '11.0'
+  s.osx.deployment_target  = '11.0'
   s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES' }
   s.swift_version = '5.0'
 end

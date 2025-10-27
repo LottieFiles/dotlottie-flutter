@@ -1,14 +1,15 @@
-import Flutter
-import UIKit
+import FlutterMacOS
+import AppKit
 import DotLottie
 import SwiftUI
 
-class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
-    private var _view: UIView
+class DotLottieFlutterPlatformView: NSObject {
+    private var _view: NSView
     private var dotLottieAnimation: DotLottieAnimation?
-    private var hostingController: UIHostingController<DotLottieView>?
+    private var hostingView: NSHostingView<DotLottieView>?
     private var methodChannel: FlutterMethodChannel
     private var isDisposed = false
+    private var viewId: Int64
     
     init(
         frame: CGRect,
@@ -16,8 +17,10 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
         arguments args: Any?,
         binaryMessenger messenger: FlutterBinaryMessenger
     ) {
-        _view = UIView(frame: frame)
-        _view.backgroundColor = UIColor.clear
+        self.viewId = viewId
+        _view = NSView(frame: frame)
+        _view.wantsLayer = true
+        _view.layer?.backgroundColor = NSColor.clear.cgColor
         
         methodChannel = FlutterMethodChannel(
             name: "dotlottie_view_\(viewId)",
@@ -26,7 +29,7 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
         
         super.init()
         
-        print("🔴 DotLottie iOS: Creating platform view with id: \(viewId)")
+        print("🔴 DotLottie MacOS: Creating platform view with id: \(viewId)")
         
         if let arguments = args as? [String: Any] {
             setupAnimation(with: arguments)
@@ -37,7 +40,7 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
         }
     }
     
-    func view() -> UIView {
+    func view() -> NSView {
         return _view
     }
     
@@ -52,10 +55,10 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
         let height = arguments["height"] as? Int
         let backgroundColor = arguments["backgroundColor"] as? String
         
-        print("🔴 DotLottie iOS: Source: \(source ?? "nil"), Type: \(sourceType ?? "nil")")
+        print("🔴 DotLottie MacOS: Source: \(source ?? "nil"), Type: \(sourceType ?? "nil")")
         
         guard let sourceType = sourceType, let source = source else {
-            print("🔴 DotLottie iOS: Missing source or sourceType")
+            print("🔴 DotLottie MacOS: Missing source or sourceType")
             return
         }
         
@@ -74,55 +77,53 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
         }
         
         if let bgColor = backgroundColor, let color = parseColor(bgColor) {
-            _view.backgroundColor = color
+            _view.layer?.backgroundColor = color.cgColor
         }
         
         // Create DotLottieAnimation based on source type
         switch sourceType {
         case "url":
-            print("🔴 DotLottie iOS: Creating URL source for: \(source)")
+            print("🔴 DotLottie MacOS: Creating URL source for: \(source)")
             dotLottieAnimation = DotLottieAnimation(webURL: source, config: config)
             
         case "asset":
-            print("🔴 DotLottie iOS: Creating asset source for: \(source)")
+            print("🔴 DotLottie MacOS: Creating asset source for: \(source)")
             dotLottieAnimation = DotLottieAnimation(fileName: source, config: config)
             
         case "json":
-            print("🔴 DotLottie iOS: Creating JSON source")
+            print("🔴 DotLottie MacOS: Creating JSON source")
             dotLottieAnimation = DotLottieAnimation(animationData: source, config: config)
             
         default:
-            print("🔴 DotLottie iOS: Invalid source type: \(sourceType)")
+            print("🔴 DotLottie MacOS: Invalid source type: \(sourceType)")
             return
         }
         
         guard let animation = dotLottieAnimation else {
-            print("🔴 DotLottie iOS: Failed to create animation")
+            print("🔴 DotLottie MacOS: Failed to create animation")
             return
         }
         
-        print("🔴 DotLottie iOS: Animation created, setting up view")
+        print("🔴 DotLottie MacOS: Animation created, setting up view")
         
         // Get the SwiftUI view from the animation
-        let animationView = animation.view() as DotLottieView
+        let animationView = animation.view()
         
-        // Wrap in UIHostingController to use in UIKit
-        let hosting = UIHostingController(rootView: animationView)
-        hosting.view.backgroundColor = UIColor.clear
-        hosting.view.frame = _view.bounds
-        hosting.view.autoresizingMask = [UIView.AutoresizingMask.flexibleWidth, UIView.AutoresizingMask.flexibleHeight]
+        // Wrap in NSHostingView to use in AppKit
+        let hosting = NSHostingView(rootView: animationView)
+        hosting.frame = _view.bounds
+        hosting.autoresizingMask = [.width, .height]
+        _view.addSubview(hosting)
+        hostingView = hosting
         
-        _view.addSubview(hosting.view)
-        self.hostingController = hosting
-        
-        print("🔴 DotLottie iOS: View added to container")
+        print("🔴 DotLottie MacOS: View added to container")
         
         // Send onLoad event
-        // DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
-        //     guard let self = self, !self.isDisposed else { return }
-        //     print("🔴 DotLottie iOS: ✅✅✅ Sending onLoad event")
-        //     self.methodChannel.invokeMethod("onLoad", arguments: nil)
-        // }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+            guard let self = self, !self.isDisposed else { return }
+            print("🔴 DotLottie MacOS: ✅✅✅ Sending onLoad event")
+            self.methodChannel.invokeMethod("onLoad", arguments: nil)
+        }
     }
     
     private func handleMethodCall(call: FlutterMethodCall, result: @escaping FlutterResult) {
@@ -136,13 +137,13 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
             return
         }
         
-        print("🔴 DotLottie iOS: Method called: \(call.method)")
+        print("🔴 DotLottie MacOS: Method called: \(call.method)")
         
         switch call.method {
-        // Playback control methods
+            // Playback control methods
         case "play":
             let success = animation.play()
-            print("🔴 DotLottie iOS: ✅ Playing animation")
+            print("🔴 DotLottie MacOS: ✅ Playing animation")
             methodChannel.invokeMethod("onPlay", arguments: nil)
             result(success)
             
@@ -150,7 +151,7 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
             if let args = call.arguments as? [String: Any],
                let frame = args["frame"] as? Double {
                 let success = animation.play(fromFrame: Float(frame))
-                print("🔴 DotLottie iOS: ✅ Playing from frame: \(frame)")
+                print("🔴 DotLottie MacOS: ✅ Playing from frame: \(frame)")
                 result(success)
             } else {
                 result(FlutterError(code: "INVALID_ARGS", message: "Invalid frame argument", details: nil))
@@ -160,7 +161,7 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
             if let args = call.arguments as? [String: Any],
                let progress = args["progress"] as? Double {
                 let success = animation.play(fromProgress: Float(progress))
-                print("🔴 DotLottie iOS: ✅ Playing from progress: \(progress)")
+                print("🔴 DotLottie MacOS: ✅ Playing from progress: \(progress)")
                 result(success)
             } else {
                 result(FlutterError(code: "INVALID_ARGS", message: "Invalid progress argument", details: nil))
@@ -168,17 +169,17 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
             
         case "pause":
             let success = animation.pause()
-            print("🔴 DotLottie iOS: ✅ Pausing animation")
+            print("🔴 DotLottie MacOS: ✅ Pausing animation")
             methodChannel.invokeMethod("onPause", arguments: nil)
             result(success)
             
         case "stop":
             let success = animation.stop()
-            print("🔴 DotLottie iOS: ✅ Stopping animation")
+            print("🔴 DotLottie MacOS: ✅ Stopping animation")
             methodChannel.invokeMethod("onStop", arguments: nil)
             result(success)
             
-        // Animation properties getters
+            // Animation properties getters
         case "isPlaying":
             result(animation.isPlaying())
             
@@ -239,7 +240,7 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
             }
             result(modeString)
             
-        // Animation control setters
+            // Animation control setters
         case "setSpeed":
             if let args = call.arguments as? [String: Any],
                let speed = args["speed"] as? Double {
@@ -330,8 +331,14 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
             if let args = call.arguments as? [String: Any],
                let colorString = args["color"] as? String,
                let color = parseColor(colorString) {
-                // Convert UIColor to CIImage
-                let ciColor = CIColor(color: color)
+                // Convert NSColor to CIImage
+                var red: CGFloat = 0
+                var green: CGFloat = 0
+                var blue: CGFloat = 0
+                var alpha: CGFloat = 0
+                color.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+                
+                let ciColor = CIColor(red: red, green: green, blue: blue, alpha: alpha)
                 let ciImage = CIImage(color: ciColor)
                 animation.setBackgroundColor(bgColor: ciImage)
                 result(nil)
@@ -339,7 +346,7 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
                 result(FlutterError(code: "INVALID_ARGS", message: "Invalid backgroundColor argument", details: nil))
             }
             
-        // Theme methods
+            // Theme methods
         case "setTheme":
             if let args = call.arguments as? [String: Any],
                let themeId = args["themeId"] as? String {
@@ -365,7 +372,7 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
         case "activeThemeId":
             result(animation.activeThemeId())
             
-        // Animation loading methods
+            // Animation loading methods
         case "loadAnimationById":
             if let args = call.arguments as? [String: Any],
                let animationId = args["animationId"] as? String {
@@ -382,7 +389,7 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
         case "activeAnimationId":
             result(animation.activeAnimationId())
             
-        // Marker methods
+            // Marker methods
         case "setMarker":
             if let args = call.arguments as? [String: Any],
                let marker = args["marker"] as? String {
@@ -403,7 +410,7 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
             }
             result(markerDicts)
             
-        // Slots methods
+            // Slots methods
         case "setSlots":
             if let args = call.arguments as? [String: Any],
                let slots = args["slots"] as? String {
@@ -413,7 +420,7 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
                 result(FlutterError(code: "INVALID_ARGS", message: "Invalid slots argument", details: nil))
             }
             
-        // Resize method
+            // Resize method
         case "resize":
             if let args = call.arguments as? [String: Any],
                let width = args["width"] as? Int,
@@ -424,7 +431,7 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
                 result(FlutterError(code: "INVALID_ARGS", message: "Invalid resize arguments", details: nil))
             }
             
-        // Layer methods
+            // Layer methods
         case "getLayerBounds":
             if let args = call.arguments as? [String: Any],
                let layerName = args["layerName"] as? String {
@@ -434,7 +441,7 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
                 result(FlutterError(code: "INVALID_ARGS", message: "Invalid layerName argument", details: nil))
             }
             
-        // State machine methods
+            // State machine methods
         case "stateMachineLoad":
             if let args = call.arguments as? [String: Any],
                let stateMachineId = args["stateMachineId"] as? String {
@@ -511,36 +518,36 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
                 result(FlutterError(code: "INVALID_ARGS", message: "Invalid boolean input arguments", details: nil))
             }
             
-//        case "stateMachineGetNumericInput":
-//            if let args = call.arguments as? [String: Any],
-//               let key = args["key"] as? String {
-//                let value = animation.stateMachineGetNumericInput(key: key)
-//                result(Double(value))
-//            } else {
-//                result(FlutterError(code: "INVALID_ARGS", message: "Invalid key argument", details: nil))
-//            }
+            // case "stateMachineGetNumericInput":
+            //     if let args = call.arguments as? [String: Any],
+            //        let key = args["key"] as? String {
+            //         let value = animation.stateMachineGetNumericInput(key: key)
+            //         result(Double(value))
+            //     } else {
+            //         result(FlutterError(code: "INVALID_ARGS", message: "Invalid key argument", details: nil))
+            //     }
             
-//        case "stateMachineGetStringInput":
-//            if let args = call.arguments as? [String: Any],
-//               let key = args["key"] as? String {
-//                let value = animation.stateMachineGetStringInput(key: key)
-//                result(value)
-//            } else {
-//                result(FlutterError(code: "INVALID_ARGS", message: "Invalid key argument", details: nil))
-//            }
+            // case "stateMachineGetStringInput":
+            //     if let args = call.arguments as? [String: Any],
+            //        let key = args["key"] as? String {
+            //         let value = animation.stateMachineGetStringInput(key: key)
+            //         result(value)
+            //     } else {
+            //         result(FlutterError(code: "INVALID_ARGS", message: "Invalid key argument", details: nil))
+            //     }
             
-//        case "stateMachineGetBooleanInput":
-//            if let args = call.arguments as? [String: Any],
-//               let key = args["key"] as? String {
-//                let value = animation.stateMachineGetBooleanInput(key: key)
-//                result(value)
-//            } else {
-//                result(FlutterError(code: "INVALID_ARGS", message: "Invalid key argument", details: nil))
-//            }
+            // case "stateMachineGetBooleanInput":
+            //     if let args = call.arguments as? [String: Any],
+            //        let key = args["key"] as? String {
+            //         let value = animation.stateMachineGetBooleanInput(key: key)
+            //         result(value)
+            //     } else {
+            //         result(FlutterError(code: "INVALID_ARGS", message: "Invalid key argument", details: nil))
+            //     }
             
-//        case "stateMachineGetInputs":
-//            let inputs = animation.stateMachineGetInputs()
-//            result(inputs)
+            // case "stateMachineGetInputs":
+            //     let inputs = animation.stateMachineGetInputs()
+            //     result(inputs)
             
         case "stateMachineCurrentState":
             result(animation.stateMachineCurrentState())
@@ -548,16 +555,16 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
         case "stateMachineFrameworkSetup":
             result(animation.stateMachineFrameworkSetup())
             
-//        case "getStateMachine":
-//            if let args = call.arguments as? [String: Any],
-//               let id = args["id"] as? String {
-//                let stateMachine = animation.getStateMachine(id)
-//                result(stateMachine)
-//            } else {
-//                result(FlutterError(code: "INVALID_ARGS", message: "Invalid id argument", details: nil))
-//            }
+            // case "getStateMachine":
+            //     if let args = call.arguments as? [String: Any],
+            //        let id = args["id"] as? String {
+            //         let stateMachine = animation.getStateMachine(id)
+            //         result(stateMachine)
+            //     } else {
+            //         result(FlutterError(code: "INVALID_ARGS", message: "Invalid id argument", details: nil))
+            //     }
             
-        // Manifest method
+            // Manifest method
         case "manifest":
             if let manifest = animation.manifest() {
                 // Convert Manifest to dictionary
@@ -569,14 +576,14 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
                 result(nil)
             }
             
-        // Error methods
+            // Error methods
         case "error":
             result(animation.error())
             
         case "errorMessage":
             result(animation.errorMessage())
             
-        // Render methods
+            // Render methods
         case "render":
             let success = animation.render()
             result(success)
@@ -584,8 +591,8 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
         case "frameImage":
             if let image = animation.frameImage() {
                 // Convert CGImage to Data
-                let uiImage = UIImage(cgImage: image)
-                if let pngData = uiImage.pngData() {
+                let bitmap = NSBitmapImageRep(cgImage: image)
+                if let pngData = bitmap.representation(using: .png, properties: [:]) {
                     result(FlutterStandardTypedData(bytes: pngData))
                 } else {
                     result(nil)
@@ -603,7 +610,7 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
         }
     }
     
-    private func parseColor(_ colorString: String) -> UIColor? {
+    private func parseColor(_ colorString: String) -> NSColor? {
         var hexString = colorString.trimmingCharacters(in: .whitespacesAndNewlines)
         hexString = hexString.replacingOccurrences(of: "#", with: "")
         
@@ -627,26 +634,25 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
             return nil
         }
         
-        return UIColor(red: r, green: g, blue: b, alpha: a)
+        return NSColor(red: r, green: g, blue: b, alpha: a)
     }
     
-    private func dispose() {
+    func dispose() {
         guard !isDisposed else { return }
         isDisposed = true
         
-        print("🔴 DotLottie iOS: Disposing view")
+        print("🔴 DotLottie MacOS: Disposing view")
         
         dotLottieAnimation = nil
         
-        DispatchQueue.main.async { [weak self] in
-            self?.hostingController?.view.removeFromSuperview()
-            self?.hostingController = nil
-            self?._view.subviews.forEach { $0.removeFromSuperview() }
+        DispatchQueue.main.async {
+            self._view.subviews.forEach { $0.removeFromSuperview() }
+            self.hostingView = nil
         }
     }
     
     deinit {
-        print("🔴 DotLottie iOS: deinit called")
+        print("🔴 DotLottie MacOS: deinit called")
         dispose()
     }
 }
