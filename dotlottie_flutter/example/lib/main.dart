@@ -15,10 +15,134 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   final String _platformVersion = 'Unknown';
   DotLottieViewController? _controller;
+  List<Map<String, dynamic>>? _stateMachines;
+  String? _activeStateMachine;
+
+  // Animation control states
+  bool _isPlaying = true;
+  double _currentFrame = 0;
+  double _totalFrames = 100;
+  bool _isDragging = false;
 
   @override
   void initState() {
     super.initState();
+    _startFrameUpdater();
+  }
+
+  // Update current frame position periodically
+  void _startFrameUpdater() {
+    Future.doWhile(() async {
+      await Future.delayed(const Duration(milliseconds: 100));
+      if (mounted &&
+          _controller != null &&
+          _isPlaying &&
+          !_isDragging &&
+          _activeStateMachine == null) {
+        final frame = await _controller!.currentFrame();
+        final total = await _controller!.totalFrames();
+        if (mounted && frame != null && total != null) {
+          setState(() {
+            _currentFrame = frame;
+            _totalFrames = total > 0 ? total : 100;
+          });
+        }
+      }
+      return mounted;
+    });
+  }
+
+  Future<void> _loadManifest() async {
+    if (_controller != null) {
+      final manifest = await _controller!.manifest();
+      print(manifest);
+      if (manifest != null) {
+        // Safely convert the state machines list
+        final stateMachinesRaw = manifest['stateMachines'] as List?;
+        if (stateMachinesRaw != null) {
+          setState(() {
+            _stateMachines = stateMachinesRaw.map((sm) {
+              // Convert each item to Map<String, dynamic>
+              return Map<String, dynamic>.from(sm as Map);
+            }).toList();
+          });
+        }
+      }
+
+      // Get initial frame counts
+      final total = await _controller!.totalFrames();
+      final current = await _controller!.currentFrame();
+      if (total != null && current != null) {
+        setState(() {
+          _totalFrames = total > 0 ? total : 100;
+          _currentFrame = current;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadAndStartStateMachine(String stateMachineId) async {
+    if (_controller != null) {
+      final result = await _controller!.stateMachineLoad(stateMachineId);
+      if (result == true) {
+        await _controller!.stateMachineStart();
+        setState(() {
+          _activeStateMachine = stateMachineId;
+        });
+        print('State machine "$stateMachineId" loaded and started');
+      }
+    }
+  }
+
+  Future<void> _stopStateMachine() async {
+    if (_controller != null && _activeStateMachine != null) {
+      await _controller!.stateMachineStop();
+      setState(() {
+        _activeStateMachine = null;
+      });
+      print('State machine stopped');
+    }
+  }
+
+  Future<void> _handlePlay() async {
+    if (_controller != null) {
+      await _controller!.play();
+      setState(() {
+        _isPlaying = true;
+      });
+    }
+  }
+
+  Future<void> _handlePause() async {
+    if (_controller != null) {
+      await _controller!.pause();
+      setState(() {
+        _isPlaying = false;
+      });
+    }
+  }
+
+  Future<void> _handleStop() async {
+    if (_controller != null) {
+      await _controller!.stop();
+      setState(() {
+        _isPlaying = false;
+        _currentFrame = 0;
+      });
+    }
+  }
+
+  Future<void> _handleSeek(double frame) async {
+    if (_controller != null) {
+      await _controller!.setFrame(frame);
+      setState(() {
+        _currentFrame = frame;
+      });
+    }
+  }
+
+  String _formatFrame(double frame) {
+    return frame.toInt().toString();
   }
 
   @override
@@ -30,9 +154,6 @@ class _MyAppState extends State<MyApp> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text('Running on: $_platformVersion\n'),
-              const SizedBox(height: 20),
-
               Container(
                 width: 300,
                 height: 300,
@@ -48,51 +169,158 @@ class _MyAppState extends State<MyApp> {
                     setState(() {
                       _controller = controller;
                     });
+                    // Load manifest when controller is ready
+                    _loadManifest();
                   },
                 ),
               ),
 
               const SizedBox(height: 20),
-              const Text('Animation should appear above'),
+
+              // Display active state machine with stop button
+              if (_activeStateMachine != null)
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.green[100],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Active: $_activeStateMachine',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton(
+                        onPressed: _stopStateMachine,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          minimumSize: Size.zero,
+                        ),
+                        child: const Text('Stop'),
+                      ),
+                    ],
+                  ),
+                ),
 
               const SizedBox(height: 20),
 
-              ElevatedButton(
-                onPressed: _controller != null
-                    ? () async {
-                        final result = await _controller!.stateMachineLoad(
-                          'StateMachine1',
-                        );
-                        if (result == true) {
-                          await _controller!.stateMachineStart();
-                          print('State machine loaded and started');
-                        }
-                      }
-                    : null,
-                child: const Text('Load & Start state machine'),
-              ),
+              // State Machines List
+              if (_stateMachines != null && _stateMachines!.isNotEmpty) ...[
+                const Text(
+                  'State Machines:',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  alignment: WrapAlignment.center,
+                  children: _stateMachines!.map((sm) {
+                    final id = sm['id'] as String;
+                    final name = sm['name'] as String?;
+                    final displayName = name ?? id;
+                    final isActive = _activeStateMachine == id;
 
-              const SizedBox(height: 10),
+                    return ElevatedButton(
+                      onPressed: () => _loadAndStartStateMachine(id),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isActive ? Colors.green : null,
+                        foregroundColor: isActive ? Colors.white : null,
+                      ),
+                      child: Text(displayName),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 20),
+              ] else if (_controller != null) ...[
+                const Text('No state machines found'),
+                const SizedBox(height: 20),
+              ],
 
-              ElevatedButton(
-                onPressed: _controller != null
-                    ? () async {
-                        await _controller!.play();
-                      }
-                    : null,
-                child: const Text('Play'),
-              ),
+              // Animation controls - hidden when state machine is active
+              if (_activeStateMachine == null && _controller != null) ...[
+                // Scrub bar
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            _formatFrame(_currentFrame),
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                          Text(
+                            _formatFrame(_totalFrames),
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ],
+                      ),
+                      SliderTheme(
+                        data: SliderTheme.of(context).copyWith(
+                          trackHeight: 3.0,
+                          thumbShape: const RoundSliderThumbShape(
+                            enabledThumbRadius: 8.0,
+                          ),
+                          overlayShape: const RoundSliderOverlayShape(
+                            overlayRadius: 16.0,
+                          ),
+                        ),
+                        child: Slider(
+                          value: _currentFrame.clamp(0, _totalFrames),
+                          min: 0,
+                          max: _totalFrames,
+                          onChanged: (value) {
+                            setState(() {
+                              _isDragging = true;
+                              _currentFrame = value;
+                            });
+                          },
+                          onChangeEnd: (value) {
+                            _handleSeek(value);
+                            setState(() {
+                              _isDragging = false;
+                            });
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
 
-              const SizedBox(height: 10),
+                const SizedBox(height: 10),
 
-              ElevatedButton(
-                onPressed: _controller != null
-                    ? () async {
-                        await _controller!.pause();
-                      }
-                    : null,
-                child: const Text('Pause'),
-              ),
+                // Playback controls
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Stop button
+                    IconButton(
+                      onPressed: _handleStop,
+                      icon: const Icon(Icons.stop),
+                      iconSize: 32,
+                      tooltip: 'Stop',
+                    ),
+                    const SizedBox(width: 20),
+                    // Play/Pause button
+                    IconButton(
+                      onPressed: _isPlaying ? _handlePause : _handlePlay,
+                      icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow),
+                      iconSize: 40,
+                      tooltip: _isPlaying ? 'Pause' : 'Play',
+                    ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),

@@ -569,8 +569,51 @@ class DotLottieFlutterPlatformView: NSObject {
             if let manifest = animation.manifest() {
                 // Convert Manifest to dictionary
                 var manifestDict: [String: Any] = [:]
-                // Add manifest properties here based on the Manifest structure
-                // This is a simplified version - adjust based on actual Manifest structure
+                
+                manifestDict["version"] = manifest.version
+                manifestDict["generator"] = manifest.generator
+                
+                // Convert ManifestInitial
+                if let initial = manifest.initial {
+                    var initialDict: [String: Any?] = [:]
+                    initialDict["animation"] = initial.animation
+                    initialDict["stateMachine"] = initial.stateMachine
+                    manifestDict["initial"] = initialDict
+                }
+                
+                // Convert ManifestAnimation array
+                //                if let animations = manifest.animations {
+                manifestDict["animations"] = manifest.animations.map { animation in
+                    var animDict: [String: Any?] = [:]
+                    animDict["id"] = animation.id
+                    animDict["name"] = animation.name
+                    animDict["initialTheme"] = animation.initialTheme
+                    animDict["themes"] = animation.themes
+                    animDict["background"] = animation.background
+                    return animDict
+                }
+                //                }
+                
+                // Convert ManifestTheme array
+                if let themes = manifest.themes {
+                    manifestDict["themes"] = themes.map { theme in
+                        var themeDict: [String: Any?] = [:]
+                        themeDict["id"] = theme.id
+                        themeDict["name"] = theme.name
+                        return themeDict
+                    }
+                }
+                
+                // Convert ManifestStateMachine array
+                if let stateMachines = manifest.stateMachines {
+                    manifestDict["stateMachines"] = stateMachines.map { stateMachine in
+                        var smDict: [String: Any?] = [:]
+                        smDict["id"] = stateMachine.id
+                        smDict["name"] = stateMachine.name
+                        return smDict
+                    }
+                }
+                
                 result(manifestDict)
             } else {
                 result(nil)
