@@ -23,35 +23,37 @@ abstract class DotLottieFlutterPlatform extends PlatformInterface {
     _instance = instance;
   }
 
-  // Event handlers - to be set by the main class
+  void Function()? onComplete;
   void Function()? onLoad;
   void Function()? onLoadError;
   void Function()? onPlay;
   void Function()? onPause;
   void Function()? onStop;
-  void Function()? onComplete;
-  void Function()? onLoop;
-  void Function(double frame)? onFrame;
+  void Function(double frameNo)? onFrame;
+  void Function(double frameNo)? onRender;
+  void Function(int loopCount)? onLoop;
 
   // Method to set event handlers
   void setEventHandlers({
+    void Function()? onComplete,
     void Function()? onLoad,
     void Function()? onLoadError,
     void Function()? onPlay,
     void Function()? onPause,
     void Function()? onStop,
-    void Function()? onComplete,
-    void Function()? onLoop,
-    void Function(double frame)? onFrame,
+    void Function(double frameNo)? onFrame,
+    void Function(double frameNo)? onRender,
+    void Function(int loopCount)? onLoop,
   }) {
+    this.onComplete = onComplete;
     this.onLoad = onLoad;
     this.onLoadError = onLoadError;
     this.onPlay = onPlay;
     this.onPause = onPause;
     this.onStop = onStop;
-    this.onComplete = onComplete;
-    this.onLoop = onLoop;
     this.onFrame = onFrame;
+    this.onRender = onRender;
+    this.onLoop = onLoop;
   }
 
   Future<String?> getPlatformVersion() {

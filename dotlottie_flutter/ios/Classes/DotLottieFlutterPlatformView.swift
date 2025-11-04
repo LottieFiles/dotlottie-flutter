@@ -3,9 +3,56 @@ import UIKit
 import DotLottie
 import SwiftUI
 
+class AnimationObserver: Observer {
+    private var methodchannel: FlutterMethodChannel
+    
+    init(methodChannel: FlutterMethodChannel) {
+        self.methodchannel = methodChannel
+    }
+    
+    func onComplete() {
+        methodchannel.invokeMethod("onComplete", arguments: nil)
+    }
+    
+    func onFrame(frameNo: Float) {
+        methodchannel.invokeMethod("onFrame", arguments: frameNo)
+    }
+    
+    func onLoad() {
+        methodchannel.invokeMethod("onLoad", arguments: nil)
+    }
+    
+    func onLoadError() {
+        methodchannel.invokeMethod("onLoadError", arguments: nil)
+    }
+    
+    func onLoop(loopCount: UInt32) {
+        methodchannel.invokeMethod("onLoop", arguments: loopCount)
+    }
+    
+    func onPause() {
+        methodchannel.invokeMethod("onPause", arguments: nil)
+    }
+    
+    func onPlay() {
+        methodchannel.invokeMethod("onPlay", arguments: nil)
+    }
+    
+    func onRender(frameNo: Float) {
+        methodchannel.invokeMethod("onRender", arguments: frameNo)
+    }
+    
+    func onStop() {
+        methodchannel.invokeMethod("onStop", arguments: nil)
+    }
+}
+
 class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
     private var _view: UIView
     private var dotLottieAnimation: DotLottieAnimation?
+    private lazy var animationObserver: AnimationObserver = {
+        return AnimationObserver(methodChannel: methodChannel)
+    }()
     private var hostingController: UIHostingController<DotLottieView>?
     private var methodChannel: FlutterMethodChannel
     private var isDisposed = false
@@ -26,7 +73,6 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
         
         super.init()
         
-        print("🔴 DotLottie iOS: Creating platform view with id: \(viewId)")
         
         if let arguments = args as? [String: Any] {
             setupAnimation(with: arguments)
@@ -52,10 +98,7 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
         let height = arguments["height"] as? Int
         let backgroundColor = arguments["backgroundColor"] as? String
         
-        print("🔴 DotLottie iOS: Source: \(source ?? "nil"), Type: \(sourceType ?? "nil")")
-        
         guard let sourceType = sourceType, let source = source else {
-            print("🔴 DotLottie iOS: Missing source or sourceType")
             return
         }
         
@@ -80,28 +123,23 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
         // Create DotLottieAnimation based on source type
         switch sourceType {
         case "url":
-            print("🔴 DotLottie iOS: Creating URL source for: \(source)")
             dotLottieAnimation = DotLottieAnimation(webURL: source, config: config)
             
         case "asset":
-            print("🔴 DotLottie iOS: Creating asset source for: \(source)")
             dotLottieAnimation = DotLottieAnimation(fileName: source, config: config)
             
         case "json":
-            print("🔴 DotLottie iOS: Creating JSON source")
             dotLottieAnimation = DotLottieAnimation(animationData: source, config: config)
             
         default:
-            print("🔴 DotLottie iOS: Invalid source type: \(sourceType)")
             return
         }
         
         guard let animation = dotLottieAnimation else {
-            print("🔴 DotLottie iOS: Failed to create animation")
             return
         }
         
-        print("🔴 DotLottie iOS: Animation created, setting up view")
+        dotLottieAnimation?.subscribe(observer: self.animationObserver)
         
         // Get the SwiftUI view from the animation
         let animationView = animation.view() as DotLottieView
@@ -114,15 +152,6 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
         
         _view.addSubview(hosting.view)
         self.hostingController = hosting
-        
-        print("🔴 DotLottie iOS: View added to container")
-        
-        // Send onLoad event
-        // DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
-        //     guard let self = self, !self.isDisposed else { return }
-        //     print("🔴 DotLottie iOS: ✅✅✅ Sending onLoad event")
-        //     self.methodChannel.invokeMethod("onLoad", arguments: nil)
-        // }
     }
     
     private func handleMethodCall(call: FlutterMethodCall, result: @escaping FlutterResult) {
@@ -136,21 +165,17 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
             return
         }
         
-        print("🔴 DotLottie iOS: Method called: \(call.method)")
         
         switch call.method {
             // Playback control methods
         case "play":
             let success = animation.play()
-            print("🔴 DotLottie iOS: ✅ Playing animation")
-            methodChannel.invokeMethod("onPlay", arguments: nil)
             result(success)
             
         case "playFromFrame":
             if let args = call.arguments as? [String: Any],
                let frame = args["frame"] as? Double {
                 let success = animation.play(fromFrame: Float(frame))
-                print("🔴 DotLottie iOS: ✅ Playing from frame: \(frame)")
                 result(success)
             } else {
                 result(FlutterError(code: "INVALID_ARGS", message: "Invalid frame argument", details: nil))
@@ -160,7 +185,6 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
             if let args = call.arguments as? [String: Any],
                let progress = args["progress"] as? Double {
                 let success = animation.play(fromProgress: Float(progress))
-                print("🔴 DotLottie iOS: ✅ Playing from progress: \(progress)")
                 result(success)
             } else {
                 result(FlutterError(code: "INVALID_ARGS", message: "Invalid progress argument", details: nil))
@@ -168,14 +192,10 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
             
         case "pause":
             let success = animation.pause()
-            print("🔴 DotLottie iOS: ✅ Pausing animation")
-            methodChannel.invokeMethod("onPause", arguments: nil)
             result(success)
             
         case "stop":
             let success = animation.stop()
-            print("🔴 DotLottie iOS: ✅ Stopping animation")
-            methodChannel.invokeMethod("onStop", arguments: nil)
             result(success)
             
             // Animation properties getters
@@ -461,6 +481,7 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
             let success = animation.stateMachineStop()
             result(success)
             
+        // Todo: Change to fire
         case "stateMachinePostEvent":
             if let args = call.arguments as? [String: Any],
                let eventString = args["event"] as? String {
@@ -612,7 +633,6 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
                 result(nil)
             }
             
-            
             // Error methods
         case "error":
             result(animation.error())
@@ -678,8 +698,7 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
         guard !isDisposed else { return }
         isDisposed = true
         
-        print("🔴 DotLottie iOS: Disposing view")
-        
+        dotLottieAnimation?.unsubscribe(observer: self.animationObserver)
         dotLottieAnimation = nil
         
         DispatchQueue.main.async { [weak self] in
@@ -690,7 +709,6 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
     }
     
     deinit {
-        print("🔴 DotLottie iOS: deinit called")
         dispose()
     }
 }

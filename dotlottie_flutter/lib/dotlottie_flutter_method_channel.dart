@@ -16,6 +16,9 @@ class MethodChannelDotLottieFlutter extends DotLottieFlutterPlatform {
 
   Future<dynamic> _handleMethodCall(MethodCall call) async {
     switch (call.method) {
+      case 'onComplete':
+        onComplete?.call();
+        break;
       case 'onLoad':
         onLoad?.call();
         break;
@@ -31,25 +34,19 @@ class MethodChannelDotLottieFlutter extends DotLottieFlutterPlatform {
       case 'onStop':
         onStop?.call();
         break;
-      case 'onComplete':
-        onComplete?.call();
-        break;
-      case 'onLoop':
-        onLoop?.call();
-        break;
       case 'onFrame':
-        final frame = (call.arguments['frame'] as num).toDouble();
+        final frame = (call.arguments['frameNo'] as num).toDouble();
         onFrame?.call(frame);
         break;
+      case 'onRender':
+        final frame = (call.arguments['frameNo'] as num).toDouble();
+        onFrame?.call(frame);
+        break;
+      case 'onLoop':
+        final loopCount = (call.arguments['loopCount'] as num).toInt();
+        onLoop?.call(loopCount);
+        break;
     }
-  }
-
-  @override
-  Future<String?> getPlatformVersion() async {
-    final version = await methodChannel.invokeMethod<String>(
-      'getPlatformVersion',
-    );
-    return version;
   }
 
   @override

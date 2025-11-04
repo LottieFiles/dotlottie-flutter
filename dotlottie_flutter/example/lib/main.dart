@@ -13,7 +13,6 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  final String _platformVersion = 'Unknown';
   DotLottieViewController? _controller;
   List<Map<String, dynamic>>? _stateMachines;
   String? _activeStateMachine;
@@ -21,35 +20,11 @@ class _MyAppState extends State<MyApp> {
   // Animation control states
   bool _isPlaying = true;
   double _currentFrame = 0;
-  double _totalFrames = 100;
-  bool _isDragging = false;
+  double _totalFrames = 0;
 
   @override
   void initState() {
     super.initState();
-    _startFrameUpdater();
-  }
-
-  // Update current frame position periodically
-  void _startFrameUpdater() {
-    Future.doWhile(() async {
-      await Future.delayed(const Duration(milliseconds: 100));
-      if (mounted &&
-          _controller != null &&
-          _isPlaying &&
-          !_isDragging &&
-          _activeStateMachine == null) {
-        final frame = await _controller!.currentFrame();
-        final total = await _controller!.totalFrames();
-        if (mounted && frame != null && total != null) {
-          setState(() {
-            _currentFrame = frame;
-            _totalFrames = total > 0 ? total : 100;
-          });
-        }
-      }
-      return mounted;
-    });
   }
 
   Future<void> _loadManifest() async {
@@ -101,6 +76,17 @@ class _MyAppState extends State<MyApp> {
         _activeStateMachine = null;
       });
       print('State machine stopped');
+    }
+  }
+
+  Future<void> _handleTotalFrames() async {
+    if (_controller != null) {
+      var totalFrames = await _controller!.totalFrames();
+      if (totalFrames != null) {
+        setState(() {
+          _totalFrames = totalFrames;
+        });
+      }
     }
   }
 
@@ -163,14 +149,23 @@ class _MyAppState extends State<MyApp> {
                   source:
                       'https://lottie.host/ffdc2f29-c7c1-462a-9016-94147dea7f41/DRuFOP07CT.lottie',
                   autoplay: true,
-                  loop: true,
-                  speed: 1.0,
+                  loop: false,
+                  speed: 3.0,
                   onViewCreated: (controller) {
                     setState(() {
                       _controller = controller;
                     });
                     // Load manifest when controller is ready
                     _loadManifest();
+                  },
+                  onLoad: () {
+                    _loadManifest();
+                    _handleTotalFrames();
+                  },
+                  onFrame: (frameNo) {
+                    setState(() {
+                      _currentFrame = frameNo;
+                    });
                   },
                 ),
               ),
@@ -281,15 +276,11 @@ class _MyAppState extends State<MyApp> {
                           max: _totalFrames,
                           onChanged: (value) {
                             setState(() {
-                              _isDragging = true;
                               _currentFrame = value;
                             });
                           },
                           onChangeEnd: (value) {
                             _handleSeek(value);
-                            setState(() {
-                              _isDragging = false;
-                            });
                           },
                         ),
                       ),

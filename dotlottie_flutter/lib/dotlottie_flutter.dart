@@ -2,15 +2,33 @@ import 'dotlottie_flutter_platform_interface.dart';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
+
+import 'package:flutter/gestures.dart';
+import 'package:flutter/material.dart';
 
 class DotLottieView extends StatefulWidget {
-  final String sourceType;
+  final String sourceType; // 'url', 'asset', or 'json'
   final String source;
   final bool autoplay;
   final bool loop;
   final double speed;
+  final String mode; // 'forward', 'reverse', 'bounce', 'reverseBounce'
+  final bool useFrameInterpolation;
+  final int? width;
+  final int? height;
+  final String? backgroundColor;
   final Function(DotLottieViewController)? onViewCreated;
+
+  // Event callbacks
+  final VoidCallback? onComplete;
+  final VoidCallback? onLoad;
+  final VoidCallback? onLoadError;
+  final VoidCallback? onPlay;
+  final VoidCallback? onPause;
+  final VoidCallback? onStop;
+  final Function(double frameNo)? onFrame;
+  final Function(double frameNo)? onRender;
+  final Function(int loopCount)? onLoop;
 
   const DotLottieView({
     super.key,
@@ -19,65 +37,229 @@ class DotLottieView extends StatefulWidget {
     this.autoplay = true,
     this.loop = true,
     this.speed = 1.0,
+    this.mode = 'forward',
+    this.useFrameInterpolation = false,
+    this.width,
+    this.height,
+    this.backgroundColor,
     this.onViewCreated,
+    this.onComplete,
+    this.onLoad,
+    this.onLoadError,
+    this.onPlay,
+    this.onPause,
+    this.onStop,
+    this.onFrame,
+    this.onRender,
+    this.onLoop,
   });
 
+  @override
   State<DotLottieView> createState() => _DotLottieViewState();
 }
 
 class _DotLottieViewState extends State<DotLottieView> {
   DotLottieViewController? _controller;
+  MethodChannel? _methodChannel;
 
   @override
   Widget build(BuildContext context) {
-    // This is used in the platform side to register the view.
-    const String viewType = 'dotlottie_view';
+    if (kIsWeb) {
+      return _buildWebView();
+    } else if (defaultTargetPlatform == TargetPlatform.android) {
+      return _buildAndroidView();
+    } else if (defaultTargetPlatform == TargetPlatform.iOS) {
+      return _buildIOSView();
+    } else if (defaultTargetPlatform == TargetPlatform.macOS) {
+      return _buildMacOSView();
+    }
+    return Container(
+      color: Colors.grey[300],
+      child: const Center(child: Text('Platform not supported')),
+    );
+  }
 
-    // Pass parameters to the platform view.
-    final Map<String, dynamic> creationParams = <String, dynamic>{
+  Widget _buildWebView() {
+    return HtmlElementView(
+      viewType: 'dotlottie_view',
+      onPlatformViewCreated: (int viewId) async {
+        print('🔴 Flutter: Platform view created with id: $viewId');
+        _onPlatformViewCreated(viewId);
+
+        // For web, send initialization after a short delay to ensure view is ready
+        await Future.delayed(const Duration(milliseconds: 150));
+
+        if (_controller != null && mounted) {
+          print('🔴 Flutter: Sending initialize command');
+          try {
+            await _controller!._channel.invokeMethod('initialize', {
+              'sourceType': widget.sourceType,
+              'source': widget.source,
+              'autoplay': widget.autoplay,
+              'loop': widget.loop,
+              'speed': widget.speed,
+              'mode': widget.mode,
+              'useFrameInterpolation': widget.useFrameInterpolation,
+              if (widget.width != null) 'width': widget.width,
+              if (widget.height != null) 'height': widget.height,
+              if (widget.backgroundColor != null)
+                'backgroundColor': widget.backgroundColor,
+            });
+            print('🔴 Flutter: Initialize command sent successfully');
+          } catch (e) {
+            print('🔴 Flutter: Error sending initialize: $e');
+          }
+        }
+      },
+    );
+  }
+
+  Widget _buildAndroidView() {
+    final creationParams = _getCreationParams();
+
+    return AndroidView(
+      viewType: 'dotlottie_view',
+      creationParams: creationParams,
+      creationParamsCodec: const StandardMessageCodec(),
+      onPlatformViewCreated: _onPlatformViewCreated,
+      gestureRecognizers: const <Factory<OneSequenceGestureRecognizer>>{},
+    );
+  }
+
+  Widget _buildIOSView() {
+    final creationParams = _getCreationParams();
+
+    return UiKitView(
+      viewType: 'dotlottie_view',
+      creationParams: creationParams,
+      creationParamsCodec: const StandardMessageCodec(),
+      onPlatformViewCreated: _onPlatformViewCreated,
+      gestureRecognizers: const <Factory<OneSequenceGestureRecognizer>>{},
+    );
+  }
+
+  Widget _buildMacOSView() {
+    final creationParams = _getCreationParams();
+
+    return AppKitView(
+      viewType: 'dotlottie_view',
+      creationParams: creationParams,
+      creationParamsCodec: const StandardMessageCodec(),
+      onPlatformViewCreated: _onPlatformViewCreated,
+      gestureRecognizers: const <Factory<OneSequenceGestureRecognizer>>{},
+    );
+  }
+
+  Map<String, dynamic> _getCreationParams() {
+    return {
       'sourceType': widget.sourceType,
       'source': widget.source,
       'autoplay': widget.autoplay,
       'loop': widget.loop,
       'speed': widget.speed,
+      'mode': widget.mode,
+      'useFrameInterpolation': widget.useFrameInterpolation,
+      if (widget.width != null) 'width': widget.width,
+      if (widget.height != null) 'height': widget.height,
+      if (widget.backgroundColor != null)
+        'backgroundColor': widget.backgroundColor,
     };
-
-    if (defaultTargetPlatform == TargetPlatform.android) {
-      return AndroidView(
-        viewType: viewType,
-        layoutDirection: TextDirection.ltr,
-        creationParams: creationParams,
-        creationParamsCodec: const StandardMessageCodec(),
-        onPlatformViewCreated: _onPlatformViewCreated,
-      );
-    } else if (defaultTargetPlatform == TargetPlatform.iOS) {
-      return UiKitView(
-        viewType: viewType,
-        layoutDirection: TextDirection.ltr,
-        creationParams: creationParams,
-        creationParamsCodec: const StandardMessageCodec(),
-        onPlatformViewCreated: _onPlatformViewCreated,
-      );
-    } else if (defaultTargetPlatform == TargetPlatform.macOS) {
-      return AppKitView(
-        viewType: viewType,
-        layoutDirection: TextDirection.ltr,
-        creationParams: creationParams,
-        creationParamsCodec: const StandardMessageCodec(),
-        onPlatformViewCreated: _onPlatformViewCreated,
-      );
-    }
-
-    return Text('$defaultTargetPlatform is not yet supported');
   }
 
   void _onPlatformViewCreated(int viewId) {
+    print('🔴 Flutter: _onPlatformViewCreated called with id: $viewId');
+
+    // Set up method channel for this view
+    _methodChannel = MethodChannel('dotlottie_view_$viewId');
+    _methodChannel!.setMethodCallHandler(_handleMethodCall);
+
+    // Create controller
     _controller = DotLottieViewController._(viewId);
-    widget.onViewCreated?.call(_controller!);
+
+    // Call onViewCreated callback
+    if (widget.onViewCreated != null) {
+      widget.onViewCreated!(_controller!);
+    }
+  }
+
+  Future<void> _handleMethodCall(MethodCall call) async {
+    if (!mounted) return;
+
+    switch (call.method) {
+      case 'onComplete':
+        print('🔴 Flutter: onComplete event received');
+        if (widget.onComplete != null) {
+          widget.onComplete!();
+        }
+        break;
+
+      case 'onLoad':
+        print('🔴 Flutter: onLoad event received');
+        if (widget.onLoad != null) {
+          widget.onLoad!();
+        }
+        break;
+
+      case 'onLoadError':
+        print('🔴 Flutter: onLoadError event received');
+        if (widget.onLoadError != null) {
+          widget.onLoadError!();
+        }
+        break;
+
+      case 'onPlay':
+        print('🔴 Flutter: onPlay event received');
+        if (widget.onPlay != null) {
+          widget.onPlay!();
+        }
+        break;
+
+      case 'onPause':
+        print('🔴 Flutter: onPause event received');
+        if (widget.onPause != null) {
+          widget.onPause!();
+        }
+        break;
+
+      case 'onFrame':
+        final frameNo = (call.arguments as num).toDouble();
+        // print('🔴 Flutter: onFrame event received (frame: $frameNo)');
+        if (widget.onFrame != null) {
+          widget.onFrame!(frameNo);
+        }
+        break;
+
+      case 'onRender':
+        final frameNo = (call.arguments as num).toDouble();
+        // print('🔴 Flutter: onRender event received (frame: $frameNo)');
+        if (widget.onRender != null) {
+          widget.onRender!(frameNo);
+        }
+        break;
+
+      case 'onStop':
+        print('🔴 Flutter: onStop event received');
+        if (widget.onStop != null) {
+          widget.onStop!();
+        }
+        break;
+
+      case 'onLoop':
+        final loopCount = call.arguments as int;
+        print('🔴 Flutter: onLoop event received (count: $loopCount)');
+        if (widget.onLoop != null) {
+          widget.onLoop!(loopCount);
+        }
+        break;
+
+      default:
+        print('🔴 Flutter: Unknown method call: ${call.method}');
+    }
   }
 
   @override
   void dispose() {
+    _methodChannel?.setMethodCallHandler(null);
     _controller?.dispose();
     super.dispose();
   }
@@ -711,25 +893,27 @@ class DotLottieViewController {
 }
 
 class DotLottieFlutter {
+  void Function()? onComplete;
   void Function()? onLoad;
   void Function()? onLoadError;
   void Function()? onPlay;
   void Function()? onPause;
   void Function()? onStop;
-  void Function()? onComplete;
-  void Function()? onLoop;
-  void Function(double frame)? onFrame;
+  void Function(double frameNo)? onFrame;
+  void Function(double frameNo)? onRender;
+  void Function(int loopCount)? onLoop;
 
   DotLottieFlutter() {
     DotLottieFlutterPlatform.instance.setEventHandlers(
+      onComplete: () => onComplete?.call(),
       onLoad: () => onLoad?.call(),
       onLoadError: () => onLoadError?.call(),
       onPlay: () => onPlay?.call(),
       onPause: () => onPause?.call(),
       onStop: () => onStop?.call(),
-      onComplete: () => onComplete?.call(),
-      onLoop: () => onLoop?.call(),
-      onFrame: (frame) => onFrame?.call(frame),
+      onFrame: (frameNo) => onFrame?.call(frameNo),
+      onRender: (frameNo) => onRender?.call(frameNo),
+      onLoop: (loopCount) => onLoop?.call(loopCount),
     );
   }
 
