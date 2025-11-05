@@ -21,7 +21,6 @@ class DotLottieFlutterWeb extends DotLottieFlutterPlatform {
   static void registerWith(Registrar registrar) {
     DotLottieFlutterPlatform.instance = DotLottieFlutterWeb();
 
-    // Auto-inject DotLottie from CDN
     final script =
         web.document.createElement('script') as web.HTMLScriptElement;
     script.type = 'module';
@@ -434,34 +433,46 @@ class DotLottieWebView {
         }
       }
 
-      // Set autoplay
       final autoplay = config['autoplay'] as bool? ?? true;
       playerConfig['autoplay'.toJS] = autoplay.toJS;
 
-      // Set loop
       final loop = config['loop'] as bool? ?? true;
       playerConfig['loop'.toJS] = loop.toJS;
+
+      final loopCount = config['loopCount'] as num? ?? 0;
+      playerConfig['loopCount'.toJS] = loopCount.toJS;
+
+      final mode = config['mode'] as String? ?? 'forward';
+      playerConfig['mode'.toJS] = mode.toJS;
 
       // Set speed
       final speed = (config['speed'] as num? ?? 1.0).toDouble();
       playerConfig['speed'.toJS] = speed.toJS;
-
-      // Set mode
-      final mode = config['mode'] as String? ?? 'forward';
-      playerConfig['mode'.toJS] = mode.toJS;
 
       // Set useFrameInterpolation
       final useFrameInterpolation =
           config['useFrameInterpolation'] as bool? ?? false;
       playerConfig['useFrameInterpolation'.toJS] = useFrameInterpolation.toJS;
 
-      // Set backgroundColor if provided
+      playerConfig['segment'.toJS] =
+          ((config['segment'] as List?)?.map((e) => (e as num).toJS).toList() ??
+                  [])
+              .toJS;
+
       final backgroundColor = config['backgroundColor'] as String?;
       if (backgroundColor != null) {
         element.style.backgroundColor = backgroundColor;
       }
 
-      // Set width/height if provided
+      final themeId = config['themeId'] as String? ?? '';
+      playerConfig['themeId'.toJS] = themeId.toJS;
+
+      final stateMachineId = config['stateMachineId'] as String? ?? '';
+      playerConfig['stateMachineId'.toJS] = stateMachineId.toJS;
+
+      final animationId = config['animationId'] as String? ?? '';
+      playerConfig['animationId'.toJS] = animationId.toJS;
+
       final width = config['width'] as int?;
       final height = config['height'] as int?;
       if (width != null) {

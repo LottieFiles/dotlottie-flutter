@@ -149,8 +149,7 @@ class _MyAppState extends State<MyApp> {
                   source:
                       'https://lottie.host/ffdc2f29-c7c1-462a-9016-94147dea7f41/DRuFOP07CT.lottie',
                   autoplay: true,
-                  loop: false,
-                  speed: 3.0,
+                  loop: true,
                   onViewCreated: (controller) {
                     setState(() {
                       _controller = controller;

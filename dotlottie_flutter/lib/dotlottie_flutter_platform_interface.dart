@@ -56,10 +56,6 @@ abstract class DotLottieFlutterPlatform extends PlatformInterface {
     this.onLoop = onLoop;
   }
 
-  Future<String?> getPlatformVersion() {
-    throw UnimplementedError('platformVersion() has not been implemented.');
-  }
-
   Future<void> createPlayer() {
     throw UnimplementedError('createPlayer() has not been implemented.');
   }

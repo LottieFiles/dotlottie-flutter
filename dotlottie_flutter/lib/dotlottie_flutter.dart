@@ -7,16 +7,25 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 class DotLottieView extends StatefulWidget {
+  final bool? autoplay;
+  final bool? loop;
+  final int? loopCount;
+  final String? mode; // 'forward', 'reverse', 'bounce', 'reverseBounce'
+  final double? speed;
+  final bool? useFrameInterpolation;
+  final List<num>? segment;
+  final String? backgroundColor;
+  // final Layout layout;
+  final String? marker;
+  final String? themeId;
+  final String? stateMachineId;
+  final String? animationId;
+
   final String sourceType; // 'url', 'asset', or 'json'
   final String source;
-  final bool autoplay;
-  final bool loop;
-  final double speed;
-  final String mode; // 'forward', 'reverse', 'bounce', 'reverseBounce'
-  final bool useFrameInterpolation;
+
   final int? width;
   final int? height;
-  final String? backgroundColor;
   final Function(DotLottieViewController)? onViewCreated;
 
   // Event callbacks
@@ -52,6 +61,12 @@ class DotLottieView extends StatefulWidget {
     this.onFrame,
     this.onRender,
     this.onLoop,
+    this.loopCount,
+    this.segment,
+    this.marker,
+    this.themeId,
+    this.stateMachineId,
+    this.animationId,
   });
 
   @override
@@ -93,17 +108,24 @@ class _DotLottieViewState extends State<DotLottieView> {
           print('🔴 Flutter: Sending initialize command');
           try {
             await _controller!._channel.invokeMethod('initialize', {
-              'sourceType': widget.sourceType,
-              'source': widget.source,
               'autoplay': widget.autoplay,
               'loop': widget.loop,
-              'speed': widget.speed,
+              'loopCount': widget.loopCount,
               'mode': widget.mode,
+              'speed': widget.speed,
               'useFrameInterpolation': widget.useFrameInterpolation,
-              if (widget.width != null) 'width': widget.width,
-              if (widget.height != null) 'height': widget.height,
+              if (widget.segment != null) 'segment': widget.segment,
               if (widget.backgroundColor != null)
                 'backgroundColor': widget.backgroundColor,
+              if (widget.marker != null) 'marker': widget.marker,
+              if (widget.themeId != null) 'themeId': widget.themeId,
+              if (widget.stateMachineId != null)
+                'stateMachineId': widget.stateMachineId,
+              if (widget.animationId != null) 'animationId': widget.animationId,
+              'sourceType': widget.sourceType,
+              'source': widget.source,
+              if (widget.width != null) 'width': widget.width,
+              if (widget.height != null) 'height': widget.height,
             });
             print('🔴 Flutter: Initialize command sent successfully');
           } catch (e) {
@@ -152,17 +174,24 @@ class _DotLottieViewState extends State<DotLottieView> {
 
   Map<String, dynamic> _getCreationParams() {
     return {
-      'sourceType': widget.sourceType,
-      'source': widget.source,
       'autoplay': widget.autoplay,
       'loop': widget.loop,
-      'speed': widget.speed,
+      'loopCount': widget.loopCount,
       'mode': widget.mode,
+      'speed': widget.speed,
       'useFrameInterpolation': widget.useFrameInterpolation,
-      if (widget.width != null) 'width': widget.width,
-      if (widget.height != null) 'height': widget.height,
+      if (widget.segment != null) 'segment': widget.segment,
       if (widget.backgroundColor != null)
         'backgroundColor': widget.backgroundColor,
+      if (widget.marker != null) 'marker': widget.marker,
+      if (widget.themeId != null) 'themeId': widget.themeId,
+      if (widget.stateMachineId != null)
+        'stateMachineId': widget.stateMachineId,
+      if (widget.animationId != null) 'animationId': widget.animationId,
+      'sourceType': widget.sourceType,
+      'source': widget.source,
+      if (widget.width != null) 'width': widget.width,
+      if (widget.height != null) 'height': widget.height,
     };
   }
 
@@ -831,7 +860,6 @@ class DotLottieViewController {
     }
   }
 
-  // Manifest method
   Future<Map<String, dynamic>?> manifest() async {
     try {
       final result = await _channel.invokeMethod('manifest');

@@ -88,15 +88,43 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
     }
     
     private func setupAnimation(with arguments: [String: Any]) {
-        let sourceType = arguments["sourceType"] as? String
-        let source = arguments["source"] as? String
         let autoplay = arguments["autoplay"] as? Bool ?? true
         let loop = arguments["loop"] as? Bool ?? true
+        let loopCount = arguments["loopCount"] as? Int ?? 0
+        let mode = arguments["mode"] as? String ?? "Forward"
+        
+        let convertedMode = {
+            switch mode {
+            case "forward":
+                return Mode.forward
+            case "reverse":
+                return Mode.reverse
+            case "bounce":
+                return Mode.bounce
+            case "reverse-bounce":
+                return Mode.reverseBounce
+            default:
+                return .forward
+            }
+        }
         let speed = arguments["speed"] as? Double ?? 1.0
         let useFrameInterpolation = arguments["useFrameInterpolation"] as? Bool ?? false
+        let segment = arguments["segment"] as? [Float] ?? []
+        let convertedSegment: ((Float, Float))? = {
+            if segment.count >= 2 {
+                return (segment[0], segment[1])
+            }
+            return nil
+        }()
+        let backgroundColor = arguments["backgroundColor"] as? String
+        let marker = arguments["marker"] as? String ?? ""
+        let themeId = arguments["themeId"] as? String ?? ""
+        let stateMachineId = arguments["stateMachineId"] as? String ?? ""
+        let animationId = arguments["animationId"] as? String ?? ""
+        let sourceType = arguments["sourceType"] as? String
+        let source = arguments["source"] as? String
         let width = arguments["width"] as? Int
         let height = arguments["height"] as? Int
-        let backgroundColor = arguments["backgroundColor"] as? String
         
         guard let sourceType = sourceType, let source = source else {
             return
@@ -105,9 +133,16 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
         var config = AnimationConfig(
             autoplay: autoplay,
             loop: loop,
+            loopCount: loopCount,
+            mode: convertedMode(),
             speed: Float(speed),
-            useFrameInterpolation: useFrameInterpolation
+            useFrameInterpolation: useFrameInterpolation,
+            segments: convertedSegment,
+            marker: marker,
+            themeId: themeId,
+            stateMachineId: stateMachineId
         )
+        config.animationId = animationId
         
         if let w = width {
             config.width = w
