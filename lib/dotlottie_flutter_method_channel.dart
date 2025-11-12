@@ -57,40 +57,8 @@ class MethodChannelDotLottieFlutter extends DotLottieFlutterPlatform {
   }
 
   @override
-  Future<void> loadAnimation({
-    required String sourceType,
-    required String source,
-    bool autoplay = true,
-    bool loop = true,
-    double speed = 1.0,
-  }) async {
-    await methodChannel.invokeMethod<void>('loadAnimation', {
-      'sourceType': sourceType,
-      'source': source,
-      'autoplay': autoplay,
-      'loop': loop,
-      'speed': speed,
-    });
-  }
-
-  // Playback control methods
-  @override
   Future<bool?> play() async {
     return await methodChannel.invokeMethod<bool>('play');
-  }
-
-  @override
-  Future<bool?> playFromFrame(double frame) async {
-    return await methodChannel.invokeMethod<bool>('playFromFrame', {
-      'frame': frame,
-    });
-  }
-
-  @override
-  Future<bool?> playFromProgress(double progress) async {
-    return await methodChannel.invokeMethod<bool>('playFromProgress', {
-      'progress': progress,
-    });
   }
 
   @override
@@ -130,13 +98,13 @@ class MethodChannelDotLottieFlutter extends DotLottieFlutterPlatform {
   }
 
   @override
-  Future<double?> totalFrames() async {
-    return await methodChannel.invokeMethod<double>('totalFrames');
+  Future<double?> currentProgress() async {
+    return await methodChannel.invokeMethod<double>('currentProgress');
   }
 
   @override
-  Future<double?> currentProgress() async {
-    return await methodChannel.invokeMethod<double>('currentProgress');
+  Future<double?> totalFrames() async {
+    return await methodChannel.invokeMethod<double>('totalFrames');
   }
 
   @override
@@ -207,11 +175,16 @@ class MethodChannelDotLottieFlutter extends DotLottieFlutterPlatform {
   }
 
   @override
-  Future<void> setSegments(double start, double end) async {
+  Future<void> setSegment(double start, double end) async {
     await methodChannel.invokeMethod<void>('setSegments', {
       'start': start,
       'end': end,
     });
+  }
+
+  @override
+  Future<void> setMarker(String marker) async {
+    await methodChannel.invokeMethod<void>('setMarker', {marker: marker});
   }
 
   @override
@@ -223,13 +196,6 @@ class MethodChannelDotLottieFlutter extends DotLottieFlutterPlatform {
   Future<void> setFrameInterpolation(bool useFrameInterpolation) async {
     await methodChannel.invokeMethod<void>('setFrameInterpolation', {
       'useFrameInterpolation': useFrameInterpolation,
-    });
-  }
-
-  @override
-  Future<void> setAutoplay(bool autoplay) async {
-    await methodChannel.invokeMethod<void>('setAutoplay', {
-      'autoplay': autoplay,
     });
   }
 
@@ -267,8 +233,8 @@ class MethodChannelDotLottieFlutter extends DotLottieFlutterPlatform {
 
   // Animation loading methods
   @override
-  Future<void> loadAnimationById(String animationId) async {
-    await methodChannel.invokeMethod<void>('loadAnimationById', {
+  Future<void> loadAnimation(String animationId) async {
+    await methodChannel.invokeMethod<void>('loadAnimation', {
       'animationId': animationId,
     });
   }
@@ -279,11 +245,6 @@ class MethodChannelDotLottieFlutter extends DotLottieFlutterPlatform {
   }
 
   // Marker methods
-  @override
-  Future<void> setMarker(String marker) async {
-    await methodChannel.invokeMethod<void>('setMarker', {'marker': marker});
-  }
-
   @override
   Future<List<Map<String, dynamic>>?> markers() async {
     final result = await methodChannel.invokeMethod('markers');
@@ -343,13 +304,6 @@ class MethodChannelDotLottieFlutter extends DotLottieFlutterPlatform {
   @override
   Future<bool?> stateMachineStop() async {
     return await methodChannel.invokeMethod<bool>('stateMachineStop');
-  }
-
-  @override
-  Future<void> stateMachinePostEvent(String event) async {
-    await methodChannel.invokeMethod<void>('stateMachinePostEvent', {
-      'event': event,
-    });
   }
 
   @override
@@ -422,24 +376,12 @@ class MethodChannelDotLottieFlutter extends DotLottieFlutterPlatform {
   }
 
   @override
-  Future<List<String>?> stateMachineFrameworkSetup() async {
-    final result = await methodChannel.invokeMethod(
-      'stateMachineFrameworkSetup',
-    );
-    if (result is List) {
-      return result.cast<String>();
-    }
-    return null;
-  }
-
-  @override
   Future<String?> getStateMachine(String id) async {
     return await methodChannel.invokeMethod<String>('getStateMachine', {
       'id': id,
     });
   }
 
-  // Manifest method
   @override
   Future<Map<String, dynamic>?> manifest() async {
     final result = await methodChannel.invokeMethod('manifest');
@@ -448,26 +390,4 @@ class MethodChannelDotLottieFlutter extends DotLottieFlutterPlatform {
     }
     return null;
   }
-
-  // Error methods
-  @override
-  Future<bool?> error() async {
-    return await methodChannel.invokeMethod<bool>('error');
-  }
-
-  @override
-  Future<String?> errorMessage() async {
-    return await methodChannel.invokeMethod<String>('errorMessage');
-  }
-
-  // Render methods
-  @override
-  Future<bool?> render() async {
-    return await methodChannel.invokeMethod<bool>('render');
-  }
-
-  // @override
-  // Future<dynamic> frameImage() async {
-  //   return await methodChannel.invokeMethod('frameImage');
-  // }
 }

@@ -60,27 +60,9 @@ abstract class DotLottieFlutterPlatform extends PlatformInterface {
     throw UnimplementedError('createPlayer() has not been implemented.');
   }
 
-  Future<void> loadAnimation({
-    required String sourceType,
-    required String source,
-    bool autoplay = true,
-    bool loop = true,
-    double speed = 1.0,
-  }) {
-    throw UnimplementedError('loadAnimation() has not been implemented.');
-  }
-
   // Playback control methods
   Future<bool?> play() {
     throw UnimplementedError('play() has not been implemented.');
-  }
-
-  Future<bool?> playFromFrame(double frame) {
-    throw UnimplementedError('playFromFrame() has not been implemented.');
-  }
-
-  Future<bool?> playFromProgress(double progress) {
-    throw UnimplementedError('playFromProgress() has not been implemented.');
   }
 
   Future<bool?> pause() {
@@ -114,10 +96,6 @@ abstract class DotLottieFlutterPlatform extends PlatformInterface {
 
   Future<double?> totalFrames() {
     throw UnimplementedError('totalFrames() has not been implemented.');
-  }
-
-  Future<double?> currentProgress() {
-    throw UnimplementedError('currentProgress() has not been implemented.');
   }
 
   Future<double?> duration() {
@@ -171,8 +149,12 @@ abstract class DotLottieFlutterPlatform extends PlatformInterface {
     throw UnimplementedError('setProgress() has not been implemented.');
   }
 
-  Future<void> setSegments(double start, double end) {
-    throw UnimplementedError('setSegments() has not been implemented.');
+  Future<void> setSegment(double start, double end) {
+    throw UnimplementedError('setSegment() has not been implemented.');
+  }
+
+  Future<void> setMarker(String marker) {
+    throw UnimplementedError('setMarker() has not been implemented.');
   }
 
   Future<void> setMode(String mode) {
@@ -183,10 +165,6 @@ abstract class DotLottieFlutterPlatform extends PlatformInterface {
     throw UnimplementedError(
       'setFrameInterpolation() has not been implemented.',
     );
-  }
-
-  Future<void> setAutoplay(bool autoplay) {
-    throw UnimplementedError('setAutoplay() has not been implemented.');
   }
 
   Future<void> setBackgroundColor(String color) {
@@ -211,29 +189,26 @@ abstract class DotLottieFlutterPlatform extends PlatformInterface {
   }
 
   // Animation loading methods
-  Future<void> loadAnimationById(String animationId) {
-    throw UnimplementedError('loadAnimationById() has not been implemented.');
+  Future<void> loadAnimation(String animationId) {
+    throw UnimplementedError('loadAnimation() has not been implemented.');
   }
 
   Future<String?> activeAnimationId() {
     throw UnimplementedError('activeAnimationId() has not been implemented.');
   }
 
-  // Marker methods
-  Future<void> setMarker(String marker) {
-    throw UnimplementedError('setMarker() has not been implemented.');
-  }
-
   Future<List<Map<String, dynamic>>?> markers() {
     throw UnimplementedError('markers() has not been implemented.');
   }
 
-  // Slots methods
+  Future<double?> currentProgress() {
+    throw UnimplementedError('currentProgress() has not been implemented.');
+  }
+
   Future<bool?> setSlots(String slots) {
     throw UnimplementedError('setSlots() has not been implemented.');
   }
 
-  // Resize method
   Future<void> resize(int width, int height) {
     throw UnimplementedError('resize() has not been implemented.');
   }
@@ -260,12 +235,6 @@ abstract class DotLottieFlutterPlatform extends PlatformInterface {
 
   Future<bool?> stateMachineStop() {
     throw UnimplementedError('stateMachineStop() has not been implemented.');
-  }
-
-  Future<void> stateMachinePostEvent(String event) {
-    throw UnimplementedError(
-      'stateMachinePostEvent() has not been implemented.',
-    );
   }
 
   Future<void> stateMachineFire(String event) {
@@ -320,12 +289,6 @@ abstract class DotLottieFlutterPlatform extends PlatformInterface {
     );
   }
 
-  Future<List<String>?> stateMachineFrameworkSetup() {
-    throw UnimplementedError(
-      'stateMachineFrameworkSetup() has not been implemented.',
-    );
-  }
-
   Future<String?> getStateMachine(String id) {
     throw UnimplementedError('getStateMachine() has not been implemented.');
   }
@@ -334,22 +297,4 @@ abstract class DotLottieFlutterPlatform extends PlatformInterface {
   Future<Map<String, dynamic>?> manifest() {
     throw UnimplementedError('manifest() has not been implemented.');
   }
-
-  // Error methods
-  Future<bool?> error() {
-    throw UnimplementedError('error() has not been implemented.');
-  }
-
-  Future<String?> errorMessage() {
-    throw UnimplementedError('errorMessage() has not been implemented.');
-  }
-
-  // Render methods
-  Future<bool?> render() {
-    throw UnimplementedError('render() has not been implemented.');
-  }
-
-  // Future<dynamic> frameImage() {
-  //   throw UnimplementedError('frameImage() has not been implemented.');
-  // }
 }

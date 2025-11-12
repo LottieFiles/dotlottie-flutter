@@ -15,11 +15,4 @@ class DotLottieFlutterWeb extends DotLottieFlutterPlatform {
       'DotLottieFlutterWeb is not supported on this platform.',
     );
   }
-
-  @override
-  Future<String?> getPlatformVersion() async {
-    throw UnsupportedError(
-      'getPlatformVersion is not supported on this platform.',
-    );
-  }
 }

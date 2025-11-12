@@ -22,8 +22,6 @@ class DotLottiePlatformView(
     private var isDisposed = false
 
     init {
-        Log.d("🔴 DotLottie", "Android: Creating platform view with id: $viewId")
-
         val layoutParams = android.view.ViewGroup.LayoutParams(
             android.view.ViewGroup.LayoutParams.MATCH_PARENT,
             android.view.ViewGroup.LayoutParams.MATCH_PARENT
@@ -53,81 +51,62 @@ class DotLottiePlatformView(
         val useFrameInterpolation = params["useFrameInterpolation"] as? Boolean ?: false
         val backgroundColor = params["backgroundColor"] as? String
     
-        Log.d("🔴 DotLottie", "Android: Adding event listener")
         dotLottieView.addEventListener(
             object : DotLottieEventListener {
                 override fun onLoad() {
-                    Log.d("🔴 DotLottie", "Android: ✅ onLoad triggered on view $viewId")
-                    
                     dotLottieView.post {
                         methodChannel.invokeMethod("onLoad", null)
                     }
                 }
     
                 override fun onPlay() {
-                    Log.d("🔴 DotLottie", "Android: ✅ onPlay triggered")
                     methodChannel.invokeMethod("onPlay", null)
                 }
     
                 override fun onPause() {
-                    Log.d("🔴 DotLottie", "Android: ✅ onPause triggered")
                     methodChannel.invokeMethod("onPause", null)
                 }
     
                 override fun onStop() {
-                    Log.d("🔴 DotLottie", "Android: ✅ onStop triggered")
                     methodChannel.invokeMethod("onStop", null)
                 }
     
                 override fun onComplete() {
-                    Log.d("🔴 DotLottie", "Android: ✅ onComplete triggered")
                     methodChannel.invokeMethod("onComplete", null)
                 }
     
                 override fun onFrame(frame: Float) {
-                    // Log.d("🔴 DotLottie", "Android: ✅ on frame: $frame")
                     methodChannel.invokeMethod("onFrame", frame)
                 }
     
                 override fun onLoop(loopCount: Int) {
-                    Log.d("🔴 DotLottie", "Android: ✅ onLoop triggered")
                     methodChannel.invokeMethod("onLoop", loopCount)
                 }
     
                 override fun onFreeze() {
-                    Log.d("🔴 DotLottie", "Android: ⚠️ onFreeze called")
                 }
     
                 override fun onUnFreeze() {
-                    Log.d("🔴 DotLottie", "Android: ⚠️ onUnFreeze called")
                 }
     
                 override fun onDestroy() {
-                    Log.d("🔴 DotLottie", "Android: ⚠️ onDestroy called")
                 }
             }
         )
-        Log.d("🔴 DotLottie", "Android: Event listener added")
     
-        // Now load the animation
         if (sourceType != null && source != null) {
-            Log.d("🔴 DotLottie", "Android: Source: $source, Type: $sourceType")
     
             val dotLottieSource = when (sourceType) {
                 "url" -> {
-                    Log.d("🔴 DotLottie", "Android: Creating URL source for: $source")
                     DotLottieSource.Url(source)
                 }
                 "asset" -> {
-                    Log.d("🔴 DotLottie", "Android: Creating asset source for: $source")
                     DotLottieSource.Asset(source)
                 }
                 "json" -> {
-                    Log.d("🔴 DotLottie", "Android: Creating JSON source")
                     DotLottieSource.Json(source)
                 }
                 else -> {
-                    Log.e("🔴 DotLottie", "Android: Invalid source type: $sourceType")
                     return
                 }
             }
@@ -175,56 +154,23 @@ class DotLottiePlatformView(
             return
         }
 
-        Log.d("🔴 DotLottie", "Android: Method called: ${call.method}")
-
         try {
             when (call.method) {
-                // Playback control methods
                 "play" -> {
                     dotLottieView.play()
-                    Log.d("🔴 DotLottie", "Android: ✅ Playing animation")
                     result.success(true)
-                }
-
-                "playFromFrame" -> {
-                    val frame = call.argument<Double>("frame")?.toFloat()
-                    if (frame != null) {
-                        dotLottieView.setFrame(frame)
-                        dotLottieView.play()
-                        Log.d("🔴 DotLottie", "Android: ✅ Playing from frame: $frame")
-                        result.success(true)
-                    } else {
-                        result.error("INVALID_ARGS", "Invalid frame argument", null)
-                    }
-                }
-
-                "playFromProgress" -> {
-                    val progress = call.argument<Double>("progress")?.toFloat()
-                    if (progress != null) {
-                        val totalFrames = dotLottieView.totalFrames
-                        val frame = progress * totalFrames
-                        dotLottieView.setFrame(frame)
-                        dotLottieView.play()
-                        Log.d("🔴 DotLottie", "Android: ✅ Playing from progress: $progress")
-                        result.success(true)
-                    } else {
-                        result.error("INVALID_ARGS", "Invalid progress argument", null)
-                    }
                 }
 
                 "pause" -> {
                     dotLottieView.pause()
-                    Log.d("🔴 DotLottie", "Android: ✅ Pausing animation")
                     result.success(true)
                 }
 
                 "stop" -> {
                     dotLottieView.stop()
-                    Log.d("🔴 DotLottie", "Android: ✅ Stopping animation")
                     result.success(true)
                 }
 
-                // Animation properties getters
                 "isPlaying" -> {
                     result.success(dotLottieView.isPlaying)
                 }
@@ -299,7 +245,6 @@ class DotLottiePlatformView(
                     result.success(mode)
                 }
 
-                // Animation control setters
                 "setSpeed" -> {
                     val speed = call.argument<Double>("speed")?.toFloat()
                     if (speed != null) {
@@ -380,17 +325,6 @@ class DotLottiePlatformView(
                     }
                 }
 
-                "setAutoplay" -> {
-                    val autoplay = call.argument<Boolean>("autoplay")
-                    if (autoplay != null) {
-                        // Note: setAutoplay may not be available in the widget API
-                        // If not available, just return success
-                        result.success(null)
-                    } else {
-                        result.error("INVALID_ARGS", "Invalid autoplay argument", null)
-                    }
-                }
-
                 "setBackgroundColor" -> {
                     val colorString = call.argument<String>("color")
                     if (colorString != null) {
@@ -406,7 +340,6 @@ class DotLottiePlatformView(
                     }
                 }
 
-                // Theme methods
                 "setTheme" -> {
                     val themeId = call.argument<String>("themeId")
                     if (themeId != null) {
@@ -420,7 +353,6 @@ class DotLottiePlatformView(
                 "setThemeData" -> {
                     val themeData = call.argument<String>("themeData")
                     if (themeData != null) {
-                        // Check if method exists in your version of the SDK
                         try {
                             val success = dotLottieView.setThemeData(themeData)
                             result.success(success)
@@ -451,8 +383,7 @@ class DotLottiePlatformView(
                     }
                 }
 
-                // Animation loading methods
-                "loadAnimationById" -> {
+                "loadAnimation" -> {
                     val animationId = call.argument<String>("animationId")
                     if (animationId != null) {
                         dotLottieView.loadAnimation(animationId)
@@ -470,7 +401,6 @@ class DotLottiePlatformView(
                     }
                 }
 
-                // Marker methods
                 "setMarker" -> {
                     val marker = call.argument<String>("marker")
                     if (marker != null) {
@@ -497,7 +427,6 @@ class DotLottiePlatformView(
                     }
                 }
 
-                // Slots methods
                 "setSlots" -> {
                     val slots = call.argument<String>("slots")
                     if (slots != null) {
@@ -513,7 +442,6 @@ class DotLottiePlatformView(
                     }
                 }
 
-                // Resize method
                 "resize" -> {
                     val width = call.argument<Int>("width")
                     val height = call.argument<Int>("height")
@@ -530,18 +458,15 @@ class DotLottiePlatformView(
                     }
                 }
 
-                // Layer methods
                 "getLayerBounds" -> {
                     // Not available in Android DotLottie widget API
                     result.success(null)
                 }
 
-                // State machine methods
                 "stateMachineLoad" -> {
                     val stateMachineId = call.argument<String>("stateMachineId")
                     if (stateMachineId != null) {
                         try {
-                            // Check if state machine methods are available
                             val success = dotLottieView.stateMachineLoad(stateMachineId)
                             result.success(success)
                         } catch (e: Exception) {
@@ -554,7 +479,6 @@ class DotLottiePlatformView(
                 }
 
                 "stateMachineLoadData" -> {
-                    // Not available in Android DotLottie widget API
                     result.success(false)
                 }
 
@@ -575,21 +499,6 @@ class DotLottiePlatformView(
                     } catch (e: Exception) {
                         Log.w("🔴 DotLottie", "stopStateMachine not available", e)
                         result.success(false)
-                    }
-                }
-
-                "stateMachinePostEvent" -> {
-                    val event = call.argument<String>("event")
-                    if (event != null) {
-                        try {
-//                            dotLottieView.stateMachinePostEvent(event)
-                            result.success(null)
-                        } catch (e: Exception) {
-                            Log.w("🔴 DotLottie", "postStateMachineEvent not available", e)
-                            result.success(null)
-                        }
-                    } else {
-                        result.error("INVALID_ARGS", "Invalid event argument", null)
                     }
                 }
 
@@ -649,11 +558,6 @@ class DotLottiePlatformView(
                     } catch (e: Exception) {
                         result.success(null)
                     }
-                }
-
-                "stateMachineFrameworkSetup" -> {
-                    // Not available in Android DotLottie widget API
-                    result.success(emptyList<String>())
                 }
 
                 "getStateMachine" -> {
@@ -721,28 +625,6 @@ class DotLottiePlatformView(
                     }
                 }
 
-                // Error methods
-                "error" -> {
-                    // Not available as a method in Android DotLottie widget API
-                    result.success(false)
-                }
-
-                "errorMessage" -> {
-                    // Not available as a method in Android DotLottie widget API
-                    result.success(null)
-                }
-
-                // Render methods
-                "render" -> {
-                    // Not available as a method in Android DotLottie widget API
-                    result.success(true)
-                }
-
-                "frameImage" -> {
-                    // Android widget API may not support frameImage extraction
-                    result.success(null)
-                }
-
                 "dispose" -> {
                     dispose()
                     result.success(null)
@@ -753,7 +635,6 @@ class DotLottiePlatformView(
                 }
             }
         } catch (e: Exception) {
-            Log.e("🔴 DotLottie", "Android: Error handling method call: ${call.method}", e)
             result.error("ERROR", "Error handling method: ${call.method}", e.message)
         }
     }
@@ -784,7 +665,6 @@ class DotLottiePlatformView(
         if (isDisposed) return
         isDisposed = true
 
-        Log.d("🔴 DotLottie", "Android: Disposing view $viewId")
         dotLottieView.stop()
         DotLottieFlutterPlugin.platformViews.remove(viewId)
     }

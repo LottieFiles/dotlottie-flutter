@@ -176,9 +176,8 @@ class DotLottieFlutterPlatformView: NSObject {
         guard let animation = dotLottieAnimation else {
             return
         }
-
-        dotLottieAnimation?.subscribe(observer: self.animationObserver)
         
+        dotLottieAnimation?.subscribe(observer: self.animationObserver)
         
         // Get the SwiftUI view from the animation
         let animationView = animation.view()
@@ -202,29 +201,10 @@ class DotLottieFlutterPlatformView: NSObject {
             return
         }
         
-        
         switch call.method {
         case "play":
             let success = animation.play()
             result(success)
-            
-        case "playFromFrame":
-            if let args = call.arguments as? [String: Any],
-               let frame = args["frame"] as? Double {
-                let success = animation.play(fromFrame: Float(frame))
-                result(success)
-            } else {
-                result(FlutterError(code: "INVALID_ARGS", message: "Invalid frame argument", details: nil))
-            }
-            
-        case "playFromProgress":
-            if let args = call.arguments as? [String: Any],
-               let progress = args["progress"] as? Double {
-                let success = animation.play(fromProgress: Float(progress))
-                result(success)
-            } else {
-                result(FlutterError(code: "INVALID_ARGS", message: "Invalid progress argument", details: nil))
-            }
             
         case "pause":
             let success = animation.pause()
@@ -234,7 +214,6 @@ class DotLottieFlutterPlatformView: NSObject {
             let success = animation.stop()
             result(success)
             
-            // Animation properties getters
         case "isPlaying":
             result(animation.isPlaying())
             
@@ -295,7 +274,6 @@ class DotLottieFlutterPlatformView: NSObject {
             }
             result(modeString)
             
-            // Animation control setters
         case "setSpeed":
             if let args = call.arguments as? [String: Any],
                let speed = args["speed"] as? Double {
@@ -373,15 +351,6 @@ class DotLottieFlutterPlatformView: NSObject {
                 result(FlutterError(code: "INVALID_ARGS", message: "Invalid frameInterpolation argument", details: nil))
             }
             
-        case "setAutoplay":
-            if let args = call.arguments as? [String: Any],
-               let autoplay = args["autoplay"] as? Bool {
-                animation.setAutoplay(autoplay: autoplay)
-                result(nil)
-            } else {
-                result(FlutterError(code: "INVALID_ARGS", message: "Invalid autoplay argument", details: nil))
-            }
-            
         case "setBackgroundColor":
             if let args = call.arguments as? [String: Any],
                let colorString = args["color"] as? String,
@@ -401,7 +370,6 @@ class DotLottieFlutterPlatformView: NSObject {
                 result(FlutterError(code: "INVALID_ARGS", message: "Invalid backgroundColor argument", details: nil))
             }
             
-            // Theme methods
         case "setTheme":
             if let args = call.arguments as? [String: Any],
                let themeId = args["themeId"] as? String {
@@ -427,8 +395,7 @@ class DotLottieFlutterPlatformView: NSObject {
         case "activeThemeId":
             result(animation.activeThemeId())
             
-            // Animation loading methods
-        case "loadAnimationById":
+        case "loadAnimation":
             if let args = call.arguments as? [String: Any],
                let animationId = args["animationId"] as? String {
                 do {
@@ -444,7 +411,6 @@ class DotLottieFlutterPlatformView: NSObject {
         case "activeAnimationId":
             result(animation.activeAnimationId())
             
-            // Marker methods
         case "setMarker":
             if let args = call.arguments as? [String: Any],
                let marker = args["marker"] as? String {
@@ -465,7 +431,6 @@ class DotLottieFlutterPlatformView: NSObject {
             }
             result(markerDicts)
             
-            // Slots methods
         case "setSlots":
             if let args = call.arguments as? [String: Any],
                let slots = args["slots"] as? String {
@@ -475,7 +440,6 @@ class DotLottieFlutterPlatformView: NSObject {
                 result(FlutterError(code: "INVALID_ARGS", message: "Invalid slots argument", details: nil))
             }
             
-            // Resize method
         case "resize":
             if let args = call.arguments as? [String: Any],
                let width = args["width"] as? Int,
@@ -486,7 +450,6 @@ class DotLottieFlutterPlatformView: NSObject {
                 result(FlutterError(code: "INVALID_ARGS", message: "Invalid resize arguments", details: nil))
             }
             
-            // Layer methods
         case "getLayerBounds":
             if let args = call.arguments as? [String: Any],
                let layerName = args["layerName"] as? String {
@@ -496,7 +459,6 @@ class DotLottieFlutterPlatformView: NSObject {
                 result(FlutterError(code: "INVALID_ARGS", message: "Invalid layerName argument", details: nil))
             }
             
-            // State machine methods
         case "stateMachineLoad":
             if let args = call.arguments as? [String: Any],
                let stateMachineId = args["stateMachineId"] as? String {
@@ -522,17 +484,6 @@ class DotLottieFlutterPlatformView: NSObject {
         case "stateMachineStop":
             let success = animation.stateMachineStop()
             result(success)
-            
-        case "stateMachinePostEvent":
-            if let args = call.arguments as? [String: Any],
-               let eventString = args["event"] as? String {
-                // Parse the event string to create an Event enum
-                // This is a simplified version - you may need to adjust based on your Event enum
-                animation.stateMachineFire(event: eventString)
-                result(nil)
-            } else {
-                result(FlutterError(code: "INVALID_ARGS", message: "Invalid event argument", details: nil))
-            }
             
         case "stateMachineFire":
             if let args = call.arguments as? [String: Any],
@@ -573,53 +524,49 @@ class DotLottieFlutterPlatformView: NSObject {
                 result(FlutterError(code: "INVALID_ARGS", message: "Invalid boolean input arguments", details: nil))
             }
             
-            // case "stateMachineGetNumericInput":
-            //     if let args = call.arguments as? [String: Any],
-            //        let key = args["key"] as? String {
-            //         let value = animation.stateMachineGetNumericInput(key: key)
-            //         result(Double(value))
-            //     } else {
-            //         result(FlutterError(code: "INVALID_ARGS", message: "Invalid key argument", details: nil))
-            //     }
+        case "stateMachineGetNumericInput":
+            if let args = call.arguments as? [String: Any],
+               let key = args["key"] as? String {
+                let value = animation.stateMachineGetNumericInput(key: key)
+                result(Double(value))
+            } else {
+                result(FlutterError(code: "INVALID_ARGS", message: "Invalid key argument", details: nil))
+            }
             
-            // case "stateMachineGetStringInput":
-            //     if let args = call.arguments as? [String: Any],
-            //        let key = args["key"] as? String {
-            //         let value = animation.stateMachineGetStringInput(key: key)
-            //         result(value)
-            //     } else {
-            //         result(FlutterError(code: "INVALID_ARGS", message: "Invalid key argument", details: nil))
-            //     }
+        case "stateMachineGetStringInput":
+            if let args = call.arguments as? [String: Any],
+               let key = args["key"] as? String {
+                let value = animation.stateMachineGetStringInput(key: key)
+                result(value)
+            } else {
+                result(FlutterError(code: "INVALID_ARGS", message: "Invalid key argument", details: nil))
+            }
             
-            // case "stateMachineGetBooleanInput":
-            //     if let args = call.arguments as? [String: Any],
-            //        let key = args["key"] as? String {
-            //         let value = animation.stateMachineGetBooleanInput(key: key)
-            //         result(value)
-            //     } else {
-            //         result(FlutterError(code: "INVALID_ARGS", message: "Invalid key argument", details: nil))
-            //     }
+        case "stateMachineGetBooleanInput":
+            if let args = call.arguments as? [String: Any],
+               let key = args["key"] as? String {
+                let value = animation.stateMachineGetBooleanInput(key: key)
+                result(value)
+            } else {
+                result(FlutterError(code: "INVALID_ARGS", message: "Invalid key argument", details: nil))
+            }
             
-            // case "stateMachineGetInputs":
-            //     let inputs = animation.stateMachineGetInputs()
-            //     result(inputs)
+        case "stateMachineGetInputs":
+            let inputs = animation.stateMachineGetInputs()
+            result(inputs)
             
         case "stateMachineCurrentState":
             result(animation.stateMachineCurrentState())
+                        
+        case "getStateMachine":
+            if let args = call.arguments as? [String: Any],
+                let id = args["id"] as? String {
+                let stateMachine = animation.getStateMachine(id)
+                result(stateMachine)
+            } else {
+                result(FlutterError(code: "INVALID_ARGS", message: "Invalid id argument", details: nil))
+            }
             
-        case "stateMachineFrameworkSetup":
-            result(animation.stateMachineFrameworkSetup())
-            
-            // case "getStateMachine":
-            //     if let args = call.arguments as? [String: Any],
-            //        let id = args["id"] as? String {
-            //         let stateMachine = animation.getStateMachine(id)
-            //         result(stateMachine)
-            //     } else {
-            //         result(FlutterError(code: "INVALID_ARGS", message: "Invalid id argument", details: nil))
-            //     }
-            
-            // Manifest method
         case "manifest":
             if let manifest = animation.manifest() {
                 // Convert Manifest to dictionary
@@ -636,8 +583,6 @@ class DotLottieFlutterPlatformView: NSObject {
                     manifestDict["initial"] = initialDict
                 }
                 
-                // Convert ManifestAnimation array
-                //                if let animations = manifest.animations {
                 manifestDict["animations"] = manifest.animations.map { animation in
                     var animDict: [String: Any?] = [:]
                     animDict["id"] = animation.id
@@ -647,7 +592,6 @@ class DotLottieFlutterPlatformView: NSObject {
                     animDict["background"] = animation.background
                     return animDict
                 }
-                //                }
                 
                 // Convert ManifestTheme array
                 if let themes = manifest.themes {
@@ -670,31 +614,6 @@ class DotLottieFlutterPlatformView: NSObject {
                 }
                 
                 result(manifestDict)
-            } else {
-                result(nil)
-            }
-            
-            // Error methods
-        case "error":
-            result(animation.error())
-            
-        case "errorMessage":
-            result(animation.errorMessage())
-            
-            // Render methods
-        case "render":
-            let success = animation.render()
-            result(success)
-            
-        case "frameImage":
-            if let image = animation.frameImage() {
-                // Convert CGImage to Data
-                let bitmap = NSBitmapImageRep(cgImage: image)
-                if let pngData = bitmap.representation(using: .png, properties: [:]) {
-                    result(FlutterStandardTypedData(bytes: pngData))
-                } else {
-                    result(nil)
-                }
             } else {
                 result(nil)
             }

@@ -537,6 +537,14 @@ class DotLottieViewController {
     }
   }
 
+  Future<void> setMarker(String marker) async {
+    try {
+      await _channel.invokeMethod('setMarker', {'marker': marker});
+    } catch (e) {
+      debugPrint('Error calling setMarker: $e');
+    }
+  }
+
   Future<void> setMode(String mode) async {
     try {
       await _channel.invokeMethod('setMode', {'mode': mode});
@@ -552,22 +560,6 @@ class DotLottieViewController {
       });
     } catch (e) {
       debugPrint('Error calling setFrameInterpolation: $e');
-    }
-  }
-
-  Future<void> setAutoplay(bool autoplay) async {
-    try {
-      await _channel.invokeMethod('setAutoplay', {'autoplay': autoplay});
-    } catch (e) {
-      debugPrint('Error calling setAutoplay: $e');
-    }
-  }
-
-  Future<void> setBackgroundColor(String color) async {
-    try {
-      await _channel.invokeMethod('setBackgroundColor', {'color': color});
-    } catch (e) {
-      debugPrint('Error calling setBackgroundColor: $e');
     }
   }
 
@@ -613,13 +605,13 @@ class DotLottieViewController {
   }
 
   // Animation loading methods
-  Future<void> loadAnimationById(String animationId) async {
+  Future<void> loadAnimation(String animationId) async {
     try {
-      await _channel.invokeMethod('loadAnimationById', {
+      await _channel.invokeMethod('loadAnimation', {
         'animationId': animationId,
       });
     } catch (e) {
-      debugPrint('Error calling loadAnimationById: $e');
+      debugPrint('Error calling loadAnimation: $e');
     }
   }
 
@@ -629,15 +621,6 @@ class DotLottieViewController {
     } catch (e) {
       debugPrint('Error calling activeAnimationId: $e');
       return null;
-    }
-  }
-
-  // Marker methods
-  Future<void> setMarker(String marker) async {
-    try {
-      await _channel.invokeMethod('setMarker', {'marker': marker});
-    } catch (e) {
-      debugPrint('Error calling setMarker: $e');
     }
   }
 
@@ -727,14 +710,6 @@ class DotLottieViewController {
     } catch (e) {
       debugPrint('Error calling stateMachineStop: $e');
       return false;
-    }
-  }
-
-  Future<void> stateMachinePostEvent(String event) async {
-    try {
-      await _channel.invokeMethod('stateMachinePostEvent', {'event': event});
-    } catch (e) {
-      debugPrint('Error calling stateMachinePostEvent: $e');
     }
   }
 
@@ -838,19 +813,6 @@ class DotLottieViewController {
     }
   }
 
-  Future<List<String>?> stateMachineFrameworkSetup() async {
-    try {
-      final result = await _channel.invokeMethod('stateMachineFrameworkSetup');
-      if (result is List) {
-        return result.cast<String>();
-      }
-      return null;
-    } catch (e) {
-      debugPrint('Error calling stateMachineFrameworkSetup: $e');
-      return null;
-    }
-  }
-
   Future<String?> getStateMachine(String id) async {
     try {
       return await _channel.invokeMethod<String>('getStateMachine', {'id': id});
@@ -869,44 +831,6 @@ class DotLottieViewController {
       return null;
     } catch (e) {
       debugPrint('Error calling manifest: $e');
-      return null;
-    }
-  }
-
-  // Error methods
-  Future<bool?> error() async {
-    try {
-      return await _channel.invokeMethod<bool>('error');
-    } catch (e) {
-      debugPrint('Error calling error: $e');
-      return false;
-    }
-  }
-
-  Future<String?> errorMessage() async {
-    try {
-      return await _channel.invokeMethod<String>('errorMessage');
-    } catch (e) {
-      debugPrint('Error calling errorMessage: $e');
-      return null;
-    }
-  }
-
-  // Render methods
-  Future<bool?> render() async {
-    try {
-      return await _channel.invokeMethod<bool>('render');
-    } catch (e) {
-      debugPrint('Error calling render: $e');
-      return false;
-    }
-  }
-
-  Future<dynamic> frameImage() async {
-    try {
-      return await _channel.invokeMethod('frameImage');
-    } catch (e) {
-      debugPrint('Error calling frameImage: $e');
       return null;
     }
   }
@@ -949,33 +873,9 @@ class DotLottieFlutter {
     return DotLottieFlutterPlatform.instance.createPlayer();
   }
 
-  Future<void> loadAnimation({
-    required String sourceType,
-    required String source,
-    bool autoplay = true,
-    bool loop = true,
-    double speed = 1.0,
-  }) {
-    return DotLottieFlutterPlatform.instance.loadAnimation(
-      sourceType: sourceType,
-      source: source,
-      autoplay: autoplay,
-      loop: loop,
-      speed: speed,
-    );
-  }
-
   // Playback control methods
   Future<bool?> play() async {
     return DotLottieFlutterPlatform.instance.play();
-  }
-
-  Future<bool?> playFromFrame(double frame) async {
-    return DotLottieFlutterPlatform.instance.playFromFrame(frame);
-  }
-
-  Future<bool?> playFromProgress(double progress) async {
-    return DotLottieFlutterPlatform.instance.playFromProgress(progress);
   }
 
   Future<bool?> pause() async {
@@ -1009,10 +909,6 @@ class DotLottieFlutter {
 
   Future<double?> totalFrames() async {
     return DotLottieFlutterPlatform.instance.totalFrames();
-  }
-
-  Future<double?> currentProgress() async {
-    return DotLottieFlutterPlatform.instance.currentProgress();
   }
 
   Future<double?> duration() async {
@@ -1064,8 +960,8 @@ class DotLottieFlutter {
     return DotLottieFlutterPlatform.instance.setProgress(progress);
   }
 
-  Future<void> setSegments(double start, double end) async {
-    return DotLottieFlutterPlatform.instance.setSegments(start, end);
+  Future<void> setSegment(double start, double end) async {
+    return DotLottieFlutterPlatform.instance.setSegment(start, end);
   }
 
   Future<void> setMode(String mode) async {
@@ -1076,10 +972,6 @@ class DotLottieFlutter {
     return DotLottieFlutterPlatform.instance.setFrameInterpolation(
       useFrameInterpolation,
     );
-  }
-
-  Future<void> setAutoplay(bool autoplay) async {
-    return DotLottieFlutterPlatform.instance.setAutoplay(autoplay);
   }
 
   Future<void> setBackgroundColor(String color) async {
@@ -1103,35 +995,22 @@ class DotLottieFlutter {
     return DotLottieFlutterPlatform.instance.activeThemeId();
   }
 
-  // Animation loading methods
-  Future<void> loadAnimationById(String animationId) async {
-    return DotLottieFlutterPlatform.instance.loadAnimationById(animationId);
-  }
-
   Future<String?> activeAnimationId() async {
     return DotLottieFlutterPlatform.instance.activeAnimationId();
-  }
-
-  // Marker methods
-  Future<void> setMarker(String marker) async {
-    return DotLottieFlutterPlatform.instance.setMarker(marker);
   }
 
   Future<List<Map<String, dynamic>>?> markers() async {
     return DotLottieFlutterPlatform.instance.markers();
   }
 
-  // Slots methods
   Future<bool?> setSlots(String slots) async {
     return DotLottieFlutterPlatform.instance.setSlots(slots);
   }
 
-  // Resize method
   Future<void> resize(int width, int height) async {
     return DotLottieFlutterPlatform.instance.resize(width, height);
   }
 
-  // Layer methods
   Future<List<double>?> getLayerBounds(String layerName) async {
     return DotLottieFlutterPlatform.instance.getLayerBounds(layerName);
   }
@@ -1151,10 +1030,6 @@ class DotLottieFlutter {
 
   Future<bool?> stateMachineStop() async {
     return DotLottieFlutterPlatform.instance.stateMachineStop();
-  }
-
-  Future<void> stateMachinePostEvent(String event) async {
-    return DotLottieFlutterPlatform.instance.stateMachinePostEvent(event);
   }
 
   Future<void> stateMachineFire(String event) async {
@@ -1202,10 +1077,6 @@ class DotLottieFlutter {
     return DotLottieFlutterPlatform.instance.stateMachineCurrentState();
   }
 
-  Future<List<String>?> stateMachineFrameworkSetup() async {
-    return DotLottieFlutterPlatform.instance.stateMachineFrameworkSetup();
-  }
-
   Future<String?> getStateMachine(String id) async {
     return DotLottieFlutterPlatform.instance.getStateMachine(id);
   }
@@ -1213,21 +1084,4 @@ class DotLottieFlutter {
   Future<Map<String, dynamic>?> manifest() async {
     return DotLottieFlutterPlatform.instance.manifest();
   }
-
-  Future<bool?> error() async {
-    return DotLottieFlutterPlatform.instance.error();
-  }
-
-  Future<String?> errorMessage() async {
-    return DotLottieFlutterPlatform.instance.errorMessage();
-  }
-
-  // Render methods
-  Future<bool?> render() async {
-    return DotLottieFlutterPlatform.instance.render();
-  }
-
-  // Future<dynamic> frameImage() async {
-  //   return DotLottieFlutterPlatform.instance.frameImage();
-  // }
 }

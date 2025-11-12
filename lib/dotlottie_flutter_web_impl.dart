@@ -28,7 +28,6 @@ class DotLottieFlutterWeb extends DotLottieFlutterPlatform {
     import { DotLottie } from 'https://cdn.jsdelivr.net/npm/@lottiefiles/dotlottie-web@0.55.0/+esm';
     window.DotLottie = DotLottie;
     window.dispatchEvent(new Event('dotlottie-ready'));
-    console.log('🔴 DotLottie auto-loaded');
   ''';
     web.document.head?.appendChild(script);
 
@@ -52,7 +51,6 @@ class DotLottieFlutterWeb extends DotLottieFlutterPlatform {
   }
 }
 
-/// Web implementation of DotLottie view
 class DotLottieWebView {
   final int viewId;
   final BinaryMessenger messenger;
@@ -80,7 +78,6 @@ class DotLottieWebView {
 
     element.appendChild(canvasElement);
 
-    // Set up method channel
     methodChannel = MethodChannel(
       'dotlottie_view_$viewId',
       const StandardMethodCodec(),
@@ -115,21 +112,12 @@ class DotLottieWebView {
       case 'play':
         return play();
 
-      case 'playFromFrame':
-        final frame = (call.arguments as Map)['frame'] as double;
-        return playFromFrame(frame);
-
-      case 'playFromProgress':
-        final progress = (call.arguments as Map)['progress'] as double;
-        return playFromProgress(progress);
-
       case 'pause':
         return pause();
 
       case 'stop':
         return stop();
 
-      // Animation properties getters
       case 'isPlaying':
         return isPlaying();
 
@@ -147,9 +135,6 @@ class DotLottieWebView {
 
       case 'totalFrames':
         return totalFrames();
-
-      case 'currentProgress':
-        return currentProgress();
 
       case 'duration':
         return duration();
@@ -175,7 +160,6 @@ class DotLottieWebView {
       case 'mode':
         return mode();
 
-      // Animation control setters
       case 'setSpeed':
         final speed = (call.arguments as Map)['speed'] as double;
         setSpeed(speed);
@@ -194,11 +178,11 @@ class DotLottieWebView {
         final progress = (call.arguments as Map)['progress'] as double;
         return setProgress(progress);
 
-      case 'setSegments':
+      case 'setSegment':
         final args = call.arguments as Map;
         final start = args['start'] as double;
         final end = args['end'] as double;
-        setSegments(start, end);
+        setSegment(start, end);
         return null;
 
       case 'setMode':
@@ -212,17 +196,11 @@ class DotLottieWebView {
         setUseFrameInterpolation(useFrameInterpolation);
         return null;
 
-      case 'setAutoplay':
-        final autoplay = (call.arguments as Map)['autoplay'] as bool;
-        setAutoplay(autoplay);
-        return null;
-
       case 'setBackgroundColor':
         final color = (call.arguments as Map)['color'] as String;
         setBackgroundColor(color);
         return null;
 
-      // Theme methods
       case 'setTheme':
         final themeId = (call.arguments as Map)['themeId'] as String;
         return setTheme(themeId);
@@ -237,16 +215,14 @@ class DotLottieWebView {
       case 'activeThemeId':
         return activeThemeId();
 
-      // Animation loading methods
-      case 'loadAnimationById':
+      case 'loadAnimation':
         final animationId = (call.arguments as Map)['animationId'] as String;
-        loadAnimationById(animationId);
+        loadAnimation(animationId);
         return null;
 
       case 'activeAnimationId':
         return activeAnimationId();
 
-      // Marker methods
       case 'setMarker':
         final marker = (call.arguments as Map)['marker'] as String;
         setMarker(marker);
@@ -255,12 +231,10 @@ class DotLottieWebView {
       case 'markers':
         return markers();
 
-      // Slots methods
       case 'setSlots':
         final slots = (call.arguments as Map)['slots'] as String;
         return setSlots(slots);
 
-      // Resize method
       case 'resize':
         final args = call.arguments as Map;
         final width = args['width'] as int;
@@ -268,12 +242,10 @@ class DotLottieWebView {
         resize(width, height);
         return null;
 
-      // Layer methods
       case 'getLayerBounds':
         final layerName = (call.arguments as Map)['layerName'] as String;
         return getLayerBounds(layerName);
 
-      // State machine methods
       case 'stateMachineLoad':
         final stateMachineId =
             (call.arguments as Map)['stateMachineId'] as String;
@@ -288,11 +260,6 @@ class DotLottieWebView {
 
       case 'stateMachineStop':
         return stateMachineStop();
-
-      case 'stateMachinePostEvent':
-        final event = (call.arguments as Map)['event'] as String;
-        stateMachinePostEvent(event);
-        return null;
 
       case 'stateMachineFire':
         final event = (call.arguments as Map)['event'] as String;
@@ -335,30 +302,12 @@ class DotLottieWebView {
       case 'stateMachineCurrentState':
         return stateMachineCurrentState();
 
-      case 'stateMachineFrameworkSetup':
-        return stateMachineFrameworkSetup();
-
       case 'getStateMachine':
         final id = (call.arguments as Map)['id'] as String;
         return getStateMachine(id);
 
-      // Manifest method
       case 'manifest':
         return manifest();
-
-      // Error methods
-      case 'error':
-        return error();
-
-      case 'errorMessage':
-        return errorMessage();
-
-      // Render methods
-      case 'render':
-        return render();
-
-      case 'frameImage':
-        return frameImage();
 
       case 'dispose':
         dispose();
@@ -445,11 +394,9 @@ class DotLottieWebView {
       final mode = config['mode'] as String? ?? 'forward';
       playerConfig['mode'.toJS] = mode.toJS;
 
-      // Set speed
       final speed = (config['speed'] as num? ?? 1.0).toDouble();
       playerConfig['speed'.toJS] = speed.toJS;
 
-      // Set useFrameInterpolation
       final useFrameInterpolation =
           config['useFrameInterpolation'] as bool? ?? false;
       playerConfig['useFrameInterpolation'.toJS] = useFrameInterpolation.toJS;
@@ -490,7 +437,6 @@ class DotLottieWebView {
 
       isInitialized = true;
 
-      // Set up event listeners
       _setupEventListeners();
     } catch (e) {
       print('Error initilizing dotLottie: $e');
@@ -511,7 +457,6 @@ class DotLottieWebView {
       }).toJS;
       addEventListener.callAsFunction(player, 'complete'.toJS, onComplete);
 
-      // Add load event listener
       final onLoad = (() {
         if (!isDisposed) {
           methodChannel.invokeMethod('onLoad');
@@ -519,7 +464,6 @@ class DotLottieWebView {
       }).toJS;
       addEventListener.callAsFunction(player, 'load'.toJS, onLoad);
 
-      // Add load error event listener
       final onLoadError = (() {
         if (!isDisposed) {
           methodChannel.invokeMethod('onLoadError');
@@ -527,7 +471,6 @@ class DotLottieWebView {
       }).toJS;
       addEventListener.callAsFunction(player, 'loadError'.toJS, onLoadError);
 
-      // Add play event listener
       final onPlay = (() {
         if (!isDisposed) {
           methodChannel.invokeMethod('onPlay');
@@ -535,7 +478,6 @@ class DotLottieWebView {
       }).toJS;
       addEventListener.callAsFunction(player, 'play'.toJS, onPlay);
 
-      // Add pause event listener
       final onPause = (() {
         if (!isDisposed) {
           methodChannel.invokeMethod('onPause');
@@ -543,7 +485,6 @@ class DotLottieWebView {
       }).toJS;
       addEventListener.callAsFunction(player, 'pause'.toJS, onPause);
 
-      // Add frame event listener with frame number
       final onFrame = ((JSAny event) {
         if (!isDisposed) {
           try {
@@ -559,11 +500,9 @@ class DotLottieWebView {
       }).toJS;
       addEventListener.callAsFunction(player, 'frame'.toJS, onFrame);
 
-      // Add render event listener with frame number
       final onRender = ((JSAny event) {
         if (!isDisposed) {
           try {
-            // Extract frame number from event
             final jsEvent = event as JSObject;
             final frameNo =
                 (jsEvent['currentFrame'.toJS] as JSNumber).toDartDouble;
@@ -575,7 +514,6 @@ class DotLottieWebView {
       }).toJS;
       addEventListener.callAsFunction(player, 'render'.toJS, onRender);
 
-      // Add stop event listener
       final onStop = (() {
         if (!isDisposed) {
           methodChannel.invokeMethod('onStop');
@@ -583,7 +521,6 @@ class DotLottieWebView {
       }).toJS;
       addEventListener.callAsFunction(player, 'stop'.toJS, onStop);
 
-      // Add loop event listener with loop count
       final onLoop = ((JSAny event) {
         if (!isDisposed) {
           try {
@@ -609,32 +546,6 @@ class DotLottieWebView {
         final playMethod = player['play'.toJS] as JSFunction;
         playMethod.callAsFunction(player);
         return true;
-      } catch (e) {
-        return false;
-      }
-    }
-    return false;
-  }
-
-  bool playFromFrame(double frame) {
-    if (dotLottiePlayer != null && !isDisposed) {
-      try {
-        // Set frame first, then play
-        setFrame(frame);
-        return play();
-      } catch (e) {
-        return false;
-      }
-    }
-    return false;
-  }
-
-  bool playFromProgress(double progress) {
-    if (dotLottiePlayer != null && !isDisposed) {
-      try {
-        // Set progress first, then play
-        setProgress(progress);
-        return play();
       } catch (e) {
         return false;
       }
@@ -670,12 +581,11 @@ class DotLottieWebView {
     return false;
   }
 
-  // Animation properties getters
   bool isPlaying() {
     if (dotLottiePlayer != null && !isDisposed) {
       try {
         final player = dotLottiePlayer as JSObject;
-        final result = player['isPlaying'.toJS]; // GETTER
+        final result = player['isPlaying'.toJS];
         return (result as JSBoolean).toDart;
       } catch (e) {
         return false;
@@ -688,7 +598,7 @@ class DotLottieWebView {
     if (dotLottiePlayer != null && !isDisposed) {
       try {
         final player = dotLottiePlayer as JSObject;
-        final result = player['isPaused'.toJS]; // GETTER
+        final result = player['isPaused'.toJS];
         return (result as JSBoolean).toDart;
       } catch (e) {
         return false;
@@ -701,7 +611,7 @@ class DotLottieWebView {
     if (dotLottiePlayer != null && !isDisposed) {
       try {
         final player = dotLottiePlayer as JSObject;
-        final result = player['isStopped'.toJS]; // GETTER
+        final result = player['isStopped'.toJS];
         return (result as JSBoolean).toDart;
       } catch (e) {
         return false;
@@ -714,7 +624,7 @@ class DotLottieWebView {
     if (dotLottiePlayer != null && !isDisposed) {
       try {
         final player = dotLottiePlayer as JSObject;
-        final result = player['isLoaded'.toJS]; // GETTER
+        final result = player['isLoaded'.toJS];
         return (result as JSBoolean).toDart;
       } catch (e) {
         return false;
@@ -727,7 +637,7 @@ class DotLottieWebView {
     if (dotLottiePlayer != null && !isDisposed) {
       try {
         final player = dotLottiePlayer as JSObject;
-        final result = player['currentFrame'.toJS]; // GETTER
+        final result = player['currentFrame'.toJS];
         return (result as JSNumber).toDartDouble;
       } catch (e) {
         return null;
@@ -742,7 +652,7 @@ class DotLottieWebView {
     if (dotLottiePlayer != null && !isDisposed) {
       try {
         final player = dotLottiePlayer as JSObject;
-        final result = player['totalFrames'.toJS]; // GETTER, not a function
+        final result = player['totalFrames'.toJS];
 
         return (result as JSNumber).toDartDouble;
       } catch (e) {
@@ -755,7 +665,6 @@ class DotLottieWebView {
   double? currentProgress() {
     if (dotLottiePlayer != null && !isDisposed) {
       try {
-        // Calculate progress from current frame and total frames
         final current = currentFrame();
         final total = totalFrames();
         if (current != null && total != null && total > 0) {
@@ -773,7 +682,7 @@ class DotLottieWebView {
     if (dotLottiePlayer != null && !isDisposed) {
       try {
         final player = dotLottiePlayer as JSObject;
-        final result = player['duration'.toJS]; // GETTER
+        final result = player['duration'.toJS];
         return (result as JSNumber).toDartDouble;
       } catch (e) {
         return null;
@@ -786,7 +695,7 @@ class DotLottieWebView {
     if (dotLottiePlayer != null && !isDisposed) {
       try {
         final player = dotLottiePlayer as JSObject;
-        final result = player['loopCount'.toJS]; // GETTER
+        final result = player['loopCount'.toJS];
         return (result as JSNumber).toDartInt;
       } catch (e) {
         return null;
@@ -799,7 +708,7 @@ class DotLottieWebView {
     if (dotLottiePlayer != null && !isDisposed) {
       try {
         final player = dotLottiePlayer as JSObject;
-        final result = player['speed'.toJS]; // GETTER
+        final result = player['speed'.toJS];
         return (result as JSNumber).toDartDouble;
       } catch (e) {
         return null;
@@ -812,7 +721,7 @@ class DotLottieWebView {
     if (dotLottiePlayer != null && !isDisposed) {
       try {
         final player = dotLottiePlayer as JSObject;
-        final result = player['loop'.toJS]; // GETTER
+        final result = player['loop'.toJS];
         return (result as JSBoolean).toDart;
       } catch (e) {
         return false;
@@ -825,7 +734,7 @@ class DotLottieWebView {
     if (dotLottiePlayer != null && !isDisposed) {
       try {
         final player = dotLottiePlayer as JSObject;
-        final result = player['autoplay'.toJS]; // GETTER
+        final result = player['autoplay'.toJS];
         return (result as JSBoolean).toDart;
       } catch (e) {
         return false;
@@ -838,7 +747,7 @@ class DotLottieWebView {
     if (dotLottiePlayer != null && !isDisposed) {
       try {
         final player = dotLottiePlayer as JSObject;
-        final result = player['useFrameInterpolation'.toJS]; // GETTER
+        final result = player['useFrameInterpolation'.toJS];
         return (result as JSBoolean).toDart;
       } catch (e) {
         return false;
@@ -851,8 +760,7 @@ class DotLottieWebView {
     if (dotLottiePlayer != null && !isDisposed) {
       try {
         final player = dotLottiePlayer as JSObject;
-        final result =
-            player['segment'.toJS]; // GETTER (note: 'segment' not 'segments')
+        final result = player['segment'.toJS];
         if (result != null) {
           final array = result as JSArray;
           return [
@@ -871,7 +779,7 @@ class DotLottieWebView {
     if (dotLottiePlayer != null && !isDisposed) {
       try {
         final player = dotLottiePlayer as JSObject;
-        final result = player['mode'.toJS]; // GETTER
+        final result = player['mode'.toJS];
         return (result as JSString).toDart;
       } catch (e) {
         return null;
@@ -880,7 +788,6 @@ class DotLottieWebView {
     return null;
   }
 
-  // Animation control setters
   void setSpeed(double speed) {
     if (dotLottiePlayer != null && !isDisposed) {
       try {
@@ -932,7 +839,7 @@ class DotLottieWebView {
     return false;
   }
 
-  void setSegments(double start, double end) {
+  void setSegment(double start, double end) {
     if (dotLottiePlayer != null && !isDisposed) {
       try {
         final player = dotLottiePlayer as JSObject;
@@ -962,16 +869,6 @@ class DotLottieWebView {
     }
   }
 
-  void setAutoplay(bool autoplay) {
-    if (dotLottiePlayer != null && !isDisposed) {
-      try {
-        final player = dotLottiePlayer as JSObject;
-        player['autoplay'.toJS] =
-            autoplay.toJS; // This is a property assignment, not a method call
-      } catch (e) {}
-    }
-  }
-
   void setBackgroundColor(String color) {
     if (!isDisposed) {
       try {
@@ -985,7 +882,6 @@ class DotLottieWebView {
     }
   }
 
-  // Theme methods
   bool setTheme(String themeId) {
     if (dotLottiePlayer != null && !isDisposed) {
       try {
@@ -1032,14 +928,16 @@ class DotLottieWebView {
     if (dotLottiePlayer != null && !isDisposed) {
       try {
         final player = dotLottiePlayer as JSObject;
-        final result = player['activeThemeId'.toJS]; // GETTER
+        final result = player['activeThemeId'.toJS];
         return (result as JSString?)?.toDart;
-      } catch (e) {}
+      } catch (e) {
+        return null;
+      }
     }
     return null;
   }
 
-  void loadAnimationById(String animationId) {
+  void loadAnimation(String animationId) {
     if (dotLottiePlayer != null && !isDisposed) {
       try {
         final player = dotLottiePlayer as JSObject;
@@ -1053,9 +951,11 @@ class DotLottieWebView {
     if (dotLottiePlayer != null && !isDisposed) {
       try {
         final player = dotLottiePlayer as JSObject;
-        final result = player['activeAnimationId'.toJS]; // GETTER
+        final result = player['activeAnimationId'.toJS];
         return (result as JSString?)?.toDart;
-      } catch (e) {}
+      } catch (e) {
+        return null;
+      }
     }
     return null;
   }
@@ -1200,10 +1100,6 @@ class DotLottieWebView {
     return false;
   }
 
-  void stateMachinePostEvent(String event) {
-    stateMachineFire(event);
-  }
-
   void stateMachineFire(String event) {
     if (dotLottiePlayer != null && !isDisposed) {
       try {
@@ -1309,7 +1205,6 @@ class DotLottieWebView {
           final inputs = <String, String>{};
           final length = (array.length as JSNumber).toDartInt;
 
-          // The array contains pairs: [name, type, name, type, ...]
           for (var i = 0; i < length; i += 2) {
             if (i + 1 < length) {
               final name = (array[i] as JSString).toDart;
@@ -1328,28 +1223,8 @@ class DotLottieWebView {
     if (dotLottiePlayer != null && !isDisposed) {
       try {
         final player = dotLottiePlayer as JSObject;
-        final result = player['stateMachineGetCurrentState'.toJS]; // GETTER
+        final result = player['stateMachineGetCurrentState'.toJS];
         return (result as JSString?)?.toDart;
-      } catch (e) {}
-    }
-    return null;
-  }
-
-  List<String>? stateMachineFrameworkSetup() {
-    if (dotLottiePlayer != null && !isDisposed) {
-      try {
-        final player = dotLottiePlayer as JSObject;
-        final method = player['stateMachineGetListeners'.toJS] as JSFunction;
-        final result = method.callAsFunction(player);
-        if (result != null) {
-          final array = result as JSArray;
-          final listeners = <String>[];
-          final length = (array.length as JSNumber).toDartInt;
-          for (var i = 0; i < length; i++) {
-            listeners.add((array[i] as JSString).toDart);
-          }
-          return listeners;
-        }
       } catch (e) {}
     }
     return null;
@@ -1372,36 +1247,18 @@ class DotLottieWebView {
       try {
         final player = dotLottiePlayer as JSObject;
 
-        // Access manifest as a property (GETTER), not a function
         final result = player['manifest'.toJS];
 
         if (result != null && !result.typeofEquals('undefined')) {
           final manifestMap = _jsObjectToMap(result as JSObject);
           return manifestMap;
-        } else {}
-      } catch (e, stackTrace) {}
-    } else {}
+        }
+      } catch (e, _) {
+        return null;
+      }
+    }
     return null;
   }
-
-  bool error() => false;
-  String? errorMessage() => null;
-
-  bool render() {
-    if (dotLottiePlayer != null && !isDisposed) {
-      try {
-        final player = dotLottiePlayer as JSObject;
-        final method = player['render'.toJS] as JSFunction?;
-        if (method != null) {
-          method.callAsFunction(player);
-          return true;
-        }
-      } catch (e) {}
-    }
-    return false;
-  }
-
-  dynamic frameImage() => null;
 
   void dispose() {
     if (isDisposed) return;
