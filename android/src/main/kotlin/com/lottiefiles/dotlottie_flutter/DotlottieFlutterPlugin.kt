@@ -22,8 +22,6 @@ class DotLottieFlutterPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
     }
 
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
-        Log.d("🔴 DotLottie", "Android: Plugin attached to engine")
-
         // Store the binary messenger
         binaryMessenger = flutterPluginBinding.binaryMessenger
 
@@ -38,7 +36,6 @@ class DotLottieFlutterPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
     }
 
     override fun onAttachedToActivity(binding: ActivityPluginBinding) {
-        Log.d("🔴 DotLottie", "Android: Attached to activity")
         activity = binding.activity
     }
 

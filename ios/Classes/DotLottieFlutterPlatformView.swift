@@ -88,8 +88,8 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
     }
     
     private func setupAnimation(with arguments: [String: Any]) {
-        let autoplay = arguments["autoplay"] as? Bool ?? true
-        let loop = arguments["loop"] as? Bool ?? true
+        let autoplay = arguments["autoplay"] as? Bool ?? false
+        let loop = arguments["loop"] as? Bool ?? false
         let loopCount = arguments["loopCount"] as? Int ?? 0
         let mode = arguments["mode"] as? String ?? "Forward"
         

@@ -44,19 +44,18 @@ class DotLottiePlatformView(
     private fun setupAnimation(params: Map<String, Any>) {
         val sourceType = params["sourceType"] as? String
         val source = params["source"] as? String
-        val autoplay = params["autoplay"] as? Boolean ?: true
-        val loop = params["loop"] as? Boolean ?: true
+        val autoplay = params["autoplay"] as? Boolean ?: false
+        val loop = params["loop"] as? Boolean ?: false
         val speed = (params["speed"] as? Number)?.toFloat() ?: 1f
         val mode = params["mode"] as? String ?: "forward"
         val useFrameInterpolation = params["useFrameInterpolation"] as? Boolean ?: false
         val backgroundColor = params["backgroundColor"] as? String
+        val stateMachineId = params["stateMachineId"] as? String ?: ""
     
         dotLottieView.addEventListener(
             object : DotLottieEventListener {
                 override fun onLoad() {
-                    dotLottieView.post {
-                        methodChannel.invokeMethod("onLoad", null)
-                    }
+                    methodChannel.invokeMethod("onLoad", null)
                 }
     
                 override fun onPlay() {
@@ -127,6 +126,7 @@ class DotLottiePlatformView(
                     .source(dotLottieSource)
                     .playMode(playMode)
                     .useFrameInterpolation(useFrameInterpolation)
+                    .stateMachineId(stateMachineId)
     
                 // Apply background color if provided
                 backgroundColor?.let {

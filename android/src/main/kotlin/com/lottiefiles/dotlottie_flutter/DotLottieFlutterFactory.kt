@@ -10,8 +10,6 @@ import io.flutter.plugin.platform.PlatformViewFactory
 class DotLottieViewFactory : PlatformViewFactory(StandardMessageCodec.INSTANCE) {
     
     override fun create(context: Context, viewId: Int, args: Any?): PlatformView {
-        Log.d("🔴 DotLottie", "Android: Factory creating view with id: $viewId")
-        
         val creationParams = args as? Map<String, Any>
         
         // Create method channel for this specific view

@@ -18,10 +18,4 @@ void main() {
   test('$MethodChannelDotLottieFlutter is the default instance', () {
     expect(initialPlatform, isInstanceOf<MethodChannelDotLottieFlutter>());
   });
-
-  test('getPlatformVersion', () async {
-    DotLottieFlutter dotLottieFlutterPlugin = DotLottieFlutter();
-    MockDotLottieFlutterPlatform fakePlatform = MockDotLottieFlutterPlatform();
-    DotLottieFlutterPlatform.instance = fakePlatform;
-  });
 }
