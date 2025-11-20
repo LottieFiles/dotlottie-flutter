@@ -6,11 +6,14 @@ import android.util.Log
 import com.dotlottie.dlplayer.Mode
 import com.lottiefiles.dotlottie.core.model.Config
 import com.lottiefiles.dotlottie.core.util.DotLottieEventListener
+import com.lottiefiles.dotlottie.core.util.StateMachineEventListener
 import com.lottiefiles.dotlottie.core.util.DotLottieSource
 import com.lottiefiles.dotlottie.core.widget.DotLottieAnimation
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.platform.PlatformView
+import android.os.Looper
+import android.os.Handler
 
 class DotLottiePlatformView(
     context: Context,
@@ -20,6 +23,8 @@ class DotLottiePlatformView(
     private val dotLottieView: DotLottieAnimation = DotLottieAnimation(context)
     private val methodChannel: MethodChannel
     private var isDisposed = false
+    // Register event listeners with Handler for main thread
+    val mainHandler = android.os.Handler(android.os.Looper.getMainLooper())
 
     init {
         val layoutParams = android.view.ViewGroup.LayoutParams(
@@ -41,9 +46,20 @@ class DotLottiePlatformView(
         }
     }
 
+    private fun invokeOnMainThread(method: String, arguments: Any? = null) {
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            // Already on main thread
+            methodChannel.invokeMethod(method, arguments)
+        } else {
+            // On background thread, post to main
+            mainHandler.post {
+                methodChannel.invokeMethod(method, arguments)
+            }
+        }
+    }
+
     private fun setupAnimation(params: Map<String, Any>) {
-        val sourceType = params["sourceType"] as? String
-        val source = params["source"] as? String
+        val sourceType = params["sourceType"] as? String ?: return
         val autoplay = params["autoplay"] as? Boolean ?: false
         val loop = params["loop"] as? Boolean ?: false
         val speed = (params["speed"] as? Number)?.toFloat() ?: 1f
@@ -52,64 +68,146 @@ class DotLottiePlatformView(
         val backgroundColor = params["backgroundColor"] as? String
         val stateMachineId = params["stateMachineId"] as? String ?: ""
     
+        
         dotLottieView.addEventListener(
             object : DotLottieEventListener {
                 override fun onLoad() {
-                    methodChannel.invokeMethod("onLoad", null)
+                    mainHandler.postDelayed({
+                        invokeOnMainThread("onLoad")
+                    }, 50)
+                }
+    
+                override fun onLoadError(error: Throwable) {
+                        invokeOnMainThread("onLoadError")
                 }
     
                 override fun onPlay() {
-                    methodChannel.invokeMethod("onPlay", null)
+                    mainHandler.post {
+                        invokeOnMainThread("onPlay")
+                    }
                 }
     
                 override fun onPause() {
-                    methodChannel.invokeMethod("onPause", null)
+                        invokeOnMainThread("onPause")
                 }
     
                 override fun onStop() {
-                    methodChannel.invokeMethod("onStop", null)
+                        invokeOnMainThread("onStop")
                 }
     
                 override fun onComplete() {
-                    methodChannel.invokeMethod("onComplete", null)
+                        invokeOnMainThread("onComplete")
                 }
     
                 override fun onFrame(frame: Float) {
-                    methodChannel.invokeMethod("onFrame", frame)
+                        invokeOnMainThread("onFrame", frame)
                 }
     
                 override fun onLoop(loopCount: Int) {
-                    methodChannel.invokeMethod("onLoop", loopCount)
+                        invokeOnMainThread("onLoop", loopCount)
                 }
     
-                override fun onFreeze() {
+                override fun onFreeze() {}
+                override fun onUnFreeze() {}
+                override fun onDestroy() {}
+            }
+        )
+    
+        // State machine listeners with main thread handler
+        dotLottieView.addStateMachineEventListener(
+            object : StateMachineEventListener {
+                override fun onStart() {
+                    mainHandler.post {
+                        methodChannel.invokeMethod("stateMachineOnStart", null)
+                    }
                 }
     
-                override fun onUnFreeze() {
+                override fun onStop() {
+                    mainHandler.post {
+                        methodChannel.invokeMethod("stateMachineOnStop", null)
+                    }
                 }
     
-                override fun onDestroy() {
+                override fun onStateEntered(enteringState: String) {
+                    mainHandler.post {
+                        methodChannel.invokeMethod("stateMachineOnStateEntered", enteringState)
+                    }
+                }
+    
+                override fun onStateExit(leavingState: String) {
+                    mainHandler.post {
+                        methodChannel.invokeMethod("stateMachineOnStateExit", leavingState)
+                    }
+                }
+    
+                override fun onTransition(previousState: String, newState: String) {
+                    mainHandler.post {
+                        val args = mapOf("previousState" to previousState, "newState" to newState)
+                        methodChannel.invokeMethod("stateMachineOnTransition", args)
+                    }
+                }
+    
+                override fun onNumericInputValueChange(inputName: String, oldValue: Float, newValue: Float) {
+                    mainHandler.post {
+                        val args = mapOf("inputName" to inputName, "oldValue" to oldValue, "newValue" to newValue)
+                        methodChannel.invokeMethod("stateMachineOnNumericInputValueChange", args)
+                    }
+                }
+    
+                override fun onStringInputValueChange(inputName: String, oldValue: String, newValue: String) {
+                    mainHandler.post {
+                        val args = mapOf("inputName" to inputName, "oldValue" to oldValue, "newValue" to newValue)
+                        methodChannel.invokeMethod("stateMachineOnStringInputValueChange", args)
+                    }
+                }
+    
+                override fun onBooleanInputValueChange(inputName: String, oldValue: Boolean, newValue: Boolean) {
+                    mainHandler.post {
+                        val args = mapOf("inputName" to inputName, "oldValue" to oldValue, "newValue" to newValue)
+                        methodChannel.invokeMethod("stateMachineOnBooleanInputValueChange", args)
+                    }
+                }
+    
+                override fun onCustomEvent(message: String) {
+                    mainHandler.post {
+                        methodChannel.invokeMethod("stateMachineOnCustomEvent", message)
+                    }
+                }
+    
+                override fun onError(message: String) {
+                    mainHandler.post {
+                        methodChannel.invokeMethod("stateMachineOnError", message)
+                    }
+                }
+    
+                override fun onInputFired(inputName: String) {
+                    mainHandler.post {
+                        val args = mapOf("inputName" to inputName)
+                        methodChannel.invokeMethod("stateMachineOnInputFired", args)
+                    }
                 }
             }
         )
     
-        if (sourceType != null && source != null) {
-    
-            val dotLottieSource = when (sourceType) {
-                "url" -> {
-                    DotLottieSource.Url(source)
-                }
-                "asset" -> {
-                    DotLottieSource.Asset(source)
-                }
-                "json" -> {
-                    DotLottieSource.Json(source)
-                }
-                else -> {
-                    return
-                }
+        // Create source
+        val dotLottieSource = when (sourceType) {
+            "url" -> {
+                val source = params["source"] as? String ?: return
+                DotLottieSource.Url(source)
             }
+            "data" -> {
+                val data = params["source"] as? ByteArray ?: return
+                DotLottieSource.Data(data)
+            }
+            "json" -> {
+                val source = params["source"] as? String ?: return
+                DotLottieSource.Json(source)
+            }
+            else -> return
+        }
     
+        // Wait for view to have dimensions before loading
+        dotLottieView.post {
             try {
                 val playMode = when (mode.lowercase()) {
                     "forward" -> Mode.FORWARD
@@ -128,22 +226,22 @@ class DotLottiePlatformView(
                     .useFrameInterpolation(useFrameInterpolation)
                     .stateMachineId(stateMachineId)
     
-                // Apply background color if provided
                 backgroundColor?.let {
                     try {
                         val color = parseColor(it)
                         dotLottieView.setBackgroundColor(color)
                     } catch (e: Exception) {
-                        Log.e("🔴 DotLottie", "Android: Error parsing background color", e)
+                        Log.e("DotLottie", "Error parsing background color", e)
                     }
                 }
     
                 val config = configBuilder.build()
                 dotLottieView.load(config)
-                
             } catch (e: Exception) {
-                Log.e("🔴 DotLottie", "Android: Exception during load: ${e.message}", e)
-                methodChannel.invokeMethod("onLoadError", null)
+                Log.e("DotLottie", "💥 Exception during load: ${e.message}", e)
+                mainHandler.post {
+                    methodChannel.invokeMethod("onLoadError", null)
+                }
             }
         }
     }
@@ -518,40 +616,74 @@ class DotLottiePlatformView(
                 }
 
                 "stateMachineSetNumericInput" -> {
-                    // Not available in Android DotLottie widget API
-                    result.success(false)
+                    val key = call.argument<String>("key")
+                        ?: return result.error("INVALID_ARGS", "Invalid stateMachineSetNumericInput argument", null)
+                    val value = call.argument<Double>("value")
+                        ?: return result.error("INVALID_ARGS", "Invalid or missing value argument", null)
+                    try {
+                        val success = dotLottieView.stateMachineSetNumericInput(key, value.toFloat())
+                        result.success(success)
+                    } catch (e: Exception) {
+                        result.success(false)
+                    }
                 }
-
                 "stateMachineSetStringInput" -> {
-                    // Not available in Android DotLottie widget API
-                    result.success(false)
+                    val key = call.argument<String>("key")
+                        ?: return result.error("INVALID_ARGS", "Invalid stateMachineSetStringInput argument", null)
+                    val value = call.argument<String>("value")
+                        ?: return result.error("INVALID_ARGS", "Invalid or missing value argument", null)
+                    try {
+                        val success = dotLottieView.stateMachineSetStringInput(key, value)
+                        result.success(success)
+                    } catch (e: Exception) {
+                        result.success(false)
+                    }
                 }
-
                 "stateMachineSetBooleanInput" -> {
-                    // Not available in Android DotLottie widget API
-                    result.success(false)
+                    val key = call.argument<String>("key")
+                        ?: return result.error("INVALID_ARGS", "Invalid stateMachineSetBooleanInput argument", null)
+                    val value = call.argument<Boolean>("value")
+                        ?: return result.error("INVALID_ARGS", "Invalid or missing value argument", null)
+                    try {
+                        val success = dotLottieView.stateMachineSetBooleanInput(key, value)
+                        result.success(success)
+                    } catch (e: Exception) {
+                        result.success(false)
+                    }
                 }
-
                 "stateMachineGetNumericInput" -> {
-                    // Not available in Android DotLottie widget API
-                    result.success(null)
+                    val key = call.argument<String>("key")
+                        ?: return result.error("INVALID_ARGS", "Invalid stateMachineGetNumericInput argument", null)
+                    try {
+                        val number = dotLottieView.stateMachineGetNumericInput(key)
+                        result.success(number)
+                    } catch (e: Exception) {
+                        result.success(null)
+                    }
                 }
-
                 "stateMachineGetStringInput" -> {
-                    // Not available in Android DotLottie widget API
-                    result.success(null)
+                    val key = call.argument<String>("key")
+                        ?: return result.error("INVALID_ARGS", "Invalid stateMachineGetStringInput argument", null)
+                    try {
+                        val value = dotLottieView.stateMachineGetStringInput(key)
+                        result.success(value)
+                    } catch (e: Exception) {
+                        result.success(null)
+                    }
                 }
-
                 "stateMachineGetBooleanInput" -> {
-                    // Not available in Android DotLottie widget API
-                    result.success(null)
+                    val key = call.argument<String>("key")
+                        ?: return result.error("INVALID_ARGS", "Invalid stateMachineGetBooleanInput argument", null)
+                    try {
+                        val boolValue = dotLottieView.stateMachineGetBooleanInput(key)
+                        result.success(boolValue)
+                    } catch (e: Exception) {
+                        result.success(null)
+                    }
                 }
-
-                "stateMachineGetInputs" -> {
-                    // Not available in Android DotLottie widget API
-                    result.success(emptyMap<String, String>())
-                }
-
+                "stateMachineGetInputs" -> result.success(emptyMap<String, String>())
+                "getStateMachine" -> result.success(null)
+                
                 "stateMachineCurrentState" -> {
                     try {
                         result.success(dotLottieView.stateMachineCurrentState())
@@ -559,12 +691,6 @@ class DotLottiePlatformView(
                         result.success(null)
                     }
                 }
-
-                "getStateMachine" -> {
-                    // Not available in Android DotLottie widget API
-                    result.success(null)
-                }
-
                 // Manifest method
                 "manifest" -> {
                     try {

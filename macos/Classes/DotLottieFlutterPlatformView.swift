@@ -47,11 +47,111 @@ class AnimationObserver: Observer {
     }
 }
 
+class FlutterStateMachineObserver: StateMachineObserver {
+    private var methodchannel: FlutterMethodChannel
+    
+    init(methodChannel: FlutterMethodChannel) {
+        self.methodchannel = methodChannel
+    }
+
+    func onBooleanInputValueChange(inputName: String, oldValue: Bool, newValue: Bool) {
+        methodchannel.invokeMethod(
+            "stateMachineOnBooleanInputValueChange",
+            arguments: [
+                "inputName": inputName,
+                "oldValue": oldValue,
+                "newValue": newValue
+            ]
+        )
+    }
+    
+    func onError(message: String) {
+        methodchannel.invokeMethod(
+            "stateMachineOnError",
+            arguments: message
+        )
+    }
+    
+    func onNumericInputValueChange(inputName: String, oldValue: Float, newValue: Float) {
+        methodchannel.invokeMethod(
+            "stateMachineOnNumericInputValueChange",
+            arguments: [
+                "inputName": inputName,
+                "oldValue": oldValue,
+                "newValue": newValue
+            ]
+        )
+    }
+    
+    func onStart() {
+        methodchannel.invokeMethod(
+            "stateMachineOnStart",
+            arguments: nil
+        )
+    }
+    
+    func onStop() {
+        methodchannel.invokeMethod(
+            "stateMachineOnStop",
+            arguments: nil
+        )
+    }
+    
+    func onStringInputValueChange(inputName: String, oldValue: String, newValue: String) {
+        methodchannel.invokeMethod(
+            "stateMachineOnStringInputValueChange",
+            arguments: [
+                "inputName": inputName,
+                "oldValue": oldValue,
+                "newValue": newValue
+            ]
+        )
+    }
+    
+    func onInputFired(inputName: String) {
+        methodchannel.invokeMethod(
+            "stateMachineOnInputFired",
+            arguments: inputName
+        )
+    }
+    
+    func onCustomEvent(message: String) {
+        methodchannel.invokeMethod(
+            "stateMachineOnCustomEvent",
+            arguments: message
+        )
+    }
+    
+    func onStateEntered(enteringState: String) {
+        methodchannel.invokeMethod(
+            "stateMachineOnStateEntered",
+            arguments: enteringState
+        )
+    }
+    
+    func onStateExit(leavingState: String) {
+        methodchannel.invokeMethod(
+            "stateMachineOnStateExit",
+            arguments: leavingState
+        )    
+    }
+    
+    func onTransition(previousState: String, newState: String) {
+        methodchannel.invokeMethod(
+            "stateMachineOnTransition",
+            arguments: ["previousState": previousState, "newState": newState]
+        )
+    }
+}
+
 class DotLottieFlutterPlatformView: NSObject {
     private var _view: NSView
     private var dotLottieAnimation: DotLottieAnimation?
     private lazy var animationObserver: AnimationObserver = {
         return AnimationObserver(methodChannel: methodChannel)
+    }()
+    private lazy var stateMachineObserver: FlutterStateMachineObserver = {
+        return FlutterStateMachineObserver(methodChannel: methodChannel)
     }()
     private var hostingView: NSHostingView<DotLottieView>?
     private var methodChannel: FlutterMethodChannel
@@ -125,14 +225,13 @@ class DotLottieFlutterPlatformView: NSObject {
         let stateMachineId = arguments["stateMachineId"] as? String ?? ""
         let animationId = arguments["animationId"] as? String ?? ""
         let sourceType = arguments["sourceType"] as? String
-        let source = arguments["source"] as? String
         let width = arguments["width"] as? Int
         let height = arguments["height"] as? Int
         
-        guard let sourceType = sourceType, let source = source else {
+        guard let sourceType = sourceType else {
             return
         }
-        
+
         var config = AnimationConfig(
             autoplay: autoplay,
             loop: loop,
@@ -146,38 +245,52 @@ class DotLottieFlutterPlatformView: NSObject {
             stateMachineId: stateMachineId
         )
         config.animationId = animationId
-        
+
         if let w = width {
             config.width = w
         }
         if let h = height {
             config.height = h
-        }
-        
+        }   
+
         if let bgColor = backgroundColor, let color = parseColor(bgColor) {
             _view.layer?.backgroundColor = color.cgColor
         }
-        
-        // Create DotLottieAnimation based on source type
+
         switch sourceType {
         case "url":
-            dotLottieAnimation = DotLottieAnimation(webURL: source, config: config)
-            
-        case "asset":
-            dotLottieAnimation = DotLottieAnimation(fileName: source, config: config)
-            
+            if let source = arguments["source"] as? String {
+                dotLottieAnimation = DotLottieAnimation(webURL: source, config: config)
+            }
+
+        case "data":
+            if let flutterData = arguments["source"] as? FlutterStandardTypedData {
+                dotLottieAnimation = DotLottieAnimation(
+                    dotLottieData: flutterData.data,
+                    config: config
+                )
+                methodChannel.invokeMethod("onLoad", arguments: nil)
+            } else {
+                print("Failed to cast source. Type: \(type(of: arguments["source"]))")
+            }
+
         case "json":
-            dotLottieAnimation = DotLottieAnimation(animationData: source, config: config)
+            if let source = arguments["source"] as? String {
+                dotLottieAnimation = DotLottieAnimation(animationData: source, config: config)
+            }
+            methodChannel.invokeMethod("onLoad", arguments: nil)
+
             
         default:
-            return
+            print("Unknown source type: \(sourceType)")
         }
         
         guard let animation = dotLottieAnimation else {
             return
         }
         
-        dotLottieAnimation?.subscribe(observer: self.animationObserver)
+        let _ = dotLottieAnimation?.subscribe(observer: self.animationObserver)
+        let _ = dotLottieAnimation?.stateMachineSubscribe(self.stateMachineObserver)
         
         // Get the SwiftUI view from the animation
         let animationView = animation.view()
@@ -660,6 +773,7 @@ class DotLottieFlutterPlatformView: NSObject {
         
         
         dotLottieAnimation?.unsubscribe(observer: self.animationObserver)
+        let _ = dotLottieAnimation?.stateMachineUnsubscribe(self.stateMachineObserver)
         
         dotLottieAnimation = nil
         

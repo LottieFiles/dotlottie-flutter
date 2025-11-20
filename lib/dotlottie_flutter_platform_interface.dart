@@ -33,6 +33,22 @@ abstract class DotLottieFlutterPlatform extends PlatformInterface {
   void Function(double frameNo)? onRender;
   void Function(int loopCount)? onLoop;
 
+  void Function(String inputName, bool oldValue, bool newValue)?
+  stateMachineOnBooleanInputValueChange;
+  void Function(String message)? stateMachineOnError;
+  void Function(String inputName, double oldValue, double newValue)?
+  stateMachineOnNumericInputValueChange;
+  void Function()? stateMachineOnStart;
+  void Function()? stateMachineOnStop;
+  void Function(String inputName)? stateMachineOnInputFired;
+  void Function(String inputName, String oldValue, String newValue)?
+  stateMachineOnStringInputValueChange;
+  void Function(String message)? stateMachineOnCustomEvent;
+  void Function(String enteringState)? stateMachineOnStateEntered;
+  void Function(String leavingState)? stateMachineOnStateExit;
+  void Function(String previousState, String newState)?
+  stateMachineOnTransition;
+
   // Method to set event handlers
   void setEventHandlers({
     void Function()? onComplete,
@@ -54,6 +70,40 @@ abstract class DotLottieFlutterPlatform extends PlatformInterface {
     this.onFrame = onFrame;
     this.onRender = onRender;
     this.onLoop = onLoop;
+  }
+
+  // Method to set state machine event handlers
+  void setStateMachineEventHandlers({
+    void Function(String inputName, bool oldValue, bool newValue)?
+    stateMachineOnBooleanInputValueChange,
+    void Function(String message)? stateMachineOnError,
+    void Function(String inputName, double oldValue, double newValue)?
+    stateMachineOnNumericInputValueChange,
+    void Function()? stateMachineOnStart,
+    void Function()? stateMachineOnStop,
+    void Function(String inputName)? stateMachineOnInputFired,
+    void Function(String inputName, String oldValue, String newValue)?
+    stateMachineOnStringInputValueChange,
+    void Function(String message)? stateMachineOnCustomEvent,
+    void Function(String enteringState)? stateMachineOnStateEntered,
+    void Function(String leavingState)? stateMachineOnStateExit,
+    void Function(String previousState, String newState)?
+    stateMachineOnTransition,
+  }) {
+    this.stateMachineOnBooleanInputValueChange =
+        stateMachineOnBooleanInputValueChange;
+    this.stateMachineOnError = stateMachineOnError;
+    this.stateMachineOnNumericInputValueChange =
+        stateMachineOnNumericInputValueChange;
+    this.stateMachineOnStart = stateMachineOnStart;
+    this.stateMachineOnStop = stateMachineOnStop;
+    this.stateMachineOnInputFired = stateMachineOnInputFired;
+    this.stateMachineOnStringInputValueChange =
+        stateMachineOnStringInputValueChange;
+    this.stateMachineOnCustomEvent = stateMachineOnCustomEvent;
+    this.stateMachineOnStateEntered = stateMachineOnStateEntered;
+    this.stateMachineOnStateExit = stateMachineOnStateExit;
+    this.stateMachineOnTransition = stateMachineOnTransition;
   }
 
   Future<void> createPlayer() {

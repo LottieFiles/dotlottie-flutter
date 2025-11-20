@@ -16,6 +16,8 @@ class _MyAppState extends State<MyApp> {
   DotLottieViewController? _controller;
   List<Map<String, dynamic>>? _stateMachines;
   String? _activeStateMachine;
+  List<Map<String, dynamic>>? _themes;
+  String? _activeTheme;
 
   // Animation control states
   bool _isPlaying = true;
@@ -30,7 +32,6 @@ class _MyAppState extends State<MyApp> {
   Future<void> _loadManifest() async {
     if (_controller != null) {
       final manifest = await _controller!.manifest();
-      print(manifest);
       if (manifest != null) {
         // Safely convert the state machines list
         final stateMachinesRaw = manifest['stateMachines'] as List?;
@@ -40,6 +41,24 @@ class _MyAppState extends State<MyApp> {
               // Convert each item to Map<String, dynamic>
               return Map<String, dynamic>.from(sm as Map);
             }).toList();
+          });
+        }
+
+        // Safely convert the themes list
+        final themesRaw = manifest['themes'] as List?;
+        if (themesRaw != null) {
+          setState(() {
+            _themes = themesRaw.map((theme) {
+              return Map<String, dynamic>.from(theme as Map);
+            }).toList();
+          });
+        }
+
+        // Get initial theme if set
+        final initialTheme = manifest['initialTheme'] as String?;
+        if (initialTheme != null) {
+          setState(() {
+            _activeTheme = initialTheme;
           });
         }
       }
@@ -76,6 +95,16 @@ class _MyAppState extends State<MyApp> {
         _activeStateMachine = null;
       });
       print('State machine stopped');
+    }
+  }
+
+  Future<void> _setTheme(String themeId) async {
+    if (_controller != null) {
+      await _controller!.setTheme(themeId);
+      setState(() {
+        _activeTheme = themeId;
+      });
+      print('Theme "$themeId" applied');
     }
   }
 
@@ -136,181 +165,229 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       home: Scaffold(
         appBar: AppBar(title: const Text('DotLottie Flutter Example')),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 300,
-                height: 300,
-                color: Colors.grey[200],
-                child: DotLottieView(
-                  sourceType: 'url',
-                  source:
-                      'https://lottie.host/ffdc2f29-c7c1-462a-9016-94147dea7f41/DRuFOP07CT.lottie',
-                  autoplay: true,
-                  loop: true,
-                  onViewCreated: (controller) {
-                    setState(() {
-                      _controller = controller;
-                    });
-                  },
-                  onLoad: () {
-                    _loadManifest();
-                    _handleTotalFrames();
-                  },
-                  onFrame: (frameNo) {
-                    print(">> Received frame: $frameNo");
-                    setState(() {
-                      _currentFrame = frameNo;
-                    });
-                  },
-                ),
-              ),
+        body: SingleChildScrollView(
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 300,
+                  height: 300,
+                  color: Colors.grey[200],
+                  child: DotLottieView(
+                    // multitheme
+                    // sourceType: 'url',
+                    // source:
+                    //     'https://lottie.host/a1641002-1aee-4506-89e2-a18210bfc9c7/PSdkPPlzA5.lottie',
 
-              const SizedBox(height: 20),
+                    // radial state machine
+                    // sourceType: 'url',
+                    // source:
+                    //     'https://lottie.host/fe76f0a1-c3f3-4312-ae5f-5235cdb47c72/Gb5D8cAAzi.lottie',
+                    sourceType: 'asset',
+                    source: 'star-rating.lottie',
 
-              // Display active state machine with stop button
-              if (_activeStateMachine != null)
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.green[100],
-                  borderRadius: BorderRadius.circular(8),
+                    // sourceType: 'asset',
+                    // source: 'test.json',
+                    autoplay: true,
+                    loop: true,
+                    onViewCreated: (controller) {
+                      setState(() {
+                        _controller = controller;
+                      });
+                    },
+                    onLoad: () {
+                      _loadManifest();
+                      _handleTotalFrames();
+                      print('🟢 Dart: Animation loaded!');
+                    },
+                    onLoadError: () {
+                      print('🔴 Dart: Animation load error!');
+                    },
+                    onPlay: () {
+                      print('🟢 Dart: Animation playing!');
+                    },
+                    onFrame: (frameNo) {
+                      setState(() {
+                        _currentFrame = frameNo;
+                      });
+                    },
+                  ),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Active: $_activeStateMachine',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                const SizedBox(height: 20),
+
+                // Display active state machine with stop button
+                if (_activeStateMachine != null)
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.green[100],
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    const SizedBox(width: 8),
-                    ElevatedButton(
-                      onPressed: _stopStateMachine,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Active: $_activeStateMachine',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
-                        minimumSize: Size.zero,
-                      ),
-                      child: const Text('Stop'),
+                        const SizedBox(width: 8),
+                        ElevatedButton(
+                          onPressed: _stopStateMachine,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                            minimumSize: Size.zero,
+                          ),
+                          child: const Text('Stop'),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
+                  ),
 
-              const SizedBox(height: 20),
-
-              // State Machines List
-              if (_stateMachines != null && _stateMachines!.isNotEmpty) ...[
-                const Text(
-                  'State Machines:',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  alignment: WrapAlignment.center,
-                  children: _stateMachines!.map((sm) {
-                    final id = sm['id'] as String;
-                    final name = sm['name'] as String?;
-                    final displayName = name ?? id;
-                    final isActive = _activeStateMachine == id;
-
-                    return ElevatedButton(
-                      onPressed: () => _loadAndStartStateMachine(id),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: isActive ? Colors.green : null,
-                        foregroundColor: isActive ? Colors.white : null,
-                      ),
-                      child: Text(displayName),
-                    );
-                  }).toList(),
-                ),
                 const SizedBox(height: 20),
-              ] else if (_controller != null) ...[
-                const Text('No state machines found'),
-                const SizedBox(height: 20),
-              ],
 
-              // Animation controls - hidden when state machine is active
-              if (_activeStateMachine == null && _controller != null) ...[
-                // Scrub bar
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Column(
+                // Themes List
+                if (_themes != null && _themes!.isNotEmpty) ...[
+                  const Text(
+                    'Themes:',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    alignment: WrapAlignment.center,
+                    children: _themes!.map((theme) {
+                      final id = theme['id'] as String;
+                      final name = theme['name'] as String?;
+                      final displayName = name ?? id;
+                      final isActive = _activeTheme == id;
+
+                      return ElevatedButton(
+                        onPressed: () => _setTheme(id),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: isActive ? Colors.blue : null,
+                          foregroundColor: isActive ? Colors.white : null,
+                        ),
+                        child: Text(displayName),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 20),
+                ],
+
+                // State Machines List
+                if (_stateMachines != null && _stateMachines!.isNotEmpty) ...[
+                  const Text(
+                    'State Machines:',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    alignment: WrapAlignment.center,
+                    children: _stateMachines!.map((sm) {
+                      final id = sm['id'] as String;
+                      final name = sm['name'] as String?;
+                      final displayName = name ?? id;
+                      final isActive = _activeStateMachine == id;
+
+                      return ElevatedButton(
+                        onPressed: () => _loadAndStartStateMachine(id),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: isActive ? Colors.green : null,
+                          foregroundColor: isActive ? Colors.white : null,
+                        ),
+                        child: Text(displayName),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 20),
+                ] else if (_controller != null) ...[
+                  const Text('No state machines found'),
+                  const SizedBox(height: 20),
+                ],
+
+                // Animation controls - hidden when state machine is active
+                if (_activeStateMachine == null && _controller != null) ...[
+                  // Scrub bar
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              _formatFrame(_currentFrame),
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                            Text(
+                              _formatFrame(_totalFrames),
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                          ],
+                        ),
+                        SliderTheme(
+                          data: SliderTheme.of(context).copyWith(
+                            trackHeight: 3.0,
+                            thumbShape: const RoundSliderThumbShape(
+                              enabledThumbRadius: 8.0,
+                            ),
+                            overlayShape: const RoundSliderOverlayShape(
+                              overlayRadius: 16.0,
+                            ),
+                          ),
+                          child: Slider(
+                            value: _currentFrame.clamp(0, _totalFrames),
+                            min: 0,
+                            max: _totalFrames,
+                            onChanged: (value) {
+                              setState(() {
+                                _currentFrame = value;
+                              });
+                            },
+                            onChangeEnd: (value) {
+                              _handleSeek(value);
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  // Playback controls
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            _formatFrame(_currentFrame),
-                            style: const TextStyle(fontSize: 12),
-                          ),
-                          Text(
-                            _formatFrame(_totalFrames),
-                            style: const TextStyle(fontSize: 12),
-                          ),
-                        ],
+                      // Stop button
+                      IconButton(
+                        onPressed: _handleStop,
+                        icon: const Icon(Icons.stop),
+                        iconSize: 32,
+                        tooltip: 'Stop',
                       ),
-                      SliderTheme(
-                        data: SliderTheme.of(context).copyWith(
-                          trackHeight: 3.0,
-                          thumbShape: const RoundSliderThumbShape(
-                            enabledThumbRadius: 8.0,
-                          ),
-                          overlayShape: const RoundSliderOverlayShape(
-                            overlayRadius: 16.0,
-                          ),
-                        ),
-                        child: Slider(
-                          value: _currentFrame.clamp(0, _totalFrames),
-                          min: 0,
-                          max: _totalFrames,
-                          onChanged: (value) {
-                            setState(() {
-                              _currentFrame = value;
-                            });
-                          },
-                          onChangeEnd: (value) {
-                            _handleSeek(value);
-                          },
-                        ),
+                      const SizedBox(width: 20),
+                      // Play/Pause button
+                      IconButton(
+                        onPressed: _isPlaying ? _handlePause : _handlePlay,
+                        icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow),
+                        iconSize: 40,
+                        tooltip: _isPlaying ? 'Pause' : 'Play',
                       ),
                     ],
                   ),
-                ),
-
-                const SizedBox(height: 10),
-
-                // Playback controls
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Stop button
-                    IconButton(
-                      onPressed: _handleStop,
-                      icon: const Icon(Icons.stop),
-                      iconSize: 32,
-                      tooltip: 'Stop',
-                    ),
-                    const SizedBox(width: 20),
-                    // Play/Pause button
-                    IconButton(
-                      onPressed: _isPlaying ? _handlePause : _handlePlay,
-                      icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow),
-                      iconSize: 40,
-                      tooltip: _isPlaying ? 'Pause' : 'Play',
-                    ),
-                  ],
-                ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),

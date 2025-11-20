@@ -6,6 +6,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
+import 'dart:convert';
+
 class DotLottieView extends StatefulWidget {
   final bool? autoplay;
   final bool? loop;
@@ -39,6 +41,23 @@ class DotLottieView extends StatefulWidget {
   final Function(double frameNo)? onRender;
   final Function(int loopCount)? onLoop;
 
+  // State Machine event callbacks
+  final Function(String inputName, bool oldValue, bool newValue)?
+  stateMachineOnBooleanInputValueChange;
+  final Function(String message)? stateMachineOnError;
+  final Function(String inputName, double oldValue, double newValue)?
+  stateMachineOnNumericInputValueChange;
+  final VoidCallback? stateMachineOnStart;
+  final VoidCallback? stateMachineOnStop;
+  final Function(String inputName)? stateMachineOnInputFired;
+  final Function(String inputName, String oldValue, String newValue)?
+  stateMachineOnStringInputValueChange;
+  final Function(String message)? stateMachineOnCustomEvent;
+  final Function(String enteringState)? stateMachineOnStateEntered;
+  final Function(String leavingState)? stateMachineOnStateExit;
+  final Function(String previousState, String newState)?
+  stateMachineOnTransition;
+
   const DotLottieView({
     super.key,
     required this.sourceType,
@@ -61,6 +80,17 @@ class DotLottieView extends StatefulWidget {
     this.onFrame,
     this.onRender,
     this.onLoop,
+    this.stateMachineOnBooleanInputValueChange,
+    this.stateMachineOnError,
+    this.stateMachineOnNumericInputValueChange,
+    this.stateMachineOnStart,
+    this.stateMachineOnStop,
+    this.stateMachineOnInputFired,
+    this.stateMachineOnStringInputValueChange,
+    this.stateMachineOnCustomEvent,
+    this.stateMachineOnStateEntered,
+    this.stateMachineOnStateExit,
+    this.stateMachineOnTransition,
     this.loopCount,
     this.segment,
     this.marker,
@@ -76,6 +106,13 @@ class DotLottieView extends StatefulWidget {
 class _DotLottieViewState extends State<DotLottieView> {
   DotLottieViewController? _controller;
   MethodChannel? _methodChannel;
+  late Future<Map<String, dynamic>> _creationParamsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _creationParamsFuture = _getCreationParams();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -94,18 +131,35 @@ class _DotLottieViewState extends State<DotLottieView> {
     );
   }
 
+  Widget _buildAndroidView() {
+    return FutureBuilder<Map<String, dynamic>>(
+      future: _creationParamsFuture, // Use the cached future
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return Container();
+        }
+
+        return AndroidView(
+          viewType: 'dotlottie_view',
+          creationParams: snapshot.data,
+          creationParamsCodec: const StandardMessageCodec(),
+          onPlatformViewCreated: _onPlatformViewCreated,
+          gestureRecognizers: const <Factory<OneSequenceGestureRecognizer>>{},
+        );
+      },
+    );
+  }
+
   Widget _buildWebView() {
     return HtmlElementView(
       viewType: 'dotlottie_view',
       onPlatformViewCreated: (int viewId) async {
-        print('🔴 Flutter: Platform view created with id: $viewId');
         _onPlatformViewCreated(viewId);
 
         // For web, send initialization after a short delay to ensure view is ready
         await Future.delayed(const Duration(milliseconds: 150));
 
         if (_controller != null && mounted) {
-          print('🔴 Flutter: Sending initialize command');
           try {
             await _controller!._channel.invokeMethod('initialize', {
               'autoplay': widget.autoplay,
@@ -127,7 +181,6 @@ class _DotLottieViewState extends State<DotLottieView> {
               if (widget.width != null) 'width': widget.width,
               if (widget.height != null) 'height': widget.height,
             });
-            print('🔴 Flutter: Initialize command sent successfully');
           } catch (e) {
             print('🔴 Flutter: Error sending initialize: $e');
           }
@@ -136,44 +189,46 @@ class _DotLottieViewState extends State<DotLottieView> {
     );
   }
 
-  Widget _buildAndroidView() {
-    final creationParams = _getCreationParams();
-
-    return AndroidView(
-      viewType: 'dotlottie_view',
-      creationParams: creationParams,
-      creationParamsCodec: const StandardMessageCodec(),
-      onPlatformViewCreated: _onPlatformViewCreated,
-      gestureRecognizers: const <Factory<OneSequenceGestureRecognizer>>{},
-    );
-  }
-
   Widget _buildIOSView() {
-    final creationParams = _getCreationParams();
+    return FutureBuilder<Map<String, dynamic>>(
+      future: _creationParamsFuture, // Use the cached future
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return Container();
+        }
 
-    return UiKitView(
-      viewType: 'dotlottie_view',
-      creationParams: creationParams,
-      creationParamsCodec: const StandardMessageCodec(),
-      onPlatformViewCreated: _onPlatformViewCreated,
-      gestureRecognizers: const <Factory<OneSequenceGestureRecognizer>>{},
+        return UiKitView(
+          viewType: 'dotlottie_view',
+          creationParams: snapshot.data,
+          creationParamsCodec: const StandardMessageCodec(),
+          onPlatformViewCreated: _onPlatformViewCreated,
+          gestureRecognizers: const <Factory<OneSequenceGestureRecognizer>>{},
+        );
+      },
     );
   }
 
   Widget _buildMacOSView() {
-    final creationParams = _getCreationParams();
+    return FutureBuilder<Map<String, dynamic>>(
+      future: _creationParamsFuture, // Use the cached future
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return Container();
+        }
 
-    return AppKitView(
-      viewType: 'dotlottie_view',
-      creationParams: creationParams,
-      creationParamsCodec: const StandardMessageCodec(),
-      onPlatformViewCreated: _onPlatformViewCreated,
-      gestureRecognizers: const <Factory<OneSequenceGestureRecognizer>>{},
+        return AppKitView(
+          viewType: 'dotlottie_view',
+          creationParams: snapshot.data,
+          creationParamsCodec: const StandardMessageCodec(),
+          onPlatformViewCreated: _onPlatformViewCreated,
+          gestureRecognizers: const <Factory<OneSequenceGestureRecognizer>>{},
+        );
+      },
     );
   }
 
-  Map<String, dynamic> _getCreationParams() {
-    return {
+  Future<Map<String, dynamic>> _getCreationParams() async {
+    Map<String, dynamic> params = {
       'autoplay': widget.autoplay,
       'loop': widget.loop,
       'loopCount': widget.loopCount,
@@ -188,16 +243,35 @@ class _DotLottieViewState extends State<DotLottieView> {
       if (widget.stateMachineId != null)
         'stateMachineId': widget.stateMachineId,
       if (widget.animationId != null) 'animationId': widget.animationId,
-      'sourceType': widget.sourceType,
-      'source': widget.source,
       if (widget.width != null) 'width': widget.width,
       if (widget.height != null) 'height': widget.height,
     };
+
+    // Handle asset loading
+    if (widget.sourceType == 'asset') {
+      final ByteData data = await rootBundle.load('assets/${widget.source}');
+      final Uint8List bytes = data.buffer.asUint8List();
+
+      // Check if it's a JSON file
+      if (widget.source.toLowerCase().endsWith('.json')) {
+        // Convert bytes to string for JSON
+        final String jsonString = utf8.decode(bytes);
+        params['sourceType'] = 'json';
+        params['source'] = jsonString;
+      } else {
+        // It's a .lottie file (binary)
+        params['sourceType'] = 'data';
+        params['source'] = bytes;
+      }
+    } else {
+      params['sourceType'] = widget.sourceType;
+      params['source'] = widget.source;
+    }
+
+    return params;
   }
 
   void _onPlatformViewCreated(int viewId) {
-    print('🔴 Flutter: _onPlatformViewCreated called with id: $viewId');
-
     // Set up method channel for this view
     _methodChannel = MethodChannel('dotlottie_view_$viewId');
     _methodChannel!.setMethodCallHandler(_handleMethodCall);
@@ -216,35 +290,30 @@ class _DotLottieViewState extends State<DotLottieView> {
 
     switch (call.method) {
       case 'onComplete':
-        print('🔴 Flutter: onComplete event received');
         if (widget.onComplete != null) {
           widget.onComplete!();
         }
         break;
 
       case 'onLoad':
-        print('🔴 Flutter: onLoad event received');
         if (widget.onLoad != null) {
           widget.onLoad!();
         }
         break;
 
       case 'onLoadError':
-        print('🔴 Flutter: onLoadError event received');
         if (widget.onLoadError != null) {
           widget.onLoadError!();
         }
         break;
 
       case 'onPlay':
-        print('🔴 Flutter: onPlay event received');
         if (widget.onPlay != null) {
           widget.onPlay!();
         }
         break;
 
       case 'onPause':
-        print('🔴 Flutter: onPause event received');
         if (widget.onPause != null) {
           widget.onPause!();
         }
@@ -252,7 +321,6 @@ class _DotLottieViewState extends State<DotLottieView> {
 
       case 'onFrame':
         final frameNo = (call.arguments as num).toDouble();
-        // print('🔴 Flutter: onFrame event received (frame: $frameNo)');
         if (widget.onFrame != null) {
           widget.onFrame!(frameNo);
         }
@@ -260,14 +328,12 @@ class _DotLottieViewState extends State<DotLottieView> {
 
       case 'onRender':
         final frameNo = (call.arguments as num).toDouble();
-        // print('🔴 Flutter: onRender event received (frame: $frameNo)');
         if (widget.onRender != null) {
           widget.onRender!(frameNo);
         }
         break;
 
       case 'onStop':
-        print('🔴 Flutter: onStop event received');
         if (widget.onStop != null) {
           widget.onStop!();
         }
@@ -275,14 +341,96 @@ class _DotLottieViewState extends State<DotLottieView> {
 
       case 'onLoop':
         final loopCount = call.arguments as int;
-        print('🔴 Flutter: onLoop event received (count: $loopCount)');
         if (widget.onLoop != null) {
           widget.onLoop!(loopCount);
         }
         break;
 
+      case 'stateMachineOnBooleanInputValueChange':
+        if (widget.stateMachineOnBooleanInputValueChange != null) {
+          final args = call.arguments as Map;
+          widget.stateMachineOnBooleanInputValueChange!(
+            args['inputName'] as String,
+            args['oldValue'] as bool,
+            args['newValue'] as bool,
+          );
+        }
+        break;
+      case 'stateMachineOnError':
+        final message = call.arguments as String;
+        if (widget.stateMachineOnError != null) {
+          widget.stateMachineOnError!(message);
+        }
+        break;
+      case 'stateMachineOnNumericInputValueChange':
+        final args = call.arguments as Map;
+        if (widget.stateMachineOnNumericInputValueChange != null) {
+          widget.stateMachineOnNumericInputValueChange!(
+            args['inputName'] as String,
+            (args['oldValue'] as num).toDouble(),
+            (args['newValue'] as num).toDouble(),
+          );
+        }
+        break;
+      case 'stateMachineOnStart':
+        if (widget.stateMachineOnStart != null) {
+          widget.stateMachineOnStart!();
+        }
+        break;
+      case 'stateMachineOnStop':
+        if (widget.stateMachineOnStop != null) {
+          widget.stateMachineOnStop!();
+        }
+        break;
+      case 'stateMachineOnInputFired':
+        final inputName = call.arguments as String;
+        if (widget.stateMachineOnInputFired != null) {
+          widget.stateMachineOnInputFired!(inputName);
+        }
+        break;
+      case 'stateMachineOnStringInputValueChange':
+        final args = call.arguments as Map;
+        if (widget.stateMachineOnStringInputValueChange != null) {
+          widget.stateMachineOnStringInputValueChange!(
+            args['inputName'] as String,
+            args['oldValue'] as String,
+            args['newValue'] as String,
+          );
+        }
+        break;
+      case 'stateMachineOnCustomEvent':
+        final message = call.arguments as String;
+        if (widget.stateMachineOnCustomEvent != null) {
+          widget.stateMachineOnCustomEvent!(message);
+        }
+        break;
+      case 'stateMachineOnStateEntered':
+        final enteringState = call.arguments as String;
+        if (widget.stateMachineOnStateEntered != null) {
+          widget.stateMachineOnStateEntered!(enteringState);
+        }
+        break;
+      case 'stateMachineOnStateExit':
+        final leavingState = call.arguments as String;
+        if (widget.stateMachineOnStateExit != null) {
+          widget.stateMachineOnStateExit!(leavingState);
+        }
+        break;
+      case 'stateMachineOnTransition':
+        try {
+          final args = call.arguments as Map;
+          if (widget.stateMachineOnTransition != null) {
+            widget.stateMachineOnTransition!(
+              args['previousState'] as String,
+              args['newState'] as String,
+            );
+          }
+        } catch (e) {
+          print('Error in stateMachineOnTransition: $e');
+        }
+
       default:
-        print('🔴 Flutter: Unknown method call: ${call.method}');
+        {}
     }
   }
 
@@ -308,28 +456,6 @@ class DotLottieViewController {
       return await _channel.invokeMethod<bool>('play');
     } catch (e) {
       debugPrint('Error calling play: $e');
-      return false;
-    }
-  }
-
-  Future<bool?> playFromFrame(double frame) async {
-    try {
-      return await _channel.invokeMethod<bool>('playFromFrame', {
-        'frame': frame,
-      });
-    } catch (e) {
-      debugPrint('Error calling playFromFrame: $e');
-      return false;
-    }
-  }
-
-  Future<bool?> playFromProgress(double progress) async {
-    try {
-      return await _channel.invokeMethod<bool>('playFromProgress', {
-        'progress': progress,
-      });
-    } catch (e) {
-      debugPrint('Error calling playFromProgress: $e');
       return false;
     }
   }
@@ -855,6 +981,22 @@ class DotLottieFlutter {
   void Function(double frameNo)? onRender;
   void Function(int loopCount)? onLoop;
 
+  void Function(String inputName, bool oldValue, bool newValue)?
+  stateMachineOnBooleanInputValueChange;
+  void Function(String message)? stateMachineOnError;
+  void Function(String inputName, double oldValue, double newValue)?
+  stateMachineOnNumericInputValueChange;
+  void Function()? stateMachineOnStart;
+  void Function()? stateMachineOnStop;
+  void Function(String inputName)? stateMachineOnInputFired;
+  void Function(String inputName, String oldValue, String newValue)?
+  stateMachineOnStringInputValueChange;
+  void Function(String message)? stateMachineOnCustomEvent;
+  void Function(String enteringState)? stateMachineOnStateEntered;
+  void Function(String leavingState)? stateMachineOnStateExit;
+  void Function(String previousState, String newState)?
+  stateMachineOnTransition;
+
   DotLottieFlutter() {
     DotLottieFlutterPlatform.instance.setEventHandlers(
       onComplete: () => onComplete?.call(),
@@ -866,6 +1008,40 @@ class DotLottieFlutter {
       onFrame: (frameNo) => onFrame?.call(frameNo),
       onRender: (frameNo) => onRender?.call(frameNo),
       onLoop: (loopCount) => onLoop?.call(loopCount),
+    );
+
+    DotLottieFlutterPlatform.instance.setStateMachineEventHandlers(
+      stateMachineOnBooleanInputValueChange: (inputName, oldValue, newValue) =>
+          stateMachineOnBooleanInputValueChange?.call(
+            inputName,
+            oldValue,
+            newValue,
+          ),
+      stateMachineOnError: (message) => stateMachineOnError?.call(message),
+      stateMachineOnNumericInputValueChange: (inputName, oldValue, newValue) =>
+          stateMachineOnNumericInputValueChange?.call(
+            inputName,
+            oldValue,
+            newValue,
+          ),
+      stateMachineOnStart: () => stateMachineOnStart?.call(),
+      stateMachineOnStop: () => stateMachineOnStop?.call(),
+      stateMachineOnInputFired: (inputName) =>
+          stateMachineOnInputFired?.call(inputName),
+      stateMachineOnStringInputValueChange: (inputName, oldValue, newValue) =>
+          stateMachineOnStringInputValueChange?.call(
+            inputName,
+            oldValue,
+            newValue,
+          ),
+      stateMachineOnCustomEvent: (message) =>
+          stateMachineOnCustomEvent?.call(message),
+      stateMachineOnStateEntered: (enteringState) =>
+          stateMachineOnStateEntered?.call(enteringState),
+      stateMachineOnStateExit: (leavingState) =>
+          stateMachineOnStateExit?.call(leavingState),
+      stateMachineOnTransition: (previousState, newState) =>
+          stateMachineOnTransition?.call(previousState, newState),
     );
   }
 

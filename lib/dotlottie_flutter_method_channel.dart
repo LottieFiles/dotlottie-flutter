@@ -46,14 +46,82 @@ class MethodChannelDotLottieFlutter extends DotLottieFlutterPlatform {
         final loopCount = (call.arguments['loopCount'] as num).toInt();
         onLoop?.call(loopCount);
         break;
+      case 'stateMachineOnBooleanInputValueChange':
+        if (stateMachineOnBooleanInputValueChange != null) {
+          final args = call.arguments as Map;
+          stateMachineOnBooleanInputValueChange!(
+            args['inputName'] as String,
+            args['oldValue'],
+            args['newValue'],
+          );
+        }
+        break;
+      case 'stateMachineOnError':
+        if (stateMachineOnError != null) {
+          stateMachineOnError!(call.arguments as String);
+        }
+        break;
+      case 'stateMachineOnNumericInputValueChange':
+        if (stateMachineOnNumericInputValueChange != null) {
+          final args = call.arguments as Map;
+          stateMachineOnNumericInputValueChange!(
+            args['inputName'] as String,
+            (args['oldValue'] as num).toDouble(),
+            (args['newValue'] as num).toDouble(),
+          );
+        }
+        break;
+      case 'stateMachineOnStart':
+        stateMachineOnStart?.call();
+        break;
+      case 'stateMachineOnStop':
+        stateMachineOnStop?.call();
+        break;
+      case 'stateMachineOnStringInputValueChange':
+        if (stateMachineOnStringInputValueChange != null) {
+          final args = call.arguments as Map;
+          stateMachineOnStringInputValueChange!(
+            args['inputName'] as String,
+            args['oldValue'] as String,
+            args['newValue'] as String,
+          );
+        }
+        break;
+      case 'stateMachineOnInputFired':
+        if (stateMachineOnInputFired != null) {
+          stateMachineOnCustomEvent!(call.arguments as String);
+        }
+        break;
+      case 'stateMachineOnCustomEvent':
+        if (stateMachineOnCustomEvent != null) {
+          stateMachineOnCustomEvent!(call.arguments as String);
+        }
+        break;
+      case 'stateMachineOnStateEntered':
+        if (stateMachineOnStateEntered != null) {
+          stateMachineOnStateEntered!(call.arguments as String);
+        }
+        break;
+      case 'stateMachineOnStateExit':
+        if (stateMachineOnStateExit != null) {
+          stateMachineOnStateExit!(call.arguments as String);
+        }
+        break;
+      case 'stateMachineOnTransition':
+        if (stateMachineOnTransition != null) {
+          final args = call.arguments as Map;
+          stateMachineOnTransition!(
+            args['previousState'] as String,
+            args['newState'] as String,
+          );
+        }
+        break;
     }
   }
 
   @override
   Future<void> createPlayer() async {
-    print('🎯 Dart: Calling createPlayer via method channel');
     await methodChannel.invokeMethod<void>('createPlayer');
-    print('🎯 Dart: createPlayer method channel call completed');
   }
 
   @override

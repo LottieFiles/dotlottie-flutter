@@ -438,6 +438,7 @@ class DotLottieWebView {
       isInitialized = true;
 
       _setupEventListeners();
+      _setupStateMachineListeners();
     } catch (e) {
       print('Error initilizing dotLottie: $e');
     }
@@ -536,6 +537,218 @@ class DotLottieWebView {
       addEventListener.callAsFunction(player, 'loop'.toJS, onLoop);
     } catch (e) {
       print('Error setting up event listeners: $e');
+    }
+  }
+
+  void _setupStateMachineListeners() {
+    if (dotLottiePlayer == null || isDisposed) return;
+
+    try {
+      final player = dotLottiePlayer as JSObject;
+      final addEventListener = player['addEventListener'.toJS] as JSFunction;
+
+      final onStart = (() {
+        if (!isDisposed) {
+          methodChannel.invokeMethod('stateMachineOnStart');
+        }
+      }).toJS;
+      addEventListener.callAsFunction(
+        player,
+        'stateMachineStart'.toJS,
+        onStart,
+      );
+
+      final onStop = (() {
+        if (!isDisposed) {
+          methodChannel.invokeMethod('stateMachineOnStop');
+        }
+      }).toJS;
+      addEventListener.callAsFunction(player, 'stateMachineStop'.toJS, onStop);
+
+      final onCustomEvent = ((JSAny event) {
+        if (!isDisposed) {
+          try {
+            final jsEvent = event as JSObject;
+            final eventName = (jsEvent['eventName'.toJS] as JSString).toDart;
+            methodChannel.invokeMethod('stateMachineOnCustomEvent', eventName);
+          } catch (e) {
+            print('Error parsing stateMachineCustomEvent: $e');
+          }
+        }
+      }).toJS;
+      addEventListener.callAsFunction(
+        player,
+        'stateMachineCustomEvent'.toJS,
+        onCustomEvent,
+      );
+
+      final onBoolInputChange = ((JSAny event) {
+        if (!isDisposed) {
+          try {
+            final jsEvent = event as JSObject;
+            final inputName = (jsEvent['inputName'.toJS] as JSString).toDart;
+            final oldValue = (jsEvent['oldValue'.toJS] as JSBoolean).toDart;
+            final newValue = (jsEvent['newValue'.toJS] as JSBoolean).toDart;
+            methodChannel.invokeMethod(
+              'stateMachineOnBooleanInputValueChange',
+              {
+                'inputName': inputName,
+                'oldValue': oldValue,
+                'newValue': newValue,
+              },
+            );
+          } catch (e) {
+            print('Error parsing stateMachineBooleanInputValueChange: $e');
+          }
+        }
+      }).toJS;
+      addEventListener.callAsFunction(
+        player,
+        'stateMachineBooleanInputValueChange'.toJS,
+        onBoolInputChange,
+      );
+
+      final onNumericInputChange = ((JSAny event) {
+        if (!isDisposed) {
+          try {
+            final jsEvent = event as JSObject;
+            final inputName = (jsEvent['inputName'.toJS] as JSString).toDart;
+            final oldValue =
+                (jsEvent['oldValue'.toJS] as JSNumber).toDartDouble;
+            final newValue =
+                (jsEvent['newValue'.toJS] as JSNumber).toDartDouble;
+            methodChannel.invokeMethod(
+              'stateMachineOnNumericInputValueChange',
+              {
+                'inputName': inputName,
+                'oldValue': oldValue,
+                'newValue': newValue,
+              },
+            );
+          } catch (e) {
+            print('Error parsing stateMachineNumericInputValueChange: $e');
+          }
+        }
+      }).toJS;
+      addEventListener.callAsFunction(
+        player,
+        'stateMachineNumericInputValueChange'.toJS,
+        onNumericInputChange,
+      );
+
+      final onStringInputChange = ((JSAny event) {
+        if (!isDisposed) {
+          try {
+            final jsEvent = event as JSObject;
+            final inputName = (jsEvent['inputName'.toJS] as JSString).toDart;
+            final oldValue = (jsEvent['oldValue'.toJS] as JSString).toDart;
+            final newValue = (jsEvent['newValue'.toJS] as JSString).toDart;
+            methodChannel.invokeMethod('stateMachineOnStringInputValueChange', {
+              'inputName': inputName,
+              'oldValue': oldValue,
+              'newValue': newValue,
+            });
+          } catch (e) {
+            print('Error parsing stateMachineStringInputValueChange: $e');
+          }
+        }
+      }).toJS;
+      addEventListener.callAsFunction(
+        player,
+        'stateMachineStringInputValueChange'.toJS,
+        onStringInputChange,
+      );
+
+      final onInputFired = ((JSAny event) {
+        if (!isDisposed) {
+          try {
+            final jsEvent = event as JSObject;
+            final inputName = (jsEvent['inputName'.toJS] as JSString).toDart;
+            methodChannel.invokeMethod('stateMachineOnInputFired', inputName);
+          } catch (e) {
+            print('Error parsing stateMachineInputFired: $e');
+          }
+        }
+      }).toJS;
+      addEventListener.callAsFunction(
+        player,
+        'stateMachineInputFired'.toJS,
+        onInputFired,
+      );
+
+      final onTransition = ((JSAny event) {
+        if (!isDisposed) {
+          try {
+            final jsEvent = event as JSObject;
+            final fromState = (jsEvent['fromState'.toJS] as JSString).toDart;
+            final toState = (jsEvent['toState'.toJS] as JSString).toDart;
+            methodChannel.invokeMethod('stateMachineOnTransition', {
+              'previousState': fromState,
+              'newState': toState,
+            });
+          } catch (e) {
+            print('Error parsing stateMachineTransition: $e');
+          }
+        }
+      }).toJS;
+      addEventListener.callAsFunction(
+        player,
+        'stateMachineTransition'.toJS,
+        onTransition,
+      );
+
+      final onStateEntered = ((JSAny event) {
+        if (!isDisposed) {
+          try {
+            final jsEvent = event as JSObject;
+            final state = (jsEvent['state'.toJS] as JSString).toDart;
+            methodChannel.invokeMethod('stateMachineOnStateEntered', state);
+          } catch (e) {
+            print('Error parsing stateMachineStateEntered: $e');
+          }
+        }
+      }).toJS;
+      addEventListener.callAsFunction(
+        player,
+        'stateMachineStateEntered'.toJS,
+        onStateEntered,
+      );
+
+      final onStateExit = ((JSAny event) {
+        if (!isDisposed) {
+          try {
+            final jsEvent = event as JSObject;
+            final state = (jsEvent['state'.toJS] as JSString).toDart;
+            methodChannel.invokeMethod('stateMachineOnStateExit', state);
+          } catch (e) {
+            print('Error parsing stateMachineStateExit: $e');
+          }
+        }
+      }).toJS;
+      addEventListener.callAsFunction(
+        player,
+        'stateMachineStateExit'.toJS,
+        onStateExit,
+      );
+
+      final onError = ((JSAny event) {
+        if (!isDisposed) {
+          try {
+            final jsEvent = event as JSObject;
+            final error = (jsEvent['error'.toJS] as JSString).toDart;
+            methodChannel.invokeMethod('stateMachineOnError', error);
+          } catch (e) {
+            print('Error parsing stateMachineError: $e');
+          }
+        }
+      }).toJS;
+      addEventListener.callAsFunction(
+        player,
+        'stateMachineError'.toJS,
+        onError,
+      );
+    } catch (e) {
+      print('Error setting up state machine event listeners: $e');
     }
   }
 
