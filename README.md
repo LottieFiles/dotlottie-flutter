@@ -43,6 +43,14 @@ Import it in your Dart code:
 import 'package:dotlottie_flutter/dotlottie_flutter.dart';
 ```
 
+### Android
+
+To allow dotlottie-android to download, ensure you have jitpack inside your build.gradle.kts file:
+
+```kotlin
+maven { url = uri("https://jitpack.io") }
+```
+
 ## Quick Start
 
 ```
