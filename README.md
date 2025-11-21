@@ -32,7 +32,7 @@ Built on top of native implementations:
 With Flutter:
 
 ```bash
-flutter pub add dotlottie-fluter
+flutter pub add dotlottie-flutter
 ```
 
 This will add a line like this to your package's pubspec.yaml (and run an implicit flutter pub get)
