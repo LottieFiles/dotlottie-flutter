@@ -181,11 +181,11 @@ class _MyAppState extends State<MyApp> {
                     //     'https://lottie.host/a1641002-1aee-4506-89e2-a18210bfc9c7/PSdkPPlzA5.lottie',
 
                     // radial state machine
-                    // sourceType: 'url',
-                    // source:
-                    //     'https://lottie.host/fe76f0a1-c3f3-4312-ae5f-5235cdb47c72/Gb5D8cAAzi.lottie',
-                    sourceType: 'asset',
-                    source: 'star-rating.lottie',
+                    sourceType: 'url',
+                    source:
+                        'https://lottie.host/fe76f0a1-c3f3-4312-ae5f-5235cdb47c72/Gb5D8cAAzi.lottie',
+                    // sourceType: 'asset',
+                    // source: 'star-rating.lottie',
 
                     // sourceType: 'asset',
                     // source: 'test.json',
