@@ -25,7 +25,7 @@ class DotLottieFlutterWeb extends DotLottieFlutterPlatform {
         web.document.createElement('script') as web.HTMLScriptElement;
     script.type = 'module';
     script.text = '''
-    import { DotLottie } from 'https://cdn.jsdelivr.net/npm/@lottiefiles/dotlottie-web@0.55.0/+esm';
+    import { DotLottie } from 'https://cdn.jsdelivr.net/npm/@lottiefiles/dotlottie-web@0.69.0/+esm';
     window.DotLottie = DotLottie;
     window.dispatchEvent(new Event('dotlottie-ready'));
   ''';

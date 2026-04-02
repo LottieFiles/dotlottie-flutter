@@ -15,7 +15,7 @@ A new Flutter plugin project.
   s.source           = { :path => '.' }
   s.source_files = 'Classes/**/*'
   s.dependency 'Flutter'
-  s.dependency 'LottieFiles-dotLottie-iOS', '~> 0.11.1'
+  s.dependency 'LottieFiles-dotLottie-iOS', '~> 0.14.1'
   s.platform = :ios, '13.0'
   
 
