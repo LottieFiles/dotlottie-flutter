@@ -1,6 +1,8 @@
 package com.lottiefiles.dotlottie_flutter
 
 import android.app.Activity
+import android.app.Application
+import android.os.Bundle
 import android.util.Log
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
@@ -15,6 +17,26 @@ class DotLottieFlutterPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
     private lateinit var channel: MethodChannel
     private var activity: Activity? = null
 
+    private val lifecycleCallbacks = object : Application.ActivityLifecycleCallbacks {
+        override fun onActivityResumed(a: Activity) {
+            if (a === activity) {
+                platformViews.values.forEach { it.resumeGL() }
+            }
+        }
+
+        override fun onActivityPaused(a: Activity) {
+            if (a === activity) {
+                platformViews.values.forEach { it.pauseGL() }
+            }
+        }
+
+        override fun onActivityCreated(a: Activity, b: Bundle?) {}
+        override fun onActivityStarted(a: Activity) {}
+        override fun onActivityStopped(a: Activity) {}
+        override fun onActivitySaveInstanceState(a: Activity, b: Bundle) {}
+        override fun onActivityDestroyed(a: Activity) {}
+    }
+
     // Store references to platform views
     companion object {
         lateinit var binaryMessenger: io.flutter.plugin.common.BinaryMessenger
@@ -22,13 +44,11 @@ class DotLottieFlutterPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
     }
 
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
-        // Store the binary messenger
         binaryMessenger = flutterPluginBinding.binaryMessenger
 
         channel = MethodChannel(flutterPluginBinding.binaryMessenger, "dotlottie_flutter")
         channel.setMethodCallHandler(this)
 
-        // Register platform view factory
         flutterPluginBinding.platformViewRegistry.registerViewFactory(
             "dotlottie_view",
             DotLottieViewFactory()
@@ -37,17 +57,21 @@ class DotLottieFlutterPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
 
     override fun onAttachedToActivity(binding: ActivityPluginBinding) {
         activity = binding.activity
+        binding.activity.application.registerActivityLifecycleCallbacks(lifecycleCallbacks)
     }
 
     override fun onDetachedFromActivityForConfigChanges() {
+        activity?.application?.unregisterActivityLifecycleCallbacks(lifecycleCallbacks)
         activity = null
     }
 
     override fun onReattachedToActivityForConfigChanges(binding: ActivityPluginBinding) {
         activity = binding.activity
+        binding.activity.application.registerActivityLifecycleCallbacks(lifecycleCallbacks)
     }
 
     override fun onDetachedFromActivity() {
+        activity?.application?.unregisterActivityLifecycleCallbacks(lifecycleCallbacks)
         activity = null
     }
 
