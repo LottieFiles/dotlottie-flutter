@@ -20,7 +20,7 @@ class _MyAppState extends State<MyApp> {
   String? _activeTheme;
 
   // Animation control states
-  bool _isPlaying = true;
+  bool _isPlaying = false;
   double _currentFrame = 0;
   double _totalFrames = 0;
 
@@ -190,6 +190,7 @@ class _MyAppState extends State<MyApp> {
                     // sourceType: 'asset',
                     // source: 'test.json',
                     autoplay: true,
+                    useOpenGL: true,
                     loop: true,
                     onViewCreated: (controller) {
                       setState(() {
@@ -205,7 +206,14 @@ class _MyAppState extends State<MyApp> {
                       print('🔴 Dart: Animation load error!');
                     },
                     onPlay: () {
+                      setState(() => _isPlaying = true);
                       print('🟢 Dart: Animation playing!');
+                    },
+                    onPause: () {
+                      setState(() => _isPlaying = false);
+                    },
+                    onStop: () {
+                      setState(() => _isPlaying = false);
                     },
                     onFrame: (frameNo) {
                       setState(() {

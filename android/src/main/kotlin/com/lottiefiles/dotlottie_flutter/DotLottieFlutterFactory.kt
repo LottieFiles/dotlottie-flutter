@@ -11,18 +11,19 @@ class DotLottieViewFactory : PlatformViewFactory(StandardMessageCodec.INSTANCE) 
     
     override fun create(context: Context, viewId: Int, args: Any?): PlatformView {
         val creationParams = args as? Map<String, Any>
-        
+        val useOpenGL = creationParams?.get("useOpenGL") as? Boolean ?: false
+
         // Create method channel for this specific view
         val methodChannel = MethodChannel(
             DotLottieFlutterPlugin.binaryMessenger,
             "dotlottie_view_$viewId"
         )
-        
-        val view = DotLottiePlatformView(context, viewId, creationParams)
-        
+
+        val view = DotLottiePlatformView(context, viewId, creationParams, useOpenGL)
+
         // Store reference
         DotLottieFlutterPlugin.platformViews[viewId] = view
-        
+
         return view
     }
 }

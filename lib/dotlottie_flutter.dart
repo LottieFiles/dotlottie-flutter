@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 
 import 'dart:convert';
 
@@ -25,6 +26,12 @@ class DotLottieView extends StatefulWidget {
 
   final String sourceType; // 'url', 'asset', or 'json'
   final String source;
+
+  /// Enables GPU-accelerated OpenGL rendering on Android via [DotLottieGLAnimation].
+  ///
+  /// The underlying Android API is marked experimental and may change in future
+  /// releases of the dotlottie-android library. Has no effect on non-Android platforms.
+  final bool useOpenGL;
 
   final int? width;
   final int? height;
@@ -70,6 +77,7 @@ class DotLottieView extends StatefulWidget {
     this.width,
     this.height,
     this.backgroundColor,
+    this.useOpenGL = false,
     this.onViewCreated,
     this.onComplete,
     this.onLoad,
@@ -133,10 +141,42 @@ class _DotLottieViewState extends State<DotLottieView> {
 
   Widget _buildAndroidView() {
     return FutureBuilder<Map<String, dynamic>>(
-      future: _creationParamsFuture, // Use the cached future
+      future: _creationParamsFuture,
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return Container();
+        }
+
+        // The GL renderer uses TextureView, which renders to its own SurfaceTexture
+        // via OpenGL. Flutter's default TLHC mode captures platform view content via
+        // the Canvas pipeline and misses TextureView's GL output on the first frame.
+        // Hybrid Composition (HC) embeds the view directly in Android's real view
+        // hierarchy, where TextureView renders correctly.
+        if (widget.useOpenGL) {
+          return PlatformViewLink(
+            viewType: 'dotlottie_view',
+            surfaceFactory: (context, controller) {
+              return AndroidViewSurface(
+                controller: controller as AndroidViewController,
+                gestureRecognizers:
+                    const <Factory<OneSequenceGestureRecognizer>>{},
+                hitTestBehavior: PlatformViewHitTestBehavior.opaque,
+              );
+            },
+            onCreatePlatformView: (params) {
+              return PlatformViewsService.initExpensiveAndroidView(
+                id: params.id,
+                viewType: 'dotlottie_view',
+                layoutDirection: TextDirection.ltr,
+                creationParams: snapshot.data,
+                creationParamsCodec: const StandardMessageCodec(),
+              )
+                ..addOnPlatformViewCreatedListener(
+                    params.onPlatformViewCreated)
+                ..addOnPlatformViewCreatedListener(_onPlatformViewCreated)
+                ..create();
+            },
+          );
         }
 
         return AndroidView(
@@ -245,6 +285,8 @@ class _DotLottieViewState extends State<DotLottieView> {
       if (widget.animationId != null) 'animationId': widget.animationId,
       if (widget.width != null) 'width': widget.width,
       if (widget.height != null) 'height': widget.height,
+      if (widget.useOpenGL && defaultTargetPlatform == TargetPlatform.android)
+        'useOpenGL': true,
     };
 
     // Handle asset loading
