@@ -1,3 +1,7 @@
+## 0.0.4
+
+* fix: crash when loading DotLottieView a second time for android
+
 ## 0.0.3
 
 * chore: upgraded dependancies for web, android and ios. Added opengl support for android.
