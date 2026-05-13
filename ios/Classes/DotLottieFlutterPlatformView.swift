@@ -224,6 +224,19 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
         let source = arguments["source"] as? String
         let width = arguments["width"] as? Int
         let height = arguments["height"] as? Int
+        let fitString = arguments["fit"] as? String
+        let convertedFit: Fit? = {
+            guard let fitString = fitString else { return nil }
+            switch fitString {
+            case "fill":      return .fill
+            case "cover":     return .cover
+            case "fitWidth":  return .fitWidth
+            case "fitHeight": return .fitHeight
+            case "none":      return Fit.none
+            default:          return .contain
+            }
+        }()
+        let layout: DotLottie.Layout? = convertedFit.map { DotLottie.Layout(fit: $0, alignX: 0.5, alignY: 0.5) }
 
         guard let sourceType = sourceType else {
             return
@@ -237,6 +250,7 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
             speed: Float(speed),
             useFrameInterpolation: useFrameInterpolation,
             segments: convertedSegment,
+            layout: layout,
             marker: marker,
             themeId: themeId,
             stateMachineId: stateMachineId

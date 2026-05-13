@@ -25,7 +25,7 @@ class DotLottieFlutterWeb extends DotLottieFlutterPlatform {
         web.document.createElement('script') as web.HTMLScriptElement;
     script.type = 'module';
     script.text = '''
-    import { DotLottie } from 'https://cdn.jsdelivr.net/npm/@lottiefiles/dotlottie-web@0.69.0/+esm';
+    import { DotLottie } from 'https://cdn.jsdelivr.net/npm/@lottiefiles/dotlottie-web@0.72.1/+esm';
     window.DotLottie = DotLottie;
     window.dispatchEvent(new Event('dotlottie-ready'));
   ''';
@@ -419,6 +419,14 @@ class DotLottieWebView {
 
       final animationId = config['animationId'] as String? ?? '';
       playerConfig['animationId'.toJS] = animationId.toJS;
+
+      final fitString = config['fit'] as String?;
+      if (fitString != null) {
+        final layoutObj = JSObject();
+        layoutObj['fit'.toJS] = fitString.toJS;
+        layoutObj['align'.toJS] = [0.5.toJS, 0.5.toJS].toJS;
+        playerConfig['layout'.toJS] = layoutObj;
+      }
 
       final width = config['width'] as int?;
       final height = config['height'] as int?;

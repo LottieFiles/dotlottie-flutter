@@ -18,7 +18,7 @@ class DotLottieView extends StatefulWidget {
   final bool? useFrameInterpolation;
   final List<num>? segment;
   final String? backgroundColor;
-  // final Layout layout;
+  final BoxFit? fit;
   final String? marker;
   final String? themeId;
   final String? stateMachineId;
@@ -77,6 +77,7 @@ class DotLottieView extends StatefulWidget {
     this.width,
     this.height,
     this.backgroundColor,
+    this.fit,
     this.useOpenGL = false,
     this.onViewCreated,
     this.onComplete,
@@ -267,6 +268,19 @@ class _DotLottieViewState extends State<DotLottieView> {
     );
   }
 
+  static String? _boxFitToString(BoxFit? fit) {
+    switch (fit) {
+      case BoxFit.contain:   return 'contain';
+      case BoxFit.cover:     return 'cover';
+      case BoxFit.fill:      return 'fill';
+      case BoxFit.fitWidth:  return 'fitWidth';
+      case BoxFit.fitHeight: return 'fitHeight';
+      case BoxFit.none:      return 'none';
+      case BoxFit.scaleDown: return 'contain';
+      case null:             return null;
+    }
+  }
+
   Future<Map<String, dynamic>> _getCreationParams() async {
     Map<String, dynamic> params = {
       'autoplay': widget.autoplay,
@@ -278,6 +292,7 @@ class _DotLottieViewState extends State<DotLottieView> {
       if (widget.segment != null) 'segment': widget.segment,
       if (widget.backgroundColor != null)
         'backgroundColor': widget.backgroundColor,
+      if (widget.fit != null) 'fit': _boxFitToString(widget.fit),
       if (widget.marker != null) 'marker': widget.marker,
       if (widget.themeId != null) 'themeId': widget.themeId,
       if (widget.stateMachineId != null)

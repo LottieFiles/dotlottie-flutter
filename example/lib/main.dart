@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:dotlottie_flutter/dotlottie_flutter.dart';
+import 'carousel_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -23,6 +24,8 @@ class _MyAppState extends State<MyApp> {
   bool _isPlaying = false;
   double _currentFrame = 0;
   double _totalFrames = 0;
+
+  BoxFit _selectedFit = BoxFit.contain;
 
   @override
   void initState() {
@@ -170,28 +173,44 @@ class _MyAppState extends State<MyApp> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Builder(
+                    builder: (ctx) => ElevatedButton.icon(
+                      onPressed: () => Navigator.of(ctx).push(
+                        MaterialPageRoute(
+                          builder: (_) => const CarouselPage(),
+                        ),
+                      ),
+                      icon: const Icon(Icons.view_carousel),
+                      label: const Text('Carousel Example'),
+                    ),
+                  ),
+                ),
                 Container(
                   width: 300,
                   height: 300,
                   color: Colors.grey[200],
                   child: DotLottieView(
+                    key: ValueKey(_selectedFit),
                     // multitheme
                     // sourceType: 'url',
                     // source:
                     //     'https://lottie.host/a1641002-1aee-4506-89e2-a18210bfc9c7/PSdkPPlzA5.lottie',
 
                     // radial state machine
-                    sourceType: 'url',
-                    source:
-                        'https://lottie.host/fe76f0a1-c3f3-4312-ae5f-5235cdb47c72/Gb5D8cAAzi.lottie',
-                    // sourceType: 'asset',
-                    // source: 'star-rating.lottie',
+                    // sourceType: 'url',
+                    // source:
+                    //     'https://lottie.host/fe76f0a1-c3f3-4312-ae5f-5235cdb47c72/Gb5D8cAAzi.lottie',
+                    sourceType: 'asset',
+                    source: 'star-rating.lottie',
 
                     // sourceType: 'asset',
                     // source: 'test.json',
                     autoplay: true,
                     useOpenGL: true,
                     loop: true,
+                    fit: _selectedFit,
                     onViewCreated: (controller) {
                       setState(() {
                         _controller = controller;
@@ -221,6 +240,35 @@ class _MyAppState extends State<MyApp> {
                       });
                     },
                   ),
+                ),
+                const SizedBox(height: 16),
+
+                // Fit mode selector
+                const Text(
+                  'BoxFit:',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  alignment: WrapAlignment.center,
+                  children:
+                      [
+                        BoxFit.contain,
+                        BoxFit.cover,
+                        BoxFit.fill,
+                        BoxFit.fitWidth,
+                        BoxFit.fitHeight,
+                        BoxFit.none,
+                      ].map((fit) {
+                        final isSelected = _selectedFit == fit;
+                        return FilterChip(
+                          label: Text(fit.name),
+                          selected: isSelected,
+                          onSelected: (_) => setState(() => _selectedFit = fit),
+                        );
+                      }).toList(),
                 ),
                 const SizedBox(height: 20),
 

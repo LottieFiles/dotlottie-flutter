@@ -6,7 +6,9 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.view.ViewGroup
+import com.dotlottie.dlplayer.Fit
 import com.dotlottie.dlplayer.Mode
+import com.lottiefiles.dotlottie.core.util.LayoutUtil
 import com.lottiefiles.dotlottie.core.ExperimentalDotLottieGLApi
 import com.lottiefiles.dotlottie.core.model.Config
 import com.lottiefiles.dotlottie.core.util.DotLottieEventListener
@@ -229,6 +231,17 @@ class DotLottiePlatformView(
                             else -> Mode.FORWARD
                         }
 
+                val fitString = params["fit"] as? String
+                val fit: Fit? = when (fitString?.lowercase()) {
+                    "contain"   -> Fit.CONTAIN
+                    "fill"      -> Fit.FILL
+                    "cover"     -> Fit.COVER
+                    "fitwidth"  -> Fit.FIT_WIDTH
+                    "fitheight" -> Fit.FIT_HEIGHT
+                    "none"      -> Fit.NONE
+                    else        -> null
+                }
+
                 val configBuilder =
                         Config.Builder()
                                 .autoplay(autoplay)
@@ -238,6 +251,10 @@ class DotLottiePlatformView(
                                 .playMode(playMode)
                                 .useFrameInterpolation(useFrameInterpolation)
                                 .stateMachineId(stateMachineId)
+
+                fit?.let { f ->
+                    configBuilder.layout(f, LayoutUtil.Alignment.Center)
+                }
 
                 backgroundColor?.let {
                     try {
