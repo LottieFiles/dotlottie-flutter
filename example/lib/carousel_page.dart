@@ -4,28 +4,28 @@ import 'package:dotlottie_flutter/dotlottie_flutter.dart';
 const _animations = [
   (
     url:
-        'https://assets.tickertape.in/lottie/assetLandingPage/diversification_score.lottie',
-    label: 'Diversification Score',
+        'https://lottie.host/f667bc2d-f0e2-47d5-8021-dc3473f31f7d/hcK2nKmaPp.lottie',
+    label: 'Smiley Slider',
   ),
   (
     url:
-        'https://assets.tickertape.in/lottie/assetLandingPage/alerts_on_investment.lottie',
-    label: 'Alerts on Investment',
+        'https://lottie.host/37cfaf9d-6805-4d77-a4d1-a44c2c66e340/e41cghHS0p.lottie',
+    label: 'Star rating',
   ),
   (
     url:
-        'https://assets.tickertape.in/lottie/assetLandingPage/compare_XIRR.lottie',
-    label: 'Compare XIRR',
+        'https://lottie.host/749236ba-351e-49f6-9ed0-b88d8c5ce023/6nY3dSYtwx.lottie',
+    label: 'Snow globe',
   ),
   (
     url:
-        'https://assets.tickertape.in/lottie/assetLandingPage/forecast.lottie',
-    label: 'Forecast',
+        'https://lottie.host/6b7b97ab-b440-4bc6-844a-1c863c0fe118/Ofg3beI37F.lottie',
+    label: 'Car',
   ),
   (
     url:
-        'https://assets.tickertape.in/lottie/assetLandingPage/red_flags.lottie',
-    label: 'Red Flags',
+        'https://lottie.host/76229bd4-4e2c-4718-9737-fa8b8bedae29/qqaRzSPO8n.lottie',
+    label: 'Lolo',
   ),
 ];
 
