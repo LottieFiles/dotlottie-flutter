@@ -178,9 +178,7 @@ class _MyAppState extends State<MyApp> {
                   child: Builder(
                     builder: (ctx) => ElevatedButton.icon(
                       onPressed: () => Navigator.of(ctx).push(
-                        MaterialPageRoute(
-                          builder: (_) => const CarouselPage(),
-                        ),
+                        MaterialPageRoute(builder: (_) => const CarouselPage()),
                       ),
                       icon: const Icon(Icons.view_carousel),
                       label: const Text('Carousel Example'),

@@ -34,6 +34,7 @@ class DotLottieFlutterWeb extends DotLottieFlutterPlatform {
     ui_web.platformViewRegistry.registerViewFactory('dotlottie_view', (
       int viewId,
     ) {
+      _viewInstances[viewId]?.dispose();
       final view = DotLottieWebView(viewId, registrar);
       _viewInstances[viewId] = view;
 
@@ -241,10 +242,6 @@ class DotLottieWebView {
         final height = args['height'] as int;
         resize(width, height);
         return null;
-
-      case 'getLayerBounds':
-        final layerName = (call.arguments as Map)['layerName'] as String;
-        return getLayerBounds(layerName);
 
       case 'stateMachineLoad':
         final stateMachineId =
@@ -1241,28 +1238,6 @@ class DotLottieWebView {
         } catch (e) {}
       }
     }
-  }
-
-  List<double>? getLayerBounds(String layerName) {
-    if (dotLottiePlayer != null && !isDisposed) {
-      try {
-        final player = dotLottiePlayer as JSObject;
-        final method = player['getLayerBoundingBox'.toJS] as JSFunction?;
-        if (method != null) {
-          final result = method.callAsFunction(player, layerName.toJS);
-          if (result != null) {
-            final array = result as JSArray;
-            final bounds = <double>[];
-            final length = (array.length as JSNumber).toDartInt;
-            for (var i = 0; i < length; i++) {
-              bounds.add((array[i] as JSNumber).toDartDouble);
-            }
-            return bounds;
-          }
-        }
-      } catch (e) {}
-    }
-    return null;
   }
 
   bool stateMachineLoad(String stateMachineId) {

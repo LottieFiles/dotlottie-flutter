@@ -41,10 +41,13 @@ class DotLottiePlatformView(
     }
 
     private fun invokeOnMainThread(method: String, arguments: Any? = null) {
+        if (isDisposed) return
         if (Looper.myLooper() == Looper.getMainLooper()) {
             methodChannel.invokeMethod(method, arguments)
         } else {
-            mainHandler.post { methodChannel.invokeMethod(method, arguments) }
+            mainHandler.post {
+                if (!isDisposed) methodChannel.invokeMethod(method, arguments)
+            }
         }
     }
 
@@ -552,10 +555,6 @@ class DotLottiePlatformView(
                         result.error("INVALID_ARGS", "Invalid resize arguments", null)
                     }
                 }
-                "getLayerBounds" -> {
-                    // Not available in Android DotLottie widget API
-                    result.success(null)
-                }
                 "stateMachineLoad" -> {
                     val stateMachineId = call.argument<String>("stateMachineId")
                     if (stateMachineId != null) {
@@ -815,6 +814,9 @@ class DotLottiePlatformView(
     override fun dispose() {
         if (isDisposed) return
         isDisposed = true
+
+        mainHandler.removeCallbacksAndMessages(null)
+        methodChannel.setMethodCallHandler(null)
 
         player.stop()
         player.onPause()

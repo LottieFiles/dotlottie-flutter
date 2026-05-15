@@ -337,18 +337,6 @@ class MethodChannelDotLottieFlutter extends DotLottieFlutterPlatform {
     });
   }
 
-  // Layer methods
-  @override
-  Future<List<double>?> getLayerBounds(String layerName) async {
-    final result = await methodChannel.invokeMethod('getLayerBounds', {
-      'layerName': layerName,
-    });
-    if (result is List) {
-      return result.cast<double>();
-    }
-    return null;
-  }
-
   // State machine methods
   @override
   Future<bool?> stateMachineLoad(String stateMachineId) async {

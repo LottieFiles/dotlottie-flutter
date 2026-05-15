@@ -4,143 +4,118 @@ import DotLottie
 import SwiftUI
 
 class AnimationObserver: Observer {
-    private var methodchannel: FlutterMethodChannel
-    
+    private let methodchannel: FlutterMethodChannel
+
     init(methodChannel: FlutterMethodChannel) {
         self.methodchannel = methodChannel
     }
-    
+
     func onComplete() {
-        methodchannel.invokeMethod("onComplete", arguments: nil)
+        DispatchQueue.main.async { self.methodchannel.invokeMethod("onComplete", arguments: nil) }
     }
-    
+
     func onFrame(frameNo: Float) {
-        methodchannel.invokeMethod("onFrame", arguments: frameNo)
+        DispatchQueue.main.async { self.methodchannel.invokeMethod("onFrame", arguments: frameNo) }
     }
-    
+
     func onLoad() {
-        methodchannel.invokeMethod("onLoad", arguments: nil)
+        DispatchQueue.main.async { self.methodchannel.invokeMethod("onLoad", arguments: nil) }
     }
-    
+
     func onLoadError() {
-        methodchannel.invokeMethod("onLoadError", arguments: nil)
+        DispatchQueue.main.async { self.methodchannel.invokeMethod("onLoadError", arguments: nil) }
     }
-    
+
     func onLoop(loopCount: UInt32) {
-        methodchannel.invokeMethod("onLoop", arguments: loopCount)
+        DispatchQueue.main.async { self.methodchannel.invokeMethod("onLoop", arguments: loopCount) }
     }
-    
+
     func onPause() {
-        methodchannel.invokeMethod("onPause", arguments: nil)
+        DispatchQueue.main.async { self.methodchannel.invokeMethod("onPause", arguments: nil) }
     }
-    
+
     func onPlay() {
-        methodchannel.invokeMethod("onPlay", arguments: nil)
+        DispatchQueue.main.async { self.methodchannel.invokeMethod("onPlay", arguments: nil) }
     }
-    
+
     func onRender(frameNo: Float) {
-        methodchannel.invokeMethod("onRender", arguments: frameNo)
+        DispatchQueue.main.async { self.methodchannel.invokeMethod("onRender", arguments: frameNo) }
     }
-    
+
     func onStop() {
-        methodchannel.invokeMethod("onStop", arguments: nil)
+        DispatchQueue.main.async { self.methodchannel.invokeMethod("onStop", arguments: nil) }
     }
 }
 
 class FlutterStateMachineObserver: StateMachineObserver {
-    private var methodchannel: FlutterMethodChannel
-    
+    private let methodchannel: FlutterMethodChannel
+
     init(methodChannel: FlutterMethodChannel) {
         self.methodchannel = methodChannel
     }
 
     func onBooleanInputValueChange(inputName: String, oldValue: Bool, newValue: Bool) {
-        methodchannel.invokeMethod(
-            "stateMachineOnBooleanInputValueChange",
-            arguments: [
-                "inputName": inputName,
-                "oldValue": oldValue,
-                "newValue": newValue
-            ]
-        )
+        DispatchQueue.main.async {
+            self.methodchannel.invokeMethod(
+                "stateMachineOnBooleanInputValueChange",
+                arguments: ["inputName": inputName, "oldValue": oldValue, "newValue": newValue]
+            )
+        }
     }
-    
+
     func onError(message: String) {
-        methodchannel.invokeMethod(
-            "stateMachineOnError",
-            arguments: message
-        )
+        DispatchQueue.main.async { self.methodchannel.invokeMethod("stateMachineOnError", arguments: message) }
     }
-    
+
     func onNumericInputValueChange(inputName: String, oldValue: Float, newValue: Float) {
-        methodchannel.invokeMethod(
-            "stateMachineOnNumericInputValueChange",
-            arguments: [
-                "inputName": inputName,
-                "oldValue": oldValue,
-                "newValue": newValue
-            ]
-        )
+        DispatchQueue.main.async {
+            self.methodchannel.invokeMethod(
+                "stateMachineOnNumericInputValueChange",
+                arguments: ["inputName": inputName, "oldValue": oldValue, "newValue": newValue]
+            )
+        }
     }
-    
+
     func onStart() {
-        methodchannel.invokeMethod(
-            "stateMachineOnStart",
-            arguments: nil
-        )
+        DispatchQueue.main.async { self.methodchannel.invokeMethod("stateMachineOnStart", arguments: nil) }
     }
-    
+
     func onStop() {
-        methodchannel.invokeMethod(
-            "stateMachineOnStop",
-            arguments: nil
-        )
+        DispatchQueue.main.async { self.methodchannel.invokeMethod("stateMachineOnStop", arguments: nil) }
     }
-    
+
     func onStringInputValueChange(inputName: String, oldValue: String, newValue: String) {
-        methodchannel.invokeMethod(
-            "stateMachineOnStringInputValueChange",
-            arguments: [
-                "inputName": inputName,
-                "oldValue": oldValue,
-                "newValue": newValue
-            ]
-        )
+        DispatchQueue.main.async {
+            self.methodchannel.invokeMethod(
+                "stateMachineOnStringInputValueChange",
+                arguments: ["inputName": inputName, "oldValue": oldValue, "newValue": newValue]
+            )
+        }
     }
-    
+
     func onInputFired(inputName: String) {
-        methodchannel.invokeMethod(
-            "stateMachineOnInputFired",
-            arguments: inputName
-        )
+        DispatchQueue.main.async { self.methodchannel.invokeMethod("stateMachineOnInputFired", arguments: inputName) }
     }
-    
+
     func onCustomEvent(message: String) {
-        methodchannel.invokeMethod(
-            "stateMachineOnCustomEvent",
-            arguments: message
-        )
+        DispatchQueue.main.async { self.methodchannel.invokeMethod("stateMachineOnCustomEvent", arguments: message) }
     }
-    
+
     func onStateEntered(enteringState: String) {
-        methodchannel.invokeMethod(
-            "stateMachineOnStateEntered",
-            arguments: enteringState
-        )
+        DispatchQueue.main.async { self.methodchannel.invokeMethod("stateMachineOnStateEntered", arguments: enteringState) }
     }
-    
+
     func onStateExit(leavingState: String) {
-        methodchannel.invokeMethod(
-            "stateMachineOnStateExit",
-            arguments: leavingState
-        )    
+        DispatchQueue.main.async { self.methodchannel.invokeMethod("stateMachineOnStateExit", arguments: leavingState) }
     }
-    
+
     func onTransition(previousState: String, newState: String) {
-        methodchannel.invokeMethod(
-            "stateMachineOnTransition",
-            arguments: ["previousState": previousState, "newState": newState]
-        )
+        DispatchQueue.main.async {
+            self.methodchannel.invokeMethod(
+                "stateMachineOnTransition",
+                arguments: ["previousState": previousState, "newState": newState]
+            )
+        }
     }
 }
 
@@ -567,15 +542,6 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
                 result(FlutterError(code: "INVALID_ARGS", message: "Invalid resize arguments", details: nil))
             }
             
-        case "getLayerBounds":
-            if let args = call.arguments as? [String: Any],
-               let layerName = args["layerName"] as? String {
-                let bounds = animation.getLayerBounds(layerName: layerName)
-                result(bounds.map { Double($0) })
-            } else {
-                result(FlutterError(code: "INVALID_ARGS", message: "Invalid layerName argument", details: nil))
-            }
-            
         case "stateMachineLoad":
             if let args = call.arguments as? [String: Any],
                let stateMachineId = args["stateMachineId"] as? String {
@@ -775,15 +741,19 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
     private func dispose() {
         guard !isDisposed else { return }
         isDisposed = true
-        
+
         let _ = dotLottieAnimation?.stateMachineUnsubscribe(self.stateMachineObserver)
         dotLottieAnimation?.unsubscribe(observer: self.animationObserver)
         dotLottieAnimation = nil
-        
-        DispatchQueue.main.async { [weak self] in
-            self?.hostingController?.view.removeFromSuperview()
-            self?.hostingController = nil
-            self?._view.subviews.forEach { $0.removeFromSuperview() }
+
+        // Capture strongly so the cleanup runs even if self is deallocated before the
+        // async block executes (e.g. when dispose() is called from deinit on the main thread).
+        let hc = hostingController
+        let view = _view
+        hostingController = nil
+        DispatchQueue.main.async {
+            hc?.view.removeFromSuperview()
+            view.subviews.forEach { $0.removeFromSuperview() }
         }
     }
     
