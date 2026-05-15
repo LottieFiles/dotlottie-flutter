@@ -1,3 +1,7 @@
+## 0.0.5
+
+* fix: hot reload crash, add fit property (translates in to Layout for dotLottie)
+
 ## 0.0.4
 
 * fix: crash when loading DotLottieView a second time for android

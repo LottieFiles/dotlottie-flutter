@@ -18,7 +18,7 @@ class DotLottieView extends StatefulWidget {
   final bool? useFrameInterpolation;
   final List<num>? segment;
   final String? backgroundColor;
-  // final Layout layout;
+  final BoxFit? fit;
   final String? marker;
   final String? themeId;
   final String? stateMachineId;
@@ -77,6 +77,7 @@ class DotLottieView extends StatefulWidget {
     this.width,
     this.height,
     this.backgroundColor,
+    this.fit,
     this.useOpenGL = false,
     this.onViewCreated,
     this.onComplete,
@@ -115,11 +116,33 @@ class _DotLottieViewState extends State<DotLottieView> {
   DotLottieViewController? _controller;
   MethodChannel? _methodChannel;
   late Future<Map<String, dynamic>> _creationParamsFuture;
+  int _platformViewGeneration = 0;
 
   @override
   void initState() {
     super.initState();
     _creationParamsFuture = _getCreationParams();
+  }
+
+  @override
+  void reassemble() {
+    super.reassemble();
+    setState(() {
+      _platformViewGeneration++;
+      _creationParamsFuture = _getCreationParams();
+    });
+  }
+
+  @override
+  void didUpdateWidget(DotLottieView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.source != widget.source ||
+        oldWidget.sourceType != widget.sourceType) {
+      setState(() {
+        _platformViewGeneration++;
+        _creationParamsFuture = _getCreationParams();
+      });
+    }
   }
 
   @override
@@ -141,6 +164,7 @@ class _DotLottieViewState extends State<DotLottieView> {
 
   Widget _buildAndroidView() {
     return FutureBuilder<Map<String, dynamic>>(
+      key: ValueKey(_platformViewGeneration),
       future: _creationParamsFuture,
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
@@ -192,6 +216,7 @@ class _DotLottieViewState extends State<DotLottieView> {
 
   Widget _buildWebView() {
     return HtmlElementView(
+      key: ValueKey(_platformViewGeneration),
       viewType: 'dotlottie_view',
       onPlatformViewCreated: (int viewId) async {
         _onPlatformViewCreated(viewId);
@@ -231,7 +256,8 @@ class _DotLottieViewState extends State<DotLottieView> {
 
   Widget _buildIOSView() {
     return FutureBuilder<Map<String, dynamic>>(
-      future: _creationParamsFuture, // Use the cached future
+      key: ValueKey(_platformViewGeneration),
+      future: _creationParamsFuture,
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return Container();
@@ -250,7 +276,8 @@ class _DotLottieViewState extends State<DotLottieView> {
 
   Widget _buildMacOSView() {
     return FutureBuilder<Map<String, dynamic>>(
-      future: _creationParamsFuture, // Use the cached future
+      key: ValueKey(_platformViewGeneration),
+      future: _creationParamsFuture,
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return Container();
@@ -267,6 +294,19 @@ class _DotLottieViewState extends State<DotLottieView> {
     );
   }
 
+  static String? _boxFitToString(BoxFit? fit) {
+    switch (fit) {
+      case BoxFit.contain:   return 'contain';
+      case BoxFit.cover:     return 'cover';
+      case BoxFit.fill:      return 'fill';
+      case BoxFit.fitWidth:  return 'fitWidth';
+      case BoxFit.fitHeight: return 'fitHeight';
+      case BoxFit.none:      return 'none';
+      case BoxFit.scaleDown: return 'contain';
+      case null:             return null;
+    }
+  }
+
   Future<Map<String, dynamic>> _getCreationParams() async {
     Map<String, dynamic> params = {
       'autoplay': widget.autoplay,
@@ -278,6 +318,7 @@ class _DotLottieViewState extends State<DotLottieView> {
       if (widget.segment != null) 'segment': widget.segment,
       if (widget.backgroundColor != null)
         'backgroundColor': widget.backgroundColor,
+      if (widget.fit != null) 'fit': _boxFitToString(widget.fit),
       if (widget.marker != null) 'marker': widget.marker,
       if (widget.themeId != null) 'themeId': widget.themeId,
       if (widget.stateMachineId != null)
@@ -314,14 +355,15 @@ class _DotLottieViewState extends State<DotLottieView> {
   }
 
   void _onPlatformViewCreated(int viewId) {
-    // Set up method channel for this view
+    // Tear down old channel and tell old native view to clean up (important for
+    // macOS which holds a strong factory reference and won't self-dispose).
+    _methodChannel?.setMethodCallHandler(null);
+    _controller?.dispose();
+
     _methodChannel = MethodChannel('dotlottie_view_$viewId');
     _methodChannel!.setMethodCallHandler(_handleMethodCall);
-
-    // Create controller
     _controller = DotLottieViewController._(viewId);
 
-    // Call onViewCreated callback
     if (widget.onViewCreated != null) {
       widget.onViewCreated!(_controller!);
     }
@@ -824,22 +866,6 @@ class DotLottieViewController {
     }
   }
 
-  // Layer methods
-  Future<List<double>?> getLayerBounds(String layerName) async {
-    try {
-      final result = await _channel.invokeMethod('getLayerBounds', {
-        'layerName': layerName,
-      });
-      if (result is List) {
-        return result.cast<double>();
-      }
-      return null;
-    } catch (e) {
-      debugPrint('Error calling getLayerBounds: $e');
-      return null;
-    }
-  }
-
   // State machine methods
   Future<bool?> stateMachineLoad(String stateMachineId) async {
     try {
@@ -1227,10 +1253,6 @@ class DotLottieFlutter {
 
   Future<void> resize(int width, int height) async {
     return DotLottieFlutterPlatform.instance.resize(width, height);
-  }
-
-  Future<List<double>?> getLayerBounds(String layerName) async {
-    return DotLottieFlutterPlatform.instance.getLayerBounds(layerName);
   }
 
   // State machine methods

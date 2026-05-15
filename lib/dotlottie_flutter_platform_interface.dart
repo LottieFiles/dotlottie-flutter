@@ -263,11 +263,6 @@ abstract class DotLottieFlutterPlatform extends PlatformInterface {
     throw UnimplementedError('resize() has not been implemented.');
   }
 
-  // Layer methods
-  Future<List<double>?> getLayerBounds(String layerName) {
-    throw UnimplementedError('getLayerBounds() has not been implemented.');
-  }
-
   // State machine methods
   Future<bool?> stateMachineLoad(String stateMachineId) {
     throw UnimplementedError('stateMachineLoad() has not been implemented.');

@@ -25,7 +25,7 @@ class DotLottieFlutterWeb extends DotLottieFlutterPlatform {
         web.document.createElement('script') as web.HTMLScriptElement;
     script.type = 'module';
     script.text = '''
-    import { DotLottie } from 'https://cdn.jsdelivr.net/npm/@lottiefiles/dotlottie-web@0.69.0/+esm';
+    import { DotLottie } from 'https://cdn.jsdelivr.net/npm/@lottiefiles/dotlottie-web@0.72.1/+esm';
     window.DotLottie = DotLottie;
     window.dispatchEvent(new Event('dotlottie-ready'));
   ''';
@@ -34,6 +34,7 @@ class DotLottieFlutterWeb extends DotLottieFlutterPlatform {
     ui_web.platformViewRegistry.registerViewFactory('dotlottie_view', (
       int viewId,
     ) {
+      _viewInstances[viewId]?.dispose();
       final view = DotLottieWebView(viewId, registrar);
       _viewInstances[viewId] = view;
 
@@ -242,10 +243,6 @@ class DotLottieWebView {
         resize(width, height);
         return null;
 
-      case 'getLayerBounds':
-        final layerName = (call.arguments as Map)['layerName'] as String;
-        return getLayerBounds(layerName);
-
       case 'stateMachineLoad':
         final stateMachineId =
             (call.arguments as Map)['stateMachineId'] as String;
@@ -419,6 +416,14 @@ class DotLottieWebView {
 
       final animationId = config['animationId'] as String? ?? '';
       playerConfig['animationId'.toJS] = animationId.toJS;
+
+      final fitString = config['fit'] as String?;
+      if (fitString != null) {
+        final layoutObj = JSObject();
+        layoutObj['fit'.toJS] = fitString.toJS;
+        layoutObj['align'.toJS] = [0.5.toJS, 0.5.toJS].toJS;
+        playerConfig['layout'.toJS] = layoutObj;
+      }
 
       final width = config['width'] as int?;
       final height = config['height'] as int?;
@@ -1233,28 +1238,6 @@ class DotLottieWebView {
         } catch (e) {}
       }
     }
-  }
-
-  List<double>? getLayerBounds(String layerName) {
-    if (dotLottiePlayer != null && !isDisposed) {
-      try {
-        final player = dotLottiePlayer as JSObject;
-        final method = player['getLayerBoundingBox'.toJS] as JSFunction?;
-        if (method != null) {
-          final result = method.callAsFunction(player, layerName.toJS);
-          if (result != null) {
-            final array = result as JSArray;
-            final bounds = <double>[];
-            final length = (array.length as JSNumber).toDartInt;
-            for (var i = 0; i < length; i++) {
-              bounds.add((array[i] as JSNumber).toDartDouble);
-            }
-            return bounds;
-          }
-        }
-      } catch (e) {}
-    }
-    return null;
   }
 
   bool stateMachineLoad(String stateMachineId) {
