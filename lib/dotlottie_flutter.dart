@@ -9,22 +9,65 @@ import 'package:flutter/rendering.dart';
 
 import 'dart:convert';
 
+/// A Flutter widget that renders a dotLottie or Lottie animation.
+///
+/// Supports loading animations from a URL, an asset file, or a raw JSON string.
+/// Use [onViewCreated] to obtain a [DotLottieViewController] for programmatic
+/// playback control after the native view is ready.
+///
+/// ```dart
+/// DotLottieView(
+///   sourceType: 'url',
+///   source: 'https://example.com/animation.lottie',
+///   autoplay: true,
+///   loop: true,
+///   onViewCreated: (controller) => _controller = controller,
+/// )
+/// ```
 class DotLottieView extends StatefulWidget {
+  /// Whether the animation starts playing immediately after loading.
   final bool? autoplay;
+
+  /// Whether the animation loops indefinitely.
   final bool? loop;
+
+  /// Number of times to loop before stopping. Ignored when [loop] is `true`.
   final int? loopCount;
-  final String? mode; // 'forward', 'reverse', 'bounce', 'reverseBounce'
+
+  /// Playback direction. One of `'forward'`, `'reverse'`, `'bounce'`, or `'reverseBounce'`.
+  final String? mode;
+
+  /// Playback speed multiplier. `1.0` is normal speed.
   final double? speed;
+
+  /// Whether to interpolate frames between keyframes for smoother playback.
   final bool? useFrameInterpolation;
+
+  /// Frame range to play, expressed as `[startFrame, endFrame]`.
   final List<num>? segment;
+
+  /// Background color as a hex string, e.g. `'#FF0000'`.
   final String? backgroundColor;
+
+  /// How the animation should be inscribed into the space allocated during layout.
   final BoxFit? fit;
+
+  /// Named marker to seek to on load.
   final String? marker;
+
+  /// ID of the theme to apply from the dotLottie file.
   final String? themeId;
+
+  /// ID of the state machine to activate on load.
   final String? stateMachineId;
+
+  /// ID of the animation to display when the file contains multiple animations.
   final String? animationId;
 
-  final String sourceType; // 'url', 'asset', or 'json'
+  /// How [source] is interpreted. One of `'url'`, `'asset'`, or `'json'`.
+  final String sourceType;
+
+  /// The animation source — a URL, asset path relative to `assets/`, or raw JSON string.
   final String source;
 
   /// Enables GPU-accelerated OpenGL rendering on Android via [DotLottieGLAnimation].
@@ -33,38 +76,83 @@ class DotLottieView extends StatefulWidget {
   /// releases of the dotlottie-android library. Has no effect on non-Android platforms.
   final bool useOpenGL;
 
+  /// Explicit width in logical pixels. When `null` the widget expands to fill available space.
   final int? width;
+
+  /// Explicit height in logical pixels. When `null` the widget expands to fill available space.
   final int? height;
+
+  /// Called once the native platform view is ready, providing a [DotLottieViewController].
   final Function(DotLottieViewController)? onViewCreated;
 
-  // Event callbacks
+  /// Called when the animation finishes playing (non-looping only).
   final VoidCallback? onComplete;
+
+  /// Called when the animation has been loaded and is ready to play.
   final VoidCallback? onLoad;
+
+  /// Called when the animation fails to load.
   final VoidCallback? onLoadError;
+
+  /// Called when playback starts or resumes.
   final VoidCallback? onPlay;
+
+  /// Called when playback is paused.
   final VoidCallback? onPause;
+
+  /// Called when playback is stopped.
   final VoidCallback? onStop;
+
+  /// Called on every frame advance with the current frame number.
   final Function(double frameNo)? onFrame;
+
+  /// Called each time a frame is rendered with the rendered frame number.
   final Function(double frameNo)? onRender;
+
+  /// Called each time a loop completes with the current loop count.
   final Function(int loopCount)? onLoop;
 
-  // State Machine event callbacks
+  /// Called when a boolean state machine input changes value.
   final Function(String inputName, bool oldValue, bool newValue)?
   stateMachineOnBooleanInputValueChange;
+
+  /// Called when the state machine encounters an error.
   final Function(String message)? stateMachineOnError;
+
+  /// Called when a numeric state machine input changes value.
   final Function(String inputName, double oldValue, double newValue)?
   stateMachineOnNumericInputValueChange;
+
+  /// Called when the state machine starts.
   final VoidCallback? stateMachineOnStart;
+
+  /// Called when the state machine stops.
   final VoidCallback? stateMachineOnStop;
+
+  /// Called when a trigger input is fired by name.
   final Function(String inputName)? stateMachineOnInputFired;
+
+  /// Called when a string state machine input changes value.
   final Function(String inputName, String oldValue, String newValue)?
   stateMachineOnStringInputValueChange;
+
+  /// Called when the state machine emits a custom event string.
   final Function(String message)? stateMachineOnCustomEvent;
+
+  /// Called when the state machine transitions into a new state.
   final Function(String enteringState)? stateMachineOnStateEntered;
+
+  /// Called when the state machine exits a state.
   final Function(String leavingState)? stateMachineOnStateExit;
+
+  /// Called when the state machine transitions between states.
   final Function(String previousState, String newState)?
   stateMachineOnTransition;
 
+  /// Creates a [DotLottieView].
+  ///
+  /// [sourceType] and [source] are required. All other parameters are optional
+  /// and mirror the dotLottie player configuration options.
   const DotLottieView({
     super.key,
     required this.sourceType,
@@ -247,7 +335,7 @@ class _DotLottieViewState extends State<DotLottieView> {
               if (widget.height != null) 'height': widget.height,
             });
           } catch (e) {
-            print('🔴 Flutter: Error sending initialize: $e');
+            debugPrint('🔴 Flutter: Error sending initialize: $e');
           }
         }
       },
@@ -510,7 +598,7 @@ class _DotLottieViewState extends State<DotLottieView> {
             );
           }
         } catch (e) {
-          print('Error in stateMachineOnTransition: $e');
+          debugPrint('Error in stateMachineOnTransition: $e');
         }
 
       default:
@@ -526,6 +614,10 @@ class _DotLottieViewState extends State<DotLottieView> {
   }
 }
 
+/// Controls a [DotLottieView] after the native platform view has been created.
+///
+/// Obtain an instance via [DotLottieView.onViewCreated]. All methods are
+/// asynchronous and communicate with the native player over a [MethodChannel].
 class DotLottieViewController {
   final int _viewId;
   late final MethodChannel _channel;
@@ -534,7 +626,7 @@ class DotLottieViewController {
     _channel = MethodChannel('dotlottie_view_$_viewId');
   }
 
-  // Playback control methods
+  /// Starts or resumes playback. Returns `true` on success.
   Future<bool?> play() async {
     try {
       return await _channel.invokeMethod<bool>('play');
@@ -544,6 +636,7 @@ class DotLottieViewController {
     }
   }
 
+  /// Pauses playback at the current frame. Returns `true` on success.
   Future<bool?> pause() async {
     try {
       return await _channel.invokeMethod<bool>('pause');
@@ -553,6 +646,7 @@ class DotLottieViewController {
     }
   }
 
+  /// Stops playback and resets to the first frame. Returns `true` on success.
   Future<bool?> stop() async {
     try {
       return await _channel.invokeMethod<bool>('stop');
@@ -562,7 +656,7 @@ class DotLottieViewController {
     }
   }
 
-  // Animation properties getters
+  /// Returns `true` if the animation is currently playing.
   Future<bool?> isPlaying() async {
     try {
       return await _channel.invokeMethod<bool>('isPlaying');
@@ -572,6 +666,7 @@ class DotLottieViewController {
     }
   }
 
+  /// Returns `true` if the animation is paused.
   Future<bool?> isPaused() async {
     try {
       return await _channel.invokeMethod<bool>('isPaused');
@@ -581,6 +676,7 @@ class DotLottieViewController {
     }
   }
 
+  /// Returns `true` if the animation is stopped.
   Future<bool?> isStopped() async {
     try {
       return await _channel.invokeMethod<bool>('isStopped');
@@ -590,6 +686,7 @@ class DotLottieViewController {
     }
   }
 
+  /// Returns `true` if an animation has been successfully loaded.
   Future<bool?> isLoaded() async {
     try {
       return await _channel.invokeMethod<bool>('isLoaded');
@@ -599,6 +696,7 @@ class DotLottieViewController {
     }
   }
 
+  /// Returns the current playback position as a frame number.
   Future<double?> currentFrame() async {
     try {
       return await _channel.invokeMethod<double>('currentFrame');
@@ -608,6 +706,7 @@ class DotLottieViewController {
     }
   }
 
+  /// Returns the total number of frames in the animation.
   Future<double?> totalFrames() async {
     try {
       return await _channel.invokeMethod<double>('totalFrames');
@@ -617,6 +716,7 @@ class DotLottieViewController {
     }
   }
 
+  /// Returns the current playback position as a value between `0.0` and `1.0`.
   Future<double?> currentProgress() async {
     try {
       return await _channel.invokeMethod<double>('currentProgress');
@@ -626,6 +726,7 @@ class DotLottieViewController {
     }
   }
 
+  /// Returns the total duration of the animation in seconds.
   Future<double?> duration() async {
     try {
       return await _channel.invokeMethod<double>('duration');
@@ -635,6 +736,7 @@ class DotLottieViewController {
     }
   }
 
+  /// Returns how many times the animation has looped since playback started.
   Future<int?> loopCount() async {
     try {
       return await _channel.invokeMethod<int>('loopCount');
@@ -644,6 +746,7 @@ class DotLottieViewController {
     }
   }
 
+  /// Returns the current playback speed multiplier.
   Future<double?> speed() async {
     try {
       return await _channel.invokeMethod<double>('speed');
@@ -653,6 +756,7 @@ class DotLottieViewController {
     }
   }
 
+  /// Returns `true` if the animation is set to loop.
   Future<bool?> loop() async {
     try {
       return await _channel.invokeMethod<bool>('loop');
@@ -662,6 +766,7 @@ class DotLottieViewController {
     }
   }
 
+  /// Returns `true` if the animation is configured to play automatically on load.
   Future<bool?> autoplay() async {
     try {
       return await _channel.invokeMethod<bool>('autoplay');
@@ -671,6 +776,7 @@ class DotLottieViewController {
     }
   }
 
+  /// Returns `true` if frame interpolation is enabled.
   Future<bool?> useFrameInterpolation() async {
     try {
       return await _channel.invokeMethod<bool>('useFrameInterpolation');
@@ -680,6 +786,7 @@ class DotLottieViewController {
     }
   }
 
+  /// Returns the active frame segment as `[startFrame, endFrame]`.
   Future<List<double>?> segments() async {
     try {
       final result = await _channel.invokeMethod('segments');
@@ -693,6 +800,7 @@ class DotLottieViewController {
     }
   }
 
+  /// Returns the current playback mode string (e.g. `'forward'`, `'reverse'`).
   Future<String?> mode() async {
     try {
       return await _channel.invokeMethod<String>('mode');
@@ -702,7 +810,7 @@ class DotLottieViewController {
     }
   }
 
-  // Animation control setters
+  /// Sets the playback speed multiplier.
   Future<void> setSpeed(double speed) async {
     try {
       await _channel.invokeMethod('setSpeed', {'speed': speed});
@@ -711,6 +819,7 @@ class DotLottieViewController {
     }
   }
 
+  /// Enables or disables looping.
   Future<void> setLoop(bool loop) async {
     try {
       await _channel.invokeMethod('setLoop', {'loop': loop});
@@ -719,6 +828,7 @@ class DotLottieViewController {
     }
   }
 
+  /// Seeks to a specific frame number. Returns `true` on success.
   Future<bool?> setFrame(double frame) async {
     try {
       return await _channel.invokeMethod<bool>('setFrame', {'frame': frame});
@@ -728,6 +838,7 @@ class DotLottieViewController {
     }
   }
 
+  /// Seeks to a normalized progress position between `0.0` and `1.0`. Returns `true` on success.
   Future<bool?> setProgress(double progress) async {
     try {
       return await _channel.invokeMethod<bool>('setProgress', {
@@ -739,6 +850,7 @@ class DotLottieViewController {
     }
   }
 
+  /// Constrains playback to the frame range `[start, end]`.
   Future<void> setSegments(double start, double end) async {
     try {
       await _channel.invokeMethod('setSegments', {'start': start, 'end': end});
@@ -747,6 +859,7 @@ class DotLottieViewController {
     }
   }
 
+  /// Seeks to the named marker defined in the animation file.
   Future<void> setMarker(String marker) async {
     try {
       await _channel.invokeMethod('setMarker', {'marker': marker});
@@ -755,6 +868,7 @@ class DotLottieViewController {
     }
   }
 
+  /// Sets the playback direction mode. Accepted values: `'forward'`, `'reverse'`, `'bounce'`, `'reverseBounce'`.
   Future<void> setMode(String mode) async {
     try {
       await _channel.invokeMethod('setMode', {'mode': mode});
@@ -763,6 +877,7 @@ class DotLottieViewController {
     }
   }
 
+  /// Enables or disables between-frame interpolation.
   Future<void> setFrameInterpolation(bool useFrameInterpolation) async {
     try {
       await _channel.invokeMethod('setFrameInterpolation', {
@@ -773,7 +888,7 @@ class DotLottieViewController {
     }
   }
 
-  // Theme methods
+  /// Applies the theme with the given [themeId] from the dotLottie file. Returns `true` on success.
   Future<bool?> setTheme(String themeId) async {
     try {
       return await _channel.invokeMethod<bool>('setTheme', {
@@ -785,6 +900,7 @@ class DotLottieViewController {
     }
   }
 
+  /// Applies a theme from a raw theme data string. Returns `true` on success.
   Future<bool?> setThemeData(String themeData) async {
     try {
       return await _channel.invokeMethod<bool>('setThemeData', {
@@ -796,6 +912,7 @@ class DotLottieViewController {
     }
   }
 
+  /// Resets the theme to the animation's default. Returns `true` on success.
   Future<bool?> resetTheme() async {
     try {
       return await _channel.invokeMethod<bool>('resetTheme');
@@ -805,6 +922,7 @@ class DotLottieViewController {
     }
   }
 
+  /// Returns the ID of the currently active theme, or `null` if none is applied.
   Future<String?> activeThemeId() async {
     try {
       return await _channel.invokeMethod<String>('activeThemeId');
@@ -814,7 +932,7 @@ class DotLottieViewController {
     }
   }
 
-  // Animation loading methods
+  /// Loads the animation identified by [animationId] from a multi-animation dotLottie file.
   Future<void> loadAnimation(String animationId) async {
     try {
       await _channel.invokeMethod('loadAnimation', {
@@ -825,6 +943,7 @@ class DotLottieViewController {
     }
   }
 
+  /// Returns the ID of the currently displayed animation.
   Future<String?> activeAnimationId() async {
     try {
       return await _channel.invokeMethod<String>('activeAnimationId');
@@ -834,6 +953,7 @@ class DotLottieViewController {
     }
   }
 
+  /// Returns the list of named markers defined in the animation.
   Future<List<Map<String, dynamic>>?> markers() async {
     try {
       final result = await _channel.invokeMethod('markers');
@@ -847,7 +967,7 @@ class DotLottieViewController {
     }
   }
 
-  // Slots methods
+  /// Applies dynamic slot data to the animation. Returns `true` on success.
   Future<bool?> setSlots(String slots) async {
     try {
       return await _channel.invokeMethod<bool>('setSlots', {'slots': slots});
@@ -857,7 +977,7 @@ class DotLottieViewController {
     }
   }
 
-  // Resize method
+  /// Resizes the animation canvas to the given [width] and [height] in pixels.
   Future<void> resize(int width, int height) async {
     try {
       await _channel.invokeMethod('resize', {'width': width, 'height': height});
@@ -866,7 +986,7 @@ class DotLottieViewController {
     }
   }
 
-  // State machine methods
+  /// Loads the state machine identified by [stateMachineId]. Returns `true` on success.
   Future<bool?> stateMachineLoad(String stateMachineId) async {
     try {
       return await _channel.invokeMethod<bool>('stateMachineLoad', {
@@ -878,6 +998,7 @@ class DotLottieViewController {
     }
   }
 
+  /// Loads a state machine from a raw JSON [data] string. Returns `true` on success.
   Future<bool?> stateMachineLoadData(String data) async {
     try {
       return await _channel.invokeMethod<bool>('stateMachineLoadData', {
@@ -889,6 +1010,7 @@ class DotLottieViewController {
     }
   }
 
+  /// Starts the loaded state machine. Returns `true` on success.
   Future<bool?> stateMachineStart() async {
     try {
       return await _channel.invokeMethod<bool>('stateMachineStart');
@@ -898,6 +1020,7 @@ class DotLottieViewController {
     }
   }
 
+  /// Stops the running state machine. Returns `true` on success.
   Future<bool?> stateMachineStop() async {
     try {
       return await _channel.invokeMethod<bool>('stateMachineStop');
@@ -907,6 +1030,7 @@ class DotLottieViewController {
     }
   }
 
+  /// Fires a trigger [event] on the active state machine.
   Future<void> stateMachineFire(String event) async {
     try {
       await _channel.invokeMethod('stateMachineFire', {'event': event});
@@ -915,6 +1039,7 @@ class DotLottieViewController {
     }
   }
 
+  /// Sets a numeric input on the active state machine. Returns `true` on success.
   Future<bool?> stateMachineSetNumericInput(String key, double value) async {
     try {
       return await _channel.invokeMethod<bool>('stateMachineSetNumericInput', {
@@ -927,6 +1052,7 @@ class DotLottieViewController {
     }
   }
 
+  /// Sets a string input on the active state machine. Returns `true` on success.
   Future<bool?> stateMachineSetStringInput(String key, String value) async {
     try {
       return await _channel.invokeMethod<bool>('stateMachineSetStringInput', {
@@ -939,6 +1065,7 @@ class DotLottieViewController {
     }
   }
 
+  /// Sets a boolean input on the active state machine. Returns `true` on success.
   Future<bool?> stateMachineSetBooleanInput(String key, bool value) async {
     try {
       return await _channel.invokeMethod<bool>('stateMachineSetBooleanInput', {
@@ -951,6 +1078,7 @@ class DotLottieViewController {
     }
   }
 
+  /// Returns the current numeric value of the named state machine input.
   Future<double?> stateMachineGetNumericInput(String key) async {
     try {
       return await _channel.invokeMethod<double>(
@@ -963,6 +1091,7 @@ class DotLottieViewController {
     }
   }
 
+  /// Returns the current string value of the named state machine input.
   Future<String?> stateMachineGetStringInput(String key) async {
     try {
       return await _channel.invokeMethod<String>('stateMachineGetStringInput', {
@@ -974,6 +1103,7 @@ class DotLottieViewController {
     }
   }
 
+  /// Returns the current boolean value of the named state machine input.
   Future<bool?> stateMachineGetBooleanInput(String key) async {
     try {
       return await _channel.invokeMethod<bool>('stateMachineGetBooleanInput', {
@@ -985,6 +1115,7 @@ class DotLottieViewController {
     }
   }
 
+  /// Returns a map of all current state machine input names to their type strings.
   Future<Map<String, String>?> stateMachineGetInputs() async {
     try {
       final result = await _channel.invokeMethod('stateMachineGetInputs');
@@ -998,6 +1129,7 @@ class DotLottieViewController {
     }
   }
 
+  /// Returns the name of the state machine's current active state.
   Future<String?> stateMachineCurrentState() async {
     try {
       return await _channel.invokeMethod<String>('stateMachineCurrentState');
@@ -1007,6 +1139,7 @@ class DotLottieViewController {
     }
   }
 
+  /// Returns the raw JSON definition of the state machine with the given [id].
   Future<String?> getStateMachine(String id) async {
     try {
       return await _channel.invokeMethod<String>('getStateMachine', {'id': id});
@@ -1016,6 +1149,7 @@ class DotLottieViewController {
     }
   }
 
+  /// Returns the dotLottie file manifest, including animation and theme metadata.
   Future<Map<String, dynamic>?> manifest() async {
     try {
       final result = await _channel.invokeMethod('manifest');
@@ -1029,6 +1163,7 @@ class DotLottieViewController {
     }
   }
 
+  /// Releases native resources held by this controller.
   Future<void> dispose() async {
     try {
       await _channel.invokeMethod('dispose');
@@ -1038,30 +1173,73 @@ class DotLottieViewController {
   }
 }
 
+/// Low-level API for controlling a dotLottie player via the platform interface.
+///
+/// This class wraps [DotLottieFlutterPlatform] and provides callback-based
+/// event handling for playback and state machine events. For widget-based usage,
+/// prefer [DotLottieView] with [DotLottieViewController].
 class DotLottieFlutter {
+  /// Called when the animation finishes playing (non-looping).
   void Function()? onComplete;
+
+  /// Called when the animation has loaded successfully.
   void Function()? onLoad;
+
+  /// Called when the animation fails to load.
   void Function()? onLoadError;
+
+  /// Called when playback starts or resumes.
   void Function()? onPlay;
+
+  /// Called when playback is paused.
   void Function()? onPause;
+
+  /// Called when playback is stopped.
   void Function()? onStop;
+
+  /// Called on every frame advance with the current frame number.
   void Function(double frameNo)? onFrame;
+
+  /// Called each time a frame is rendered with the rendered frame number.
   void Function(double frameNo)? onRender;
+
+  /// Called each time a loop completes with the current loop count.
   void Function(int loopCount)? onLoop;
 
+  /// Called when a boolean state machine input changes value.
   void Function(String inputName, bool oldValue, bool newValue)?
   stateMachineOnBooleanInputValueChange;
+
+  /// Called when the state machine encounters an error.
   void Function(String message)? stateMachineOnError;
+
+  /// Called when a numeric state machine input changes value.
   void Function(String inputName, double oldValue, double newValue)?
   stateMachineOnNumericInputValueChange;
+
+  /// Called when the state machine starts.
   void Function()? stateMachineOnStart;
+
+  /// Called when the state machine stops.
   void Function()? stateMachineOnStop;
+
+  /// Called when a trigger input is fired by name.
   void Function(String inputName)? stateMachineOnInputFired;
+
+  /// Called when a string state machine input changes value.
   void Function(String inputName, String oldValue, String newValue)?
   stateMachineOnStringInputValueChange;
+
+  /// Called when the state machine emits a custom event string.
   void Function(String message)? stateMachineOnCustomEvent;
+
+  /// Called when the state machine transitions into a new state.
   void Function(String enteringState)? stateMachineOnStateEntered;
+
+  /// Called when the state machine exits a state.
   void Function(String leavingState)? stateMachineOnStateExit;
+
+  /// Called when the state machine transitions between states.
   void Function(String previousState, String newState)?
   stateMachineOnTransition;
 
@@ -1113,169 +1291,204 @@ class DotLottieFlutter {
     );
   }
 
+  /// Initializes the native dotLottie player instance.
   Future<void> createPlayer() async {
     return DotLottieFlutterPlatform.instance.createPlayer();
   }
 
-  // Playback control methods
+  /// Starts or resumes playback. Returns `true` on success.
   Future<bool?> play() async {
     return DotLottieFlutterPlatform.instance.play();
   }
 
+  /// Pauses playback. Returns `true` on success.
   Future<bool?> pause() async {
     return DotLottieFlutterPlatform.instance.pause();
   }
 
+  /// Stops playback and resets to the first frame. Returns `true` on success.
   Future<bool?> stop() async {
     return DotLottieFlutterPlatform.instance.stop();
   }
 
-  // Animation properties getters
+  /// Returns `true` if the animation is currently playing.
   Future<bool?> isPlaying() async {
     return DotLottieFlutterPlatform.instance.isPlaying();
   }
 
+  /// Returns `true` if the animation is paused.
   Future<bool?> isPaused() async {
     return DotLottieFlutterPlatform.instance.isPaused();
   }
 
+  /// Returns `true` if the animation is stopped.
   Future<bool?> isStopped() async {
     return DotLottieFlutterPlatform.instance.isStopped();
   }
 
+  /// Returns `true` if an animation has been successfully loaded.
   Future<bool?> isLoaded() async {
     return DotLottieFlutterPlatform.instance.isLoaded();
   }
 
+  /// Returns the current playback position as a frame number.
   Future<double?> currentFrame() async {
     return DotLottieFlutterPlatform.instance.currentFrame();
   }
 
+  /// Returns the total number of frames in the animation.
   Future<double?> totalFrames() async {
     return DotLottieFlutterPlatform.instance.totalFrames();
   }
 
+  /// Returns the total duration of the animation in seconds.
   Future<double?> duration() async {
     return DotLottieFlutterPlatform.instance.duration();
   }
 
+  /// Returns how many times the animation has looped since playback started.
   Future<int?> loopCount() async {
     return DotLottieFlutterPlatform.instance.loopCount();
   }
 
+  /// Returns the current playback speed multiplier.
   Future<double?> speed() async {
     return DotLottieFlutterPlatform.instance.speed();
   }
 
+  /// Returns `true` if the animation is set to loop.
   Future<bool?> loop() async {
     return DotLottieFlutterPlatform.instance.loop();
   }
 
+  /// Returns `true` if the animation is configured to play automatically on load.
   Future<bool?> autoplay() async {
     return DotLottieFlutterPlatform.instance.autoplay();
   }
 
+  /// Returns `true` if frame interpolation is enabled.
   Future<bool?> useFrameInterpolation() async {
     return DotLottieFlutterPlatform.instance.useFrameInterpolation();
   }
 
+  /// Returns the active frame segment as `[startFrame, endFrame]`.
   Future<List<double>?> segments() async {
     return DotLottieFlutterPlatform.instance.segments();
   }
 
+  /// Returns the current playback mode string.
   Future<String?> mode() async {
     return DotLottieFlutterPlatform.instance.mode();
   }
 
-  // Animation control setters
+  /// Sets the playback speed multiplier.
   Future<void> setSpeed(double speed) async {
     return DotLottieFlutterPlatform.instance.setSpeed(speed);
   }
 
+  /// Enables or disables looping.
   Future<void> setLoop(bool loop) async {
     return DotLottieFlutterPlatform.instance.setLoop(loop);
   }
 
+  /// Seeks to a specific frame number. Returns `true` on success.
   Future<bool?> setFrame(double frame) async {
     return DotLottieFlutterPlatform.instance.setFrame(frame);
   }
 
+  /// Seeks to a normalized progress position between `0.0` and `1.0`. Returns `true` on success.
   Future<bool?> setProgress(double progress) async {
     return DotLottieFlutterPlatform.instance.setProgress(progress);
   }
 
+  /// Constrains playback to the frame range `[start, end]`.
   Future<void> setSegment(double start, double end) async {
     return DotLottieFlutterPlatform.instance.setSegment(start, end);
   }
 
+  /// Sets the playback direction mode.
   Future<void> setMode(String mode) async {
     return DotLottieFlutterPlatform.instance.setMode(mode);
   }
 
+  /// Enables or disables between-frame interpolation.
   Future<void> setFrameInterpolation(bool useFrameInterpolation) async {
     return DotLottieFlutterPlatform.instance.setFrameInterpolation(
       useFrameInterpolation,
     );
   }
 
+  /// Sets the background color as a hex string, e.g. `'#FF0000'`.
   Future<void> setBackgroundColor(String color) async {
     return DotLottieFlutterPlatform.instance.setBackgroundColor(color);
   }
 
-  // Theme methods
+  /// Applies the theme with the given [themeId]. Returns `true` on success.
   Future<bool?> setTheme(String themeId) async {
     return DotLottieFlutterPlatform.instance.setTheme(themeId);
   }
 
+  /// Applies a theme from a raw theme data string. Returns `true` on success.
   Future<bool?> setThemeData(String themeData) async {
     return DotLottieFlutterPlatform.instance.setThemeData(themeData);
   }
 
+  /// Resets the theme to the animation's default. Returns `true` on success.
   Future<bool?> resetTheme() async {
     return DotLottieFlutterPlatform.instance.resetTheme();
   }
 
+  /// Returns the ID of the currently active theme.
   Future<String?> activeThemeId() async {
     return DotLottieFlutterPlatform.instance.activeThemeId();
   }
 
+  /// Returns the ID of the currently displayed animation.
   Future<String?> activeAnimationId() async {
     return DotLottieFlutterPlatform.instance.activeAnimationId();
   }
 
+  /// Returns the list of named markers defined in the animation.
   Future<List<Map<String, dynamic>>?> markers() async {
     return DotLottieFlutterPlatform.instance.markers();
   }
 
+  /// Applies dynamic slot data to the animation. Returns `true` on success.
   Future<bool?> setSlots(String slots) async {
     return DotLottieFlutterPlatform.instance.setSlots(slots);
   }
 
+  /// Resizes the animation canvas to [width] × [height] pixels.
   Future<void> resize(int width, int height) async {
     return DotLottieFlutterPlatform.instance.resize(width, height);
   }
 
-  // State machine methods
+  /// Loads the state machine identified by [stateMachineId]. Returns `true` on success.
   Future<bool?> stateMachineLoad(String stateMachineId) async {
     return DotLottieFlutterPlatform.instance.stateMachineLoad(stateMachineId);
   }
 
+  /// Loads a state machine from a raw JSON string. Returns `true` on success.
   Future<bool?> stateMachineLoadData(String data) async {
     return DotLottieFlutterPlatform.instance.stateMachineLoadData(data);
   }
 
+  /// Starts the loaded state machine. Returns `true` on success.
   Future<bool?> stateMachineStart() async {
     return DotLottieFlutterPlatform.instance.stateMachineStart();
   }
 
+  /// Stops the running state machine. Returns `true` on success.
   Future<bool?> stateMachineStop() async {
     return DotLottieFlutterPlatform.instance.stateMachineStop();
   }
 
+  /// Fires a named trigger [event] on the active state machine.
   Future<void> stateMachineFire(String event) async {
     return DotLottieFlutterPlatform.instance.stateMachineFire(event);
   }
 
+  /// Sets a numeric input on the active state machine. Returns `true` on success.
   Future<bool?> stateMachineSetNumericInput(String key, double value) async {
     return DotLottieFlutterPlatform.instance.stateMachineSetNumericInput(
       key,
@@ -1283,6 +1496,7 @@ class DotLottieFlutter {
     );
   }
 
+  /// Sets a string input on the active state machine. Returns `true` on success.
   Future<bool?> stateMachineSetStringInput(String key, String value) async {
     return DotLottieFlutterPlatform.instance.stateMachineSetStringInput(
       key,
@@ -1290,6 +1504,7 @@ class DotLottieFlutter {
     );
   }
 
+  /// Sets a boolean input on the active state machine. Returns `true` on success.
   Future<bool?> stateMachineSetBooleanInput(String key, bool value) async {
     return DotLottieFlutterPlatform.instance.stateMachineSetBooleanInput(
       key,
@@ -1297,30 +1512,37 @@ class DotLottieFlutter {
     );
   }
 
+  /// Returns the current numeric value of the named state machine input.
   Future<double?> stateMachineGetNumericInput(String key) async {
     return DotLottieFlutterPlatform.instance.stateMachineGetNumericInput(key);
   }
 
+  /// Returns the current string value of the named state machine input.
   Future<String?> stateMachineGetStringInput(String key) async {
     return DotLottieFlutterPlatform.instance.stateMachineGetStringInput(key);
   }
 
+  /// Returns the current boolean value of the named state machine input.
   Future<bool?> stateMachineGetBooleanInput(String key) async {
     return DotLottieFlutterPlatform.instance.stateMachineGetBooleanInput(key);
   }
 
+  /// Returns a map of all state machine input names to their type strings.
   Future<Map<String, String>?> stateMachineGetInputs() async {
     return DotLottieFlutterPlatform.instance.stateMachineGetInputs();
   }
 
+  /// Returns the name of the state machine's current active state.
   Future<String?> stateMachineCurrentState() async {
     return DotLottieFlutterPlatform.instance.stateMachineCurrentState();
   }
 
+  /// Returns the raw JSON definition of the state machine with the given [id].
   Future<String?> getStateMachine(String id) async {
     return DotLottieFlutterPlatform.instance.getStateMachine(id);
   }
 
+  /// Returns the dotLottie file manifest, including animation and theme metadata.
   Future<Map<String, dynamic>?> manifest() async {
     return DotLottieFlutterPlatform.instance.manifest();
   }
