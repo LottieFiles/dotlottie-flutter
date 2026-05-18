@@ -2,6 +2,7 @@
 import 'dart:js_interop';
 import 'dart:ui_web' as ui_web;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_web_plugins/flutter_web_plugins.dart';
 import 'package:web/web.dart' as web;
@@ -445,7 +446,7 @@ class DotLottieWebView {
       _setupEventListeners();
       _setupStateMachineListeners();
     } catch (e) {
-      print('Error initilizing dotLottie: $e');
+      debugPrint('Error initilizing dotLottie: $e');
     }
   }
 
@@ -500,7 +501,7 @@ class DotLottieWebView {
                 (jsEvent['currentFrame'.toJS] as JSNumber).toDartDouble;
             methodChannel.invokeMethod('onFrame', frameNo);
           } catch (e) {
-            print('Error parsing frame event: $e');
+            debugPrint('Error parsing frame event: $e');
           }
         }
       }).toJS;
@@ -514,7 +515,7 @@ class DotLottieWebView {
                 (jsEvent['currentFrame'.toJS] as JSNumber).toDartDouble;
             methodChannel.invokeMethod('onRender', frameNo);
           } catch (e) {
-            print('Error parsing render event: $e');
+            debugPrint('Error parsing render event: $e');
           }
         }
       }).toJS;
@@ -535,13 +536,13 @@ class DotLottieWebView {
             final loopCount = (jsEvent['loopCount'.toJS] as JSNumber).toDartInt;
             methodChannel.invokeMethod('onLoop', loopCount);
           } catch (e) {
-            print('Error parsing loop event: $e');
+            debugPrint('Error parsing loop event: $e');
           }
         }
       }).toJS;
       addEventListener.callAsFunction(player, 'loop'.toJS, onLoop);
     } catch (e) {
-      print('Error setting up event listeners: $e');
+      debugPrint('Error setting up event listeners: $e');
     }
   }
 
@@ -577,7 +578,7 @@ class DotLottieWebView {
             final eventName = (jsEvent['eventName'.toJS] as JSString).toDart;
             methodChannel.invokeMethod('stateMachineOnCustomEvent', eventName);
           } catch (e) {
-            print('Error parsing stateMachineCustomEvent: $e');
+            debugPrint('Error parsing stateMachineCustomEvent: $e');
           }
         }
       }).toJS;
@@ -603,7 +604,7 @@ class DotLottieWebView {
               },
             );
           } catch (e) {
-            print('Error parsing stateMachineBooleanInputValueChange: $e');
+            debugPrint('Error parsing stateMachineBooleanInputValueChange: $e');
           }
         }
       }).toJS;
@@ -631,7 +632,7 @@ class DotLottieWebView {
               },
             );
           } catch (e) {
-            print('Error parsing stateMachineNumericInputValueChange: $e');
+            debugPrint('Error parsing stateMachineNumericInputValueChange: $e');
           }
         }
       }).toJS;
@@ -654,7 +655,7 @@ class DotLottieWebView {
               'newValue': newValue,
             });
           } catch (e) {
-            print('Error parsing stateMachineStringInputValueChange: $e');
+            debugPrint('Error parsing stateMachineStringInputValueChange: $e');
           }
         }
       }).toJS;
@@ -671,7 +672,7 @@ class DotLottieWebView {
             final inputName = (jsEvent['inputName'.toJS] as JSString).toDart;
             methodChannel.invokeMethod('stateMachineOnInputFired', inputName);
           } catch (e) {
-            print('Error parsing stateMachineInputFired: $e');
+            debugPrint('Error parsing stateMachineInputFired: $e');
           }
         }
       }).toJS;
@@ -692,7 +693,7 @@ class DotLottieWebView {
               'newState': toState,
             });
           } catch (e) {
-            print('Error parsing stateMachineTransition: $e');
+            debugPrint('Error parsing stateMachineTransition: $e');
           }
         }
       }).toJS;
@@ -709,7 +710,7 @@ class DotLottieWebView {
             final state = (jsEvent['state'.toJS] as JSString).toDart;
             methodChannel.invokeMethod('stateMachineOnStateEntered', state);
           } catch (e) {
-            print('Error parsing stateMachineStateEntered: $e');
+            debugPrint('Error parsing stateMachineStateEntered: $e');
           }
         }
       }).toJS;
@@ -726,7 +727,7 @@ class DotLottieWebView {
             final state = (jsEvent['state'.toJS] as JSString).toDart;
             methodChannel.invokeMethod('stateMachineOnStateExit', state);
           } catch (e) {
-            print('Error parsing stateMachineStateExit: $e');
+            debugPrint('Error parsing stateMachineStateExit: $e');
           }
         }
       }).toJS;
@@ -743,7 +744,7 @@ class DotLottieWebView {
             final error = (jsEvent['error'.toJS] as JSString).toDart;
             methodChannel.invokeMethod('stateMachineOnError', error);
           } catch (e) {
-            print('Error parsing stateMachineError: $e');
+            debugPrint('Error parsing stateMachineError: $e');
           }
         }
       }).toJS;
@@ -753,7 +754,7 @@ class DotLottieWebView {
         onError,
       );
     } catch (e) {
-      print('Error setting up state machine event listeners: $e');
+      debugPrint('Error setting up state machine event listeners: $e');
     }
   }
 
@@ -1012,7 +1013,7 @@ class DotLottieWebView {
         final player = dotLottiePlayer as JSObject;
         final method = player['setSpeed'.toJS] as JSFunction;
         method.callAsFunction(player, speed.toJS);
-      } catch (e) {}
+      } catch (e) {} // ignore: empty_catches
     }
   }
 
@@ -1022,7 +1023,7 @@ class DotLottieWebView {
         final player = dotLottiePlayer as JSObject;
         final method = player['setLoop'.toJS] as JSFunction;
         method.callAsFunction(player, loop.toJS);
-      } catch (e) {}
+      } catch (e) {} // ignore: empty_catches
     }
   }
 
@@ -1063,7 +1064,7 @@ class DotLottieWebView {
         final player = dotLottiePlayer as JSObject;
         final method = player['setSegment'.toJS] as JSFunction;
         method.callAsFunction(player, start.toJS, end.toJS);
-      } catch (e) {}
+      } catch (e) {} // ignore: empty_catches
     }
   }
 
@@ -1073,7 +1074,7 @@ class DotLottieWebView {
         final player = dotLottiePlayer as JSObject;
         final method = player['setMode'.toJS] as JSFunction;
         method.callAsFunction(player, mode.toJS);
-      } catch (e) {}
+      } catch (e) {} // ignore: empty_catches
     }
   }
 
@@ -1083,7 +1084,7 @@ class DotLottieWebView {
         final player = dotLottiePlayer as JSObject;
         final method = player['setUseFrameInterpolation'.toJS] as JSFunction;
         method.callAsFunction(player, useFrameInterpolation.toJS);
-      } catch (e) {}
+      } catch (e) {} // ignore: empty_catches
     }
   }
 
@@ -1137,7 +1138,9 @@ class DotLottieWebView {
           final result = method.callAsFunction(player);
           return (result as JSBoolean?)?.toDart ?? false;
         }
-      } catch (e) {}
+      } catch (e) {
+        return false;
+      }
     }
     return false;
   }
@@ -1161,7 +1164,7 @@ class DotLottieWebView {
         final player = dotLottiePlayer as JSObject;
         final method = player['loadAnimation'.toJS] as JSFunction;
         method.callAsFunction(player, animationId.toJS);
-      } catch (e) {}
+      } catch (e) {} // ignore: empty_catches
     }
   }
 
@@ -1184,7 +1187,7 @@ class DotLottieWebView {
         final player = dotLottiePlayer as JSObject;
         final method = player['setMarker'.toJS] as JSFunction;
         method.callAsFunction(player, marker.toJS);
-      } catch (e) {}
+      } catch (e) {} // ignore: empty_catches
     }
   }
 
@@ -1197,14 +1200,16 @@ class DotLottieWebView {
         if (result != null) {
           final array = result as JSArray;
           final markers = <Map<String, dynamic>>[];
-          final length = (array.length as JSNumber).toDartInt;
+          final length = array.length;
           for (var i = 0; i < length; i++) {
             final marker = array[i] as JSObject;
             markers.add(_jsObjectToMap(marker));
           }
           return markers;
         }
-      } catch (e) {}
+      } catch (e) {
+        return null;
+      }
     }
     return null;
   }
@@ -1218,7 +1223,9 @@ class DotLottieWebView {
           method.callAsFunction(player, slots.toJS);
           return true;
         }
-      } catch (e) {}
+      } catch (e) {
+        return false;
+      }
     }
     return false;
   }
@@ -1235,7 +1242,7 @@ class DotLottieWebView {
           if (method != null) {
             method.callAsFunction(player);
           }
-        } catch (e) {}
+        } catch (e) {} // ignore: empty_catches
       }
     }
   }
@@ -1302,7 +1309,7 @@ class DotLottieWebView {
         final player = dotLottiePlayer as JSObject;
         final method = player['stateMachineFireEvent'.toJS] as JSFunction;
         method.callAsFunction(player, event.toJS);
-      } catch (e) {}
+      } catch (e) {} // ignore: empty_catches
     }
   }
 
@@ -1399,7 +1406,7 @@ class DotLottieWebView {
         if (result != null) {
           final array = result as JSArray;
           final inputs = <String, String>{};
-          final length = (array.length as JSNumber).toDartInt;
+          final length = array.length;
 
           for (var i = 0; i < length; i += 2) {
             if (i + 1 < length) {
@@ -1410,7 +1417,9 @@ class DotLottieWebView {
           }
           return inputs;
         }
-      } catch (e) {}
+      } catch (e) {
+        return null;
+      }
     }
     return null;
   }
@@ -1421,7 +1430,9 @@ class DotLottieWebView {
         final player = dotLottiePlayer as JSObject;
         final result = player['stateMachineGetCurrentState'.toJS];
         return (result as JSString?)?.toDart;
-      } catch (e) {}
+      } catch (e) {
+        return null;
+      }
     }
     return null;
   }
@@ -1433,7 +1444,9 @@ class DotLottieWebView {
         final method = player['stateMachineGet'.toJS] as JSFunction;
         final result = method.callAsFunction(player, id.toJS);
         return (result as JSString?)?.toDart;
-      } catch (e) {}
+      } catch (e) {
+        return null;
+      }
     }
     return null;
   }
@@ -1466,7 +1479,7 @@ class DotLottieWebView {
         final player = dotLottiePlayer as JSObject;
         final destroyMethod = player['destroy'.toJS] as JSFunction;
         destroyMethod.callAsFunction(player);
-      } catch (e) {}
+      } catch (e) {} // ignore: empty_catches
       dotLottiePlayer = null;
     }
 
@@ -1480,14 +1493,14 @@ class DotLottieWebView {
       final keys = (web.window as JSObject)['Object'.toJS] as JSObject;
       final keysMethod = keys['keys'.toJS] as JSFunction;
       final keysList = keysMethod.callAsFunction(keys, jsObj) as JSArray;
-      final length = (keysList.length as JSNumber).toDartInt;
+      final length = keysList.length;
 
       for (var i = 0; i < length; i++) {
         final key = (keysList[i] as JSString).toDart;
         final value = jsObj[key.toJS];
         map[key] = _jsValueToDart(value);
       }
-    } catch (e) {}
+    } catch (e) {} // ignore: empty_catches
 
     return map;
   }
@@ -1510,7 +1523,7 @@ class DotLottieWebView {
         if ((isArrayResult as JSBoolean).toDart) {
           final array = value as JSArray;
           final list = <dynamic>[];
-          final length = (array.length as JSNumber).toDartInt;
+          final length = array.length;
           for (var i = 0; i < length; i++) {
             list.add(_jsValueToDart(array[i]));
           }
@@ -1519,7 +1532,7 @@ class DotLottieWebView {
           return _jsObjectToMap(value as JSObject);
         }
       }
-    } catch (e) {}
+    } catch (e) {} // ignore: empty_catches
 
     return null;
   }
