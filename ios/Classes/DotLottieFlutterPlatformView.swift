@@ -257,7 +257,13 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
             // one load runs at a time.  The hosting view is also added only after the load
             // finishes, so the MTKView display link cannot race with the load on the same
             // animation.
-            guard let urlString = source, let url = URL(string: urlString) else { return }
+            guard let urlString = source, let url = URL(string: urlString) else {
+                 DispatchQueue.main.async { [weak self] in
+                     guard let self = self, !self.isDisposed else { return }
+                     self.methodChannel.invokeMethod("onLoadError", arguments: nil)
+                 }
+                 return
+             }
             let task = URLSession.shared.dataTask(with: url) { [weak self] data, _, error in
                 guard let self = self else { return }
                 guard let data = data, error == nil else {

@@ -120,6 +120,11 @@ class FlutterStateMachineObserver: StateMachineObserver {
 }
 
 class DotLottieFlutterPlatformView: NSObject {
+    private static let animationLoadQueue = DispatchQueue(
+        label: "com.dotlottie.flutter.animationLoad",
+        qos: .userInitiated
+    )
+
     private var _view: NSView
     private var dotLottieAnimation: DotLottieAnimation?
     private lazy var animationObserver: AnimationObserver = {
@@ -128,10 +133,11 @@ class DotLottieFlutterPlatformView: NSObject {
     private lazy var stateMachineObserver: FlutterStateMachineObserver = {
         return FlutterStateMachineObserver(methodChannel: methodChannel)
     }()
-    private var hostingView: NSHostingView<DotLottieView>?
+    private var hostingController: NSHostingController<DotLottieView>?
     private var methodChannel: FlutterMethodChannel
     private var isDisposed = false
     private var viewId: Int64
+    private var pendingURLTask: URLSessionDataTask?
     
     init(
         frame: CGRect,
@@ -200,6 +206,7 @@ class DotLottieFlutterPlatformView: NSObject {
         let stateMachineId = arguments["stateMachineId"] as? String ?? ""
         let animationId = arguments["animationId"] as? String ?? ""
         let sourceType = arguments["sourceType"] as? String
+        let source = arguments["source"] as? String
         let width = arguments["width"] as? Int
         let height = arguments["height"] as? Int
         let fitString = arguments["fit"] as? String
@@ -248,48 +255,78 @@ class DotLottieFlutterPlatformView: NSObject {
 
         switch sourceType {
         case "url":
-            if let source = arguments["source"] as? String {
-                dotLottieAnimation = DotLottieAnimation(webURL: source, config: config)
+            // Download the data ourselves so we can control when dotlottie_load_dotlottie_data
+            // is called. By serialising through animationLoadQueue we guarantee only
+            // one load runs at a time.  The hosting view is also added only after the load
+            // finishes, so the MTKView display link cannot race with the load on the same
+            // animation.
+            guard let urlString = source, let url = URL(string: urlString) else {
+                 DispatchQueue.main.async { [weak self] in
+                     guard let self = self, !self.isDisposed else { return }
+                     self.methodChannel.invokeMethod("onLoadError", arguments: nil)
+                 }
+                 return
+             }
+            let task = URLSession.shared.dataTask(with: url) { [weak self] data, _, error in
+                guard let self = self else { return }
+                guard let data = data, error == nil else {
+                    DispatchQueue.main.async {
+                        guard !self.isDisposed else { return }
+                        self.methodChannel.invokeMethod("onLoadError", arguments: nil)
+                    }
+                    return
+                }
+                Self.animationLoadQueue.async { [weak self] in
+                    guard let self = self, !self.isDisposed else { return }
+                    let animation = DotLottieAnimation(dotLottieData: data, config: config)
+                    DispatchQueue.main.async { [weak self] in
+                        guard let self = self, !self.isDisposed else { return }
+                        self.mountAnimation(animation)
+                        self.methodChannel.invokeMethod("onLoad", arguments: nil)
+                    }
+                }
             }
+            pendingURLTask = task
+            task.resume()
+            return
 
         case "data":
             if let flutterData = arguments["source"] as? FlutterStandardTypedData {
-                dotLottieAnimation = DotLottieAnimation(
-                    dotLottieData: flutterData.data,
-                    config: config
-                )
+                let animation = DotLottieAnimation(dotLottieData: flutterData.data, config: config)
+                mountAnimation(animation)
                 methodChannel.invokeMethod("onLoad", arguments: nil)
-            } else {
-                print("Failed to cast source. Type: \(type(of: arguments["source"]))")
             }
+            return
 
         case "json":
-            if let source = arguments["source"] as? String {
-                dotLottieAnimation = DotLottieAnimation(animationData: source, config: config)
+            if let src = source {
+                let animation = DotLottieAnimation(animationData: src, config: config)
+                mountAnimation(animation)
             }
             methodChannel.invokeMethod("onLoad", arguments: nil)
+            return
 
-            
         default:
-            print("Unknown source type: \(sourceType)")
-        }
-        
-        guard let animation = dotLottieAnimation else {
             return
         }
-        
-        let _ = dotLottieAnimation?.subscribe(observer: self.animationObserver)
-        let _ = dotLottieAnimation?.stateMachineSubscribe(self.stateMachineObserver)
-        
-        // Get the SwiftUI view from the animation
-        let animationView = animation.view()
-        
-        // Wrap in NSHostingView to use in AppKit
-        let hosting = NSHostingView(rootView: animationView)
-        hosting.frame = _view.bounds
-        hosting.autoresizingMask = [.width, .height]
-        _view.addSubview(hosting)
-        hostingView = hosting
+    }
+
+    // Attaches a fully-loaded animation to the view hierarchy.  Must be called on the main
+    // thread.  Keeping this separate means URL sources can defer mounting until after load,
+    // preventing the MTKView display link from ticking an unloaded canvas.
+    private func mountAnimation(_ animation: DotLottieAnimation) {
+        dotLottieAnimation = animation
+        animation.subscribe(observer: animationObserver)
+        let _ = animation.stateMachineSubscribe(stateMachineObserver)
+
+        let animationView = animation.view() as DotLottieView
+        let hosting = NSHostingController(rootView: animationView)
+        hosting.view.wantsLayer = true
+        hosting.view.layer?.backgroundColor = .clear
+        hosting.view.frame = _view.bounds
+        hosting.view.autoresizingMask = [.width, .height]
+        _view.addSubview(hosting.view)
+        hostingController = hosting
     }
     
     private func handleMethodCall(call: FlutterMethodCall, result: @escaping FlutterResult) {
@@ -747,20 +784,24 @@ class DotLottieFlutterPlatformView: NSObject {
         return NSColor(red: r, green: g, blue: b, alpha: a)
     }
     
-    func dispose() {
+    private func dispose() {
         guard !isDisposed else { return }
         isDisposed = true
 
-        dotLottieAnimation?.unsubscribe(observer: self.animationObserver)
-        let _ = dotLottieAnimation?.stateMachineUnsubscribe(self.stateMachineObserver)
+        pendingURLTask?.cancel()
+        pendingURLTask = nil
 
+        let _ = dotLottieAnimation?.stateMachineUnsubscribe(self.stateMachineObserver)
+        dotLottieAnimation?.unsubscribe(observer: self.animationObserver)
         dotLottieAnimation = nil
 
-        methodChannel.setMethodCallHandler(nil)
-
+        // Capture strongly so the cleanup runs even if self is deallocated before the
+        // async block executes (e.g. when dispose() is called from deinit on the main thread).
+        let hc = hostingController
         let view = _view
-        hostingView = nil
+        hostingController = nil
         DispatchQueue.main.async {
+            hc?.view.removeFromSuperview()
             view.subviews.forEach { $0.removeFromSuperview() }
         }
     }
