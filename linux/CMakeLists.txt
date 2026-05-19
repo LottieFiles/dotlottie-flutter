@@ -13,7 +13,7 @@ set(DOTLOTTIE_SO
     "${CMAKE_CURRENT_SOURCE_DIR}/${DOTLOTTIE_ARCH}/dotlottie-player/lib/libdotlottie_rs.so")
 
 if(EXISTS "${DOTLOTTIE_SO}")
-  install(FILES "${DOTLOTTIE_SO}" DESTINATION "${CMAKE_INSTALL_PREFIX}")
+  set(dotlottie_flutter_bundled_libraries "${DOTLOTTIE_SO}" PARENT_SCOPE)
 else()
   message(WARNING
     "linux/${DOTLOTTIE_ARCH}/dotlottie-player/lib/libdotlottie_rs.so not found. "

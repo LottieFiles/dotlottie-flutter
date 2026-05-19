@@ -13,7 +13,7 @@ set(DOTLOTTIE_DLL
     "${CMAKE_CURRENT_SOURCE_DIR}/${DOTLOTTIE_ARCH}/dotlottie-player/lib/dotlottie_player.dll")
 
 if(EXISTS "${DOTLOTTIE_DLL}")
-  install(FILES "${DOTLOTTIE_DLL}" DESTINATION "${CMAKE_INSTALL_PREFIX}")
+  set(dotlottie_flutter_bundled_libraries "${DOTLOTTIE_DLL}" PARENT_SCOPE)
 else()
   message(WARNING
     "windows/${DOTLOTTIE_ARCH}/dotlottie-player/lib/dotlottie_player.dll not found. "
