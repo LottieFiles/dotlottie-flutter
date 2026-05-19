@@ -183,12 +183,19 @@ class _AnimationPage extends StatefulWidget {
 class _AnimationPageState extends State<_AnimationPage>
     with AutomaticKeepAliveClientMixin {
   DotLottieViewController? _controller;
+  bool _loaded = false;
+  bool _loadError = false;
 
   @override
   bool get wantKeepAlive => true;
 
-  void play() => _controller?.play();
-  void pause() => _controller?.pause();
+  void play() {
+    if (_loaded) _controller?.play();
+  }
+
+  void pause() {
+    if (_loaded) _controller?.pause();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -199,15 +206,48 @@ class _AnimationPageState extends State<_AnimationPage>
         Expanded(
           child: Padding(
             padding: const EdgeInsets.all(24),
-            child: DotLottieView(
-              sourceType: 'url',
-              source: widget.url,
-              autoplay: true,
-              loop: true,
-              fit: BoxFit.contain,
-              onViewCreated: (controller) {
-                _controller = controller;
-              },
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                DotLottieView(
+                  sourceType: 'url',
+                  source: widget.url,
+                  autoplay: true,
+                  loop: true,
+                  fit: BoxFit.contain,
+                  onViewCreated: (controller) {
+                    _controller = controller;
+                  },
+                  onLoad: () => setState(() => _loaded = true),
+                  onLoadError: () => setState(() => _loadError = true),
+                ),
+                if (_loadError)
+                  Container(
+                    color: Theme.of(context).colorScheme.errorContainer,
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            color: Theme.of(context).colorScheme.onErrorContainer,
+                            size: 48,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Failed to load animation',
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onErrorContainer,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
         ),

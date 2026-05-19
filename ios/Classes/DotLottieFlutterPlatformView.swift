@@ -125,6 +125,12 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
         label: "com.dotlottie.flutter.animationLoad",
         qos: .userInitiated
     )
+    private static let urlSession: URLSession = {
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = 15
+        config.timeoutIntervalForResource = 30
+        return URLSession(configuration: config)
+    }()
 
     private var _view: UIView
     private var dotLottieAnimation: DotLottieAnimation?
@@ -258,13 +264,13 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
             // finishes, so the MTKView display link cannot race with the load on the same
             // animation.
             guard let urlString = source, let url = URL(string: urlString) else {
-                 DispatchQueue.main.async { [weak self] in
-                     guard let self = self, !self.isDisposed else { return }
-                     self.methodChannel.invokeMethod("onLoadError", arguments: nil)
-                 }
-                 return
-             }
-            let task = URLSession.shared.dataTask(with: url) { [weak self] data, _, error in
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+                    guard let self = self, !self.isDisposed else { return }
+                    self.methodChannel.invokeMethod("onLoadError", arguments: nil)
+                }
+                return
+            }
+            let task = Self.urlSession.dataTask(with: url) { [weak self] data, _, error in
                 guard let self = self else { return }
                 guard let data = data, error == nil else {
                     DispatchQueue.main.async {
