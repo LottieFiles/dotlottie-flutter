@@ -28,6 +28,11 @@ class DotLottieFfiPlayer {
   bool play() => false;
   bool pause() => false;
   bool stop() => false;
+
+  void setSpeed(double speed) {}
+  void setLoop(bool loop) {}
+  void setMode(String mode) {}
+  void setFrameInterpolation(bool use) {}
   bool isPlaying() => false;
   bool isPaused() => false;
   bool isStopped() => true;

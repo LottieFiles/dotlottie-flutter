@@ -99,6 +99,12 @@ class DotLottieFfiPlayer {
   bool pause() => dotlottiePause(_ptr) == kResultSuccess;
   bool stop() => dotlottieStop(_ptr) == kResultSuccess;
 
+  void setSpeed(double speed) => dotlottieSetSpeed(_ptr, speed);
+  void setLoop(bool loop) => dotlottieSetLoop(_ptr, loop);
+  void setMode(String mode) => dotlottieSetMode(_ptr, _modeFromString(mode));
+  void setFrameInterpolation(bool use) =>
+      dotlottieSetUseFrameInterpolation(_ptr, use);
+
   bool isPlaying() => dotlottieGetPlaybackStatus(_ptr) == kStatusPlaying;
   bool isPaused() => dotlottieGetPlaybackStatus(_ptr) == kStatusPaused;
   bool isStopped() => dotlottieGetPlaybackStatus(_ptr) == kStatusStopped;

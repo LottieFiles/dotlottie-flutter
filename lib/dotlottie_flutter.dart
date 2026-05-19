@@ -1637,6 +1637,74 @@ class DotLottieDesktopViewController extends DotLottieViewController {
   @override
   Future<int?> loopCount() async => _ffi.loopCount();
 
+  // Config setters — wired to FFI
+  @override
+  Future<void> setSpeed(double speed) async => _ffi.setSpeed(speed);
+  @override
+  Future<void> setLoop(bool loop) async => _ffi.setLoop(loop);
+  @override
+  Future<void> setMode(String mode) async => _ffi.setMode(mode);
+  @override
+  Future<void> setFrameInterpolation(bool useFrameInterpolation) async =>
+      _ffi.setFrameInterpolation(useFrameInterpolation);
+
+  // Progress — computed from frame position
+  @override
+  Future<double?> currentProgress() async {
+    final total = _ffi.totalFrames();
+    return total > 0 ? _ffi.currentFrame() / total : 0.0;
+  }
+
+  // Seek — not available in the C API; silently ignored
+  @override
+  Future<bool?> setFrame(double frame) async => false;
+  @override
+  Future<bool?> setProgress(double progress) async => false;
+
+  // Manifest — not available in the C API
+  @override
+  Future<Map<String, dynamic>?> manifest() async => null;
+
+  // Getters with no C API equivalent — return null silently
+  @override Future<double?> speed() async => null;
+  @override Future<bool?> loop() async => null;
+  @override Future<bool?> autoplay() async => null;
+  @override Future<bool?> useFrameInterpolation() async => null;
+  @override Future<List<double>?> segments() async => null;
+  @override Future<String?> mode() async => null;
+
+  // Setters with no C API equivalent — silently ignored
+  @override Future<void> setSegments(double start, double end) async {}
+  @override Future<void> setMarker(String marker) async {}
+  @override Future<void> loadAnimation(String animationId) async {}
+  @override Future<void> resize(int width, int height) async {}
+
+  // Theme — not in the C API yet
+  @override Future<bool?> setTheme(String themeId) async => false;
+  @override Future<bool?> setThemeData(String themeData) async => false;
+  @override Future<bool?> resetTheme() async => false;
+  @override Future<String?> activeThemeId() async => null;
+
+  // Multi-animation — not in the C API yet
+  @override Future<String?> activeAnimationId() async => null;
+  @override Future<List<Map<String, dynamic>>?> markers() async => null;
+  @override Future<bool?> setSlots(String slots) async => false;
+
+  // State machine — not in the C API yet
+  @override Future<bool?> stateMachineLoad(String stateMachineId) async => false;
+  @override Future<bool?> stateMachineStart() async => false;
+  @override Future<bool?> stateMachineStop() async => false;
+  @override Future<void> stateMachineFire(String event) async {}
+  @override Future<bool?> stateMachineSetNumericInput(String key, double value) async => false;
+  @override Future<bool?> stateMachineSetStringInput(String key, String value) async => false;
+  @override Future<bool?> stateMachineSetBooleanInput(String key, bool value) async => false;
+  @override Future<double?> stateMachineGetNumericInput(String key) async => null;
+  @override Future<String?> stateMachineGetStringInput(String key) async => null;
+  @override Future<bool?> stateMachineGetBooleanInput(String key) async => null;
+  @override Future<Map<String, String>?> stateMachineGetInputs() async => null;
+  @override Future<String?> stateMachineCurrentState() async => null;
+  @override Future<String?> getStateMachine(String id) async => null;
+
   @override
   Future<void> dispose() async => _ffi.dispose();
 }
