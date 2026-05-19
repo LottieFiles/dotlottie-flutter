@@ -1,3 +1,7 @@
+## 0.0.6
+
+* fix: manual loading of animations from urls
+
 ## 0.0.5
 
 * fix: hot reload crash, add fit property (translates in to Layout for dotLottie)
