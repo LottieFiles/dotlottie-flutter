@@ -2,12 +2,13 @@
 
 A Flutter plugin for rendering Lottie and dotLottie animations with full playback control, state machine support, and cross-platform compatibility.
 
-**Platforms supported:** iOS, Android, macOS, and Web
+**Platforms supported:** iOS, Android, macOS, Web, Windows, and Linux
 
 Built on top of native implementations:
 - [iOS/macOS](https://github.com/LottieFiles/dotlottie-ios/)
 - [Android](https://github.com/LottieFiles/dotlottie-android/)
 - [Web](https://github.com/LottieFiles/dotlottie-web)
+- Windows & Linux: [dotlottie-rs](https://github.com/LottieFiles/dotlottie-rs) via FFI
 
 ## Features
 
@@ -15,7 +16,7 @@ Built on top of native implementations:
 - 🎮 Full playback control (play, pause, stop, seek)
 - 🔄 State machine support with interactive inputs
 - 🎨 Theme support
-- 📱 Cross-platform: iOS, Android, macOS, and Web
+- 📱 Cross-platform: iOS, Android, macOS, Web, Windows, and Linux
 
 ## Table of Contents
 
@@ -25,6 +26,7 @@ Built on top of native implementations:
 - [Methods](#methods)
 - [Events](#events)
 - [State Machines](#state-machine-example)
+- [Platform Notes](#platform-notes)
 - [Developer Setup](#developer-setup-guide)
 
 ## Installation
@@ -50,6 +52,19 @@ To allow dotlottie-android to download, ensure you have jitpack inside your buil
 ```kotlin
 maven { url = uri("https://jitpack.io") }
 ```
+
+### Windows
+
+The Windows renderer uses the pre-built `dotlottie_player.dll` bundled with the plugin (x86_64 and ARM64 are both included). No additional setup is required — Flutter's cmake build copies the DLL into your app bundle automatically.
+
+### Linux
+
+The Linux renderer uses the pre-built `libdotlottie_rs.so` bundled with the plugin (x86_64 and ARM64 are both included). No additional setup is required — Flutter's cmake build copies the shared library into your app bundle automatically.
+
+> **Ubuntu 24.04 note:** If you are using clang 18 from the LLVM apt repository and encounter a `type_traits` build error, install `libc++-dev`:
+> ```bash
+> sudo apt-get install libc++-dev libc++abi-dev
+> ```
 
 ## Quick Start
 
@@ -354,6 +369,24 @@ DotLottieView(
 | `stateMachineOnInputFired` → `void Function(String inputName)?`                                               | Called when an input event is fired.             |
 | `stateMachineOnCustomEvent` → `void Function(String message)?`                                                | Called when a custom state machine event occurs. |
 | `stateMachineOnError` → `void Function(String message)?`                                                      | Called when a state machine error occurs.        |
+
+## Platform Notes
+
+### Windows & Linux
+
+The Windows and Linux implementations use [dotlottie-rs](https://github.com/LottieFiles/dotlottie-rs) via Dart FFI and render directly into a Flutter texture. The following features are supported:
+
+| Feature | Supported |
+|---------|-----------|
+| Play / Pause / Stop | ✅ |
+| Seek (setFrame, setProgress) | ✅ |
+| Loop, Speed, Mode, Frame interpolation | ✅ |
+| Load from URL, asset, or JSON | ✅ |
+| onLoad, onPlay, onPause, onStop, onComplete, onLoop, onFrame, onRender | ✅ |
+| State machines | ❌ |
+| Themes | ❌ |
+| Markers / Segments | ❌ |
+| Multi-animation manifest | ❌ |
 
 ## Contributing
 

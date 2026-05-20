@@ -1,3 +1,7 @@
+## 0.1.0
+
+* feat: Windows and Linux support
+
 ## 0.0.6
 
 * fix: manual loading of animations from urls
