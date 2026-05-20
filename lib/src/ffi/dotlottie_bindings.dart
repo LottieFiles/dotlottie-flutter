@@ -119,6 +119,11 @@ final dotlottieRender =
     _lib.lookupFunction<Int32 Function(Pointer<DotLottiePlayer>),
         int Function(Pointer<DotLottiePlayer>)>('dotlottie_render');
 
+// Seek
+final dotlottieSeek = _lib.lookupFunction<
+    Int32 Function(Pointer<DotLottiePlayer>, Float),
+    int Function(Pointer<DotLottiePlayer>, double)>('dotlottie_seek');
+
 // Playback control
 final dotlottiePlay =
     _lib.lookupFunction<Int32 Function(Pointer<DotLottiePlayer>),

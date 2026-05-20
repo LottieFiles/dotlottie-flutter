@@ -18,6 +18,7 @@ class DotLottieFfiPlayer {
   int _width = 0;
   int _height = 0;
   bool _disposed = false;
+  bool _seekPending = false;
 
   DotLottieFfiPlayer() {
     _ptr = dotlottieNewPlayer(1);
@@ -130,12 +131,26 @@ class DotLottieFfiPlayer {
     return _uint32Out.value;
   }
 
+  /// Seeks to [frame] and renders it into the pixel buffer.
+  bool seekFrame(double frame) {
+    final result = dotlottieSeek(_ptr, frame) == kResultSuccess;
+    if (result) {
+      dotlottieRender(_ptr);
+      _seekPending = true;
+    }
+    return result;
+  }
+
   /// Advances the animation by [dtMs] milliseconds.
   /// Returns true if a new frame was rendered into the pixel buffer.
   bool tick(double dtMs) {
     if (_pixelBuffer == null || _width == 0 || _height == 0) return false;
     dotlottieTick(_ptr, dtMs, _boolOut);
-    return _boolOut.value;
+    if (_boolOut.value || _seekPending) {
+      _seekPending = false;
+      return true;
+    }
+    return false;
   }
 
   void render() => dotlottieRender(_ptr);

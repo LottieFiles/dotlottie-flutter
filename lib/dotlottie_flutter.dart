@@ -1655,11 +1655,15 @@ class DotLottieDesktopViewController extends DotLottieViewController {
     return total > 0 ? _ffi.currentFrame() / total : 0.0;
   }
 
-  // Seek — not available in the C API; silently ignored
+  // Seek
   @override
-  Future<bool?> setFrame(double frame) async => false;
+  Future<bool?> setFrame(double frame) async => _ffi.seekFrame(frame);
   @override
-  Future<bool?> setProgress(double progress) async => false;
+  Future<bool?> setProgress(double progress) async {
+    final total = _ffi.totalFrames();
+    if (total <= 0) return false;
+    return _ffi.seekFrame(progress.clamp(0.0, 1.0) * total);
+  }
 
   // Manifest — not available in the C API
   @override

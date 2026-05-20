@@ -34,6 +34,28 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     "Debug" "Profile" "Release")
 endif()
 
+# On Ubuntu 24.04 the LLVM-packaged clang 18 may not locate GCC's C++ headers
+# automatically (it depends on how clang was configured at build time).
+# If libc++-dev is installed, use LLVM's own stdlib which clang always finds.
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  # Detect whether the LLVM libc++ headers are present before enabling this.
+  if(EXISTS "/usr/include/c++/v1/type_traits")
+    add_compile_options(-stdlib=libc++)
+    add_link_options(-stdlib=libc++)
+  else()
+    # Fall back to explicit GCC header paths for the most common Ubuntu versions.
+    foreach(_gxx_ver 14 13 12)
+      if(EXISTS "/usr/include/c++/${_gxx_ver}")
+        add_compile_options(
+          -isystem "/usr/include/c++/${_gxx_ver}"
+          -isystem "/usr/include/${CMAKE_SYSTEM_PROCESSOR}-linux-gnu/c++/${_gxx_ver}"
+        )
+        break()
+      endif()
+    endforeach()
+  endif()
+endif()
+
 # Compilation settings that should be applied to most targets.
 #
 # Be cautious about adding new options here, as plugins use this function by
