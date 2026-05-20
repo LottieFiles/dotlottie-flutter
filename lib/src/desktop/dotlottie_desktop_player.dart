@@ -133,7 +133,7 @@ class DotLottieFfiPlayer {
 
   /// Seeks to [frame] and renders it into the pixel buffer.
   bool seekFrame(double frame) {
-    final result = dotlottieSeek(_ptr, frame) == kResultSuccess;
+    final result = dotlottieSetFrame(_ptr, frame) == kResultSuccess;
     if (result) {
       dotlottieRender(_ptr);
       _seekPending = true;
