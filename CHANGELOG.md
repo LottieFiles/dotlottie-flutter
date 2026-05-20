@@ -1,3 +1,7 @@
+## 0.0.7
+
+* fix: crash when multiple animations are unloaded
+
 ## 0.0.6
 
 * fix: manual loading of animations from urls

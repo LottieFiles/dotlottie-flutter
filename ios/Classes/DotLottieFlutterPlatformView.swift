@@ -788,18 +788,26 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
         pendingURLTask?.cancel()
         pendingURLTask = nil
 
+        dotLottieAnimation?.stop()
+
         let _ = dotLottieAnimation?.stateMachineUnsubscribe(self.stateMachineObserver)
         dotLottieAnimation?.unsubscribe(observer: self.animationObserver)
-        dotLottieAnimation = nil
 
-        // Capture strongly so the cleanup runs even if self is deallocated before the
-        // async block executes (e.g. when dispose() is called from deinit on the main thread).
+        // Tear down the hosting view synchronously so the display link stops driving
+        // the SwiftUI render tree before we release the C++ objects.
         let hc = hostingController
         let view = _view
+        let animToRelease = dotLottieAnimation
         hostingController = nil
-        DispatchQueue.main.async {
-            hc?.view.removeFromSuperview()
-            view.subviews.forEach { $0.removeFromSuperview() }
+        dotLottieAnimation = nil
+
+        hc?.view.removeFromSuperview()
+        view.subviews.forEach { $0.removeFromSuperview() }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            Self.animationLoadQueue.async {
+                _ = animToRelease
+            }
         }
     }
     
