@@ -383,10 +383,10 @@ The Windows and Linux implementations use [dotlottie-rs](https://github.com/Lott
 | Loop, Speed, Mode, Frame interpolation | ✅ |
 | Load from URL, asset, or JSON | ✅ |
 | onLoad, onPlay, onPause, onStop, onComplete, onLoop, onFrame, onRender | ✅ |
+| Themes | ✅ |
+| Markers / Segments | ✅ |
+| Multi-animation manifest | ✅ |
 | State machines | ❌ |
-| Themes | ❌ |
-| Markers / Segments | ❌ |
-| Multi-animation manifest | ❌ |
 
 ## Contributing
 

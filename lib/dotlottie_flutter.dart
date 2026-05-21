@@ -1665,33 +1665,47 @@ class DotLottieDesktopViewController extends DotLottieViewController {
     return _ffi.seekFrame(progress.clamp(0.0, 1.0) * total);
   }
 
-  // Manifest — not available in the C API
+  // Manifest
   @override
-  Future<Map<String, dynamic>?> manifest() async => null;
+  Future<Map<String, dynamic>?> manifest() async {
+    final json = _ffi.getManifest();
+    if (json == null) return null;
+    return jsonDecode(json) as Map<String, dynamic>?;
+  }
 
   // Getters with no C API equivalent — return null silently
   @override Future<double?> speed() async => null;
   @override Future<bool?> loop() async => null;
   @override Future<bool?> autoplay() async => null;
   @override Future<bool?> useFrameInterpolation() async => null;
-  @override Future<List<double>?> segments() async => null;
   @override Future<String?> mode() async => null;
 
-  // Setters with no C API equivalent — silently ignored
-  @override Future<void> setSegments(double start, double end) async {}
-  @override Future<void> setMarker(String marker) async {}
-  @override Future<void> loadAnimation(String animationId) async {}
+  // Segments
+  @override Future<List<double>?> segments() async => _ffi.getSegment();
+  @override Future<void> setSegments(double start, double end) async =>
+      _ffi.setSegment(start, end);
+
+  // Markers
+  @override Future<void> setMarker(String marker) async =>
+      _ffi.setMarker(marker);
+  @override Future<List<Map<String, dynamic>>?> markers() async =>
+      _ffi.getMarkers();
+
+  // Multi-animation
+  @override Future<void> loadAnimation(String animationId) async =>
+      _ffi.loadAnimation(animationId);
+  @override Future<String?> activeAnimationId() async =>
+      _ffi.getAnimationId();
+
+  // Themes
+  @override Future<bool?> setTheme(String themeId) async =>
+      _ffi.setTheme(themeId);
+  @override Future<bool?> setThemeData(String themeData) async =>
+      _ffi.setThemeData(themeData);
+  @override Future<bool?> resetTheme() async => _ffi.resetTheme();
+  @override Future<String?> activeThemeId() async => _ffi.activeThemeId();
+
   @override Future<void> resize(int width, int height) async {}
-
-  // Theme — not in the C API yet
-  @override Future<bool?> setTheme(String themeId) async => false;
-  @override Future<bool?> setThemeData(String themeData) async => false;
-  @override Future<bool?> resetTheme() async => false;
-  @override Future<String?> activeThemeId() async => null;
-
-  // Multi-animation — not in the C API yet
-  @override Future<String?> activeAnimationId() async => null;
-  @override Future<List<Map<String, dynamic>>?> markers() async => null;
   @override Future<bool?> setSlots(String slots) async => false;
 
   // State machine — not in the C API yet

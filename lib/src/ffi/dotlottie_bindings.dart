@@ -197,3 +197,72 @@ final dotlottiePollEvent = _lib.lookupFunction<
     Int32 Function(Pointer<DotLottiePlayer>, Pointer<DotLottiePlayerEvent>),
     int Function(Pointer<DotLottiePlayer>,
         Pointer<DotLottiePlayerEvent>)>('dotlottie_poll_event');
+
+// Themes
+final dotlottieSetTheme = _lib.lookupFunction<
+    Int32 Function(Pointer<DotLottiePlayer>, Pointer<Utf8>),
+    int Function(Pointer<DotLottiePlayer>, Pointer<Utf8>)>('dotlottie_set_theme');
+
+final dotlottieResetTheme =
+    _lib.lookupFunction<Int32 Function(Pointer<DotLottiePlayer>),
+        int Function(Pointer<DotLottiePlayer>)>('dotlottie_reset_theme');
+
+final dotlottieSetThemeData = _lib.lookupFunction<
+    Int32 Function(Pointer<DotLottiePlayer>, Pointer<Utf8>),
+    int Function(
+        Pointer<DotLottiePlayer>, Pointer<Utf8>)>('dotlottie_set_theme_data');
+
+final dotlottieGetThemeId = _lib.lookupFunction<
+    Int32 Function(Pointer<DotLottiePlayer>, Pointer<Uint8>, Pointer<UintPtr>),
+    int Function(Pointer<DotLottiePlayer>, Pointer<Uint8>,
+        Pointer<UintPtr>)>('dotlottie_get_theme_id');
+
+// Markers
+final dotlottieSetMarker = _lib.lookupFunction<
+    Int32 Function(Pointer<DotLottiePlayer>, Pointer<Utf8>),
+    int Function(
+        Pointer<DotLottiePlayer>, Pointer<Utf8>)>('dotlottie_set_marker');
+
+final dotlottieGetActiveMarker = _lib.lookupFunction<
+    Int32 Function(Pointer<DotLottiePlayer>, Pointer<Uint8>, Pointer<UintPtr>),
+    int Function(Pointer<DotLottiePlayer>, Pointer<Uint8>,
+        Pointer<UintPtr>)>('dotlottie_get_active_marker');
+
+final dotlottieGetMarkersCount = _lib.lookupFunction<
+    Int32 Function(Pointer<DotLottiePlayer>, Pointer<Uint32>),
+    int Function(Pointer<DotLottiePlayer>,
+        Pointer<Uint32>)>('dotlottie_get_markers_count');
+
+final dotlottieGetMarker = _lib.lookupFunction<
+    Int32 Function(Pointer<DotLottiePlayer>, Uint32, Pointer<Pointer<Utf8>>,
+        Pointer<Float>, Pointer<Float>),
+    int Function(Pointer<DotLottiePlayer>, int, Pointer<Pointer<Utf8>>,
+        Pointer<Float>, Pointer<Float>)>('dotlottie_get_marker');
+
+// Segments
+// C type is `const float (*)[2]` — at the machine level this is just float*.
+final dotlottieSetSegment = _lib.lookupFunction<
+    Int32 Function(Pointer<DotLottiePlayer>, Pointer<Float>),
+    int Function(
+        Pointer<DotLottiePlayer>, Pointer<Float>)>('dotlottie_set_segment');
+
+final dotlottieGetSegment = _lib.lookupFunction<
+    Int32 Function(Pointer<DotLottiePlayer>, Pointer<Float>),
+    int Function(
+        Pointer<DotLottiePlayer>, Pointer<Float>)>('dotlottie_get_segment');
+
+// Multi-animation
+final dotlottieLoadAnimation = _lib.lookupFunction<
+    Int32 Function(Pointer<DotLottiePlayer>, Pointer<Utf8>),
+    int Function(
+        Pointer<DotLottiePlayer>, Pointer<Utf8>)>('dotlottie_load_animation');
+
+final dotlottieGetAnimationId = _lib.lookupFunction<
+    Int32 Function(Pointer<DotLottiePlayer>, Pointer<Uint8>, Pointer<UintPtr>),
+    int Function(Pointer<DotLottiePlayer>, Pointer<Uint8>,
+        Pointer<UintPtr>)>('dotlottie_get_animation_id');
+
+final dotlottieGetManifest = _lib.lookupFunction<
+    Int32 Function(Pointer<DotLottiePlayer>, Pointer<Uint8>, Pointer<UintPtr>),
+    int Function(Pointer<DotLottiePlayer>, Pointer<Uint8>,
+        Pointer<UintPtr>)>('dotlottie_get_manifest');

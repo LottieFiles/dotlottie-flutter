@@ -14,6 +14,7 @@ class DotLottieFfiPlayer {
   late final Pointer<Float> _floatOut;
   late final Pointer<Uint32> _uint32Out;
   late final Pointer<Bool> _boolOut;
+  late final Pointer<UintPtr> _sizeOut;
 
   int _width = 0;
   int _height = 0;
@@ -27,6 +28,7 @@ class DotLottieFfiPlayer {
     _floatOut = malloc<Float>();
     _uint32Out = malloc<Uint32>();
     _boolOut = malloc<Bool>();
+    _sizeOut = malloc<UintPtr>();
   }
 
   bool get isDisposed => _disposed;
@@ -195,6 +197,149 @@ class DotLottieFfiPlayer {
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Themes
+  // ---------------------------------------------------------------------------
+
+  bool setTheme(String themeId) {
+    final ptr = themeId.toNativeUtf8();
+    try {
+      return dotlottieSetTheme(_ptr, ptr) == kResultSuccess;
+    } finally {
+      malloc.free(ptr);
+    }
+  }
+
+  bool setThemeData(String themeData) {
+    final ptr = themeData.toNativeUtf8();
+    try {
+      return dotlottieSetThemeData(_ptr, ptr) == kResultSuccess;
+    } finally {
+      malloc.free(ptr);
+    }
+  }
+
+  bool resetTheme() => dotlottieResetTheme(_ptr) == kResultSuccess;
+
+  String? activeThemeId() => _readNativeString(
+        (buf, sizeOut) => dotlottieGetThemeId(_ptr, buf, sizeOut),
+      );
+
+  // ---------------------------------------------------------------------------
+  // Markers
+  // ---------------------------------------------------------------------------
+
+  bool setMarker(String marker) {
+    final ptr = marker.toNativeUtf8();
+    try {
+      return dotlottieSetMarker(_ptr, ptr) == kResultSuccess;
+    } finally {
+      malloc.free(ptr);
+    }
+  }
+
+  String? activeMarker() => _readNativeString(
+        (buf, sizeOut) => dotlottieGetActiveMarker(_ptr, buf, sizeOut),
+      );
+
+  List<Map<String, dynamic>> getMarkers() {
+    if (dotlottieGetMarkersCount(_ptr, _uint32Out) != kResultSuccess) {
+      return [];
+    }
+    final count = _uint32Out.value;
+    if (count == 0) return [];
+
+    final namePtr = malloc<Pointer<Utf8>>();
+    final startPtr = malloc<Float>();
+    final endPtr = malloc<Float>();
+    try {
+      final markers = <Map<String, dynamic>>[];
+      for (int i = 0; i < count; i++) {
+        if (dotlottieGetMarker(_ptr, i, namePtr, startPtr, endPtr) ==
+            kResultSuccess) {
+          markers.add({
+            'name': namePtr.value.toDartString(),
+            'start': startPtr.value,
+            'end': endPtr.value,
+          });
+        }
+      }
+      return markers;
+    } finally {
+      malloc.free(namePtr);
+      malloc.free(startPtr);
+      malloc.free(endPtr);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Segments
+  // ---------------------------------------------------------------------------
+
+  bool setSegment(double start, double end) {
+    final seg = malloc<Float>(2);
+    try {
+      seg[0] = start;
+      seg[1] = end;
+      return dotlottieSetSegment(_ptr, seg) == kResultSuccess;
+    } finally {
+      malloc.free(seg);
+    }
+  }
+
+  void clearSegment() => dotlottieSetSegment(_ptr, nullptr.cast<Float>());
+
+  List<double>? getSegment() {
+    final seg = malloc<Float>(2);
+    try {
+      if (dotlottieGetSegment(_ptr, seg) != kResultSuccess) return null;
+      return [seg[0], seg[1]];
+    } finally {
+      malloc.free(seg);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Multi-animation
+  // ---------------------------------------------------------------------------
+
+  bool loadAnimation(String animationId) {
+    final ptr = animationId.toNativeUtf8();
+    try {
+      return dotlottieLoadAnimation(_ptr, ptr) == kResultSuccess;
+    } finally {
+      malloc.free(ptr);
+    }
+  }
+
+  String? getAnimationId() => _readNativeString(
+        (buf, sizeOut) => dotlottieGetAnimationId(_ptr, buf, sizeOut),
+      );
+
+  String? getManifest() => _readNativeString(
+        (buf, sizeOut) => dotlottieGetManifest(_ptr, buf, sizeOut),
+      );
+
+  // ---------------------------------------------------------------------------
+  // Private helpers
+  // ---------------------------------------------------------------------------
+
+  /// Two-pass pattern for C functions that write a string into a caller-allocated buffer.
+  /// First call with null buffer to get required size, then allocate and read.
+  String? _readNativeString(
+      int Function(Pointer<Uint8>, Pointer<UintPtr>) fn) {
+    if (fn(nullptr.cast<Uint8>(), _sizeOut) != kResultSuccess) return null;
+    final size = _sizeOut.value;
+    if (size == 0) return null;
+    final buf = malloc<Uint8>(size);
+    try {
+      if (fn(buf, _sizeOut) != kResultSuccess) return null;
+      return buf.cast<Utf8>().toDartString();
+    } finally {
+      malloc.free(buf);
+    }
+  }
+
   void dispose() {
     if (_disposed) return;
     _disposed = true;
@@ -206,6 +351,7 @@ class DotLottieFfiPlayer {
     malloc.free(_floatOut);
     malloc.free(_uint32Out);
     malloc.free(_boolOut);
+    malloc.free(_sizeOut);
     dotlottieDestroy(_ptr);
   }
 

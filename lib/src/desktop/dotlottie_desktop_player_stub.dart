@@ -58,5 +58,22 @@ class DotLottieFfiPlayer {
     void Function(int loopCount)? onLoop,
   }) {}
 
+  bool setTheme(String themeId) => false;
+  bool setThemeData(String themeData) => false;
+  bool resetTheme() => false;
+  String? activeThemeId() => null;
+
+  bool setMarker(String marker) => false;
+  String? activeMarker() => null;
+  List<Map<String, dynamic>> getMarkers() => [];
+
+  bool setSegment(double start, double end) => false;
+  void clearSegment() {}
+  List<double>? getSegment() => null;
+
+  bool loadAnimation(String animationId) => false;
+  String? getAnimationId() => null;
+  String? getManifest() => null;
+
   void dispose() {}
 }
