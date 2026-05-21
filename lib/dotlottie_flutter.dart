@@ -8,6 +8,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
 import 'dart:convert';
+import 'dart:ui' as ui;
+import 'package:flutter/scheduler.dart';
+
+import 'src/desktop/dotlottie_desktop_player_stub.dart'
+    if (dart.library.ffi) 'src/desktop/dotlottie_desktop_player.dart';
 
 /// A Flutter widget that renders a dotLottie or Lottie animation.
 ///
@@ -243,6 +248,9 @@ class _DotLottieViewState extends State<DotLottieView> {
       return _buildIOSView();
     } else if (defaultTargetPlatform == TargetPlatform.macOS) {
       return _buildMacOSView();
+    } else if (defaultTargetPlatform == TargetPlatform.windows ||
+               defaultTargetPlatform == TargetPlatform.linux) {
+      return _buildDesktopView();
     }
     return Container(
       color: Colors.grey[300],
@@ -377,6 +385,40 @@ class _DotLottieViewState extends State<DotLottieView> {
           creationParamsCodec: const StandardMessageCodec(),
           onPlatformViewCreated: _onPlatformViewCreated,
           gestureRecognizers: const <Factory<OneSequenceGestureRecognizer>>{},
+        );
+      },
+    );
+  }
+
+  Widget _buildDesktopView() {
+    return LayoutBuilder(
+      key: ValueKey(_platformViewGeneration),
+      builder: (context, constraints) {
+        final dpr = MediaQuery.devicePixelRatioOf(context);
+        final w = constraints.maxWidth.isFinite ? constraints.maxWidth : 300.0;
+        final h = constraints.maxHeight.isFinite ? constraints.maxHeight : 300.0;
+        return _DotLottieDesktopWidget(
+          sourceType: widget.sourceType,
+          source: widget.source,
+          autoplay: widget.autoplay ?? false,
+          loop: widget.loop ?? false,
+          loopCount: widget.loopCount ?? 0,
+          speed: widget.speed ?? 1.0,
+          mode: widget.mode ?? 'forward',
+          useFrameInterpolation: widget.useFrameInterpolation ?? false,
+          logicalWidth: w,
+          logicalHeight: h,
+          devicePixelRatio: dpr,
+          onViewCreated: widget.onViewCreated,
+          onLoad: widget.onLoad,
+          onLoadError: widget.onLoadError,
+          onPlay: widget.onPlay,
+          onPause: widget.onPause,
+          onStop: widget.onStop,
+          onComplete: widget.onComplete,
+          onFrame: widget.onFrame,
+          onRender: widget.onRender,
+          onLoop: widget.onLoop,
         );
       },
     );
@@ -1546,4 +1588,377 @@ class DotLottieFlutter {
   Future<Map<String, dynamic>?> manifest() async {
     return DotLottieFlutterPlatform.instance.manifest();
   }
+}
+
+// ---------------------------------------------------------------------------
+// Desktop (Windows / Linux) — FFI-based controller
+// ---------------------------------------------------------------------------
+
+/// A [DotLottieViewController] backed by the dotlottie-rs C FFI on Windows and Linux.
+///
+/// Obtained via [DotLottieView.onViewCreated] when running on a desktop platform.
+/// All methods are synchronous internally but return futures to match the shared
+/// interface.
+class DotLottieDesktopViewController extends DotLottieViewController {
+  final DotLottieFfiPlayer _ffi;
+
+  DotLottieDesktopViewController._(this._ffi) : super._(-1);
+
+  @override
+  Future<bool?> play() async => _ffi.play();
+
+  @override
+  Future<bool?> pause() async => _ffi.pause();
+
+  @override
+  Future<bool?> stop() async => _ffi.stop();
+
+  @override
+  Future<bool?> isPlaying() async => _ffi.isPlaying();
+
+  @override
+  Future<bool?> isPaused() async => _ffi.isPaused();
+
+  @override
+  Future<bool?> isStopped() async => _ffi.isStopped();
+
+  @override
+  Future<bool?> isLoaded() async => _ffi.isLoaded();
+
+  @override
+  Future<double?> currentFrame() async => _ffi.currentFrame();
+
+  @override
+  Future<double?> totalFrames() async => _ffi.totalFrames();
+
+  @override
+  Future<double?> duration() async => _ffi.duration();
+
+  @override
+  Future<int?> loopCount() async => _ffi.loopCount();
+
+  // Config setters — wired to FFI
+  @override
+  Future<void> setSpeed(double speed) async => _ffi.setSpeed(speed);
+  @override
+  Future<void> setLoop(bool loop) async => _ffi.setLoop(loop);
+  @override
+  Future<void> setMode(String mode) async => _ffi.setMode(mode);
+  @override
+  Future<void> setFrameInterpolation(bool useFrameInterpolation) async =>
+      _ffi.setFrameInterpolation(useFrameInterpolation);
+
+  // Progress — computed from frame position
+  @override
+  Future<double?> currentProgress() async {
+    final total = _ffi.totalFrames();
+    return total > 0 ? _ffi.currentFrame() / total : 0.0;
+  }
+
+  // Seek
+  @override
+  Future<bool?> setFrame(double frame) async => _ffi.seekFrame(frame);
+  @override
+  Future<bool?> setProgress(double progress) async {
+    final total = _ffi.totalFrames();
+    if (total <= 0) return false;
+    return _ffi.seekFrame(progress.clamp(0.0, 1.0) * total);
+  }
+
+  // Manifest
+  @override
+  Future<Map<String, dynamic>?> manifest() async {
+    final json = _ffi.getManifest();
+    if (json == null) return null;
+    return jsonDecode(json) as Map<String, dynamic>?;
+  }
+
+  // Getters with no C API equivalent — return null silently
+  @override Future<double?> speed() async => null;
+  @override Future<bool?> loop() async => null;
+  @override Future<bool?> autoplay() async => null;
+  @override Future<bool?> useFrameInterpolation() async => null;
+  @override Future<String?> mode() async => null;
+
+  // Segments
+  @override Future<List<double>?> segments() async => _ffi.getSegment();
+  @override Future<void> setSegments(double start, double end) async =>
+      _ffi.setSegment(start, end);
+
+  // Markers
+  @override Future<void> setMarker(String marker) async =>
+      _ffi.setMarker(marker);
+  @override Future<List<Map<String, dynamic>>?> markers() async =>
+      _ffi.getMarkers();
+
+  // Multi-animation
+  @override Future<void> loadAnimation(String animationId) async =>
+      _ffi.loadAnimation(animationId);
+  @override Future<String?> activeAnimationId() async =>
+      _ffi.getAnimationId();
+
+  // Themes
+  @override Future<bool?> setTheme(String themeId) async =>
+      _ffi.setTheme(themeId);
+  @override Future<bool?> setThemeData(String themeData) async =>
+      _ffi.setThemeData(themeData);
+  @override Future<bool?> resetTheme() async => _ffi.resetTheme();
+  @override Future<String?> activeThemeId() async => _ffi.activeThemeId();
+
+  @override Future<void> resize(int width, int height) async {}
+  @override Future<bool?> setSlots(String slots) async => false;
+
+  // State machine — not in the C API yet
+  @override Future<bool?> stateMachineLoad(String stateMachineId) async => false;
+  @override Future<bool?> stateMachineStart() async => false;
+  @override Future<bool?> stateMachineStop() async => false;
+  @override Future<void> stateMachineFire(String event) async {}
+  @override Future<bool?> stateMachineSetNumericInput(String key, double value) async => false;
+  @override Future<bool?> stateMachineSetStringInput(String key, String value) async => false;
+  @override Future<bool?> stateMachineSetBooleanInput(String key, bool value) async => false;
+  @override Future<double?> stateMachineGetNumericInput(String key) async => null;
+  @override Future<String?> stateMachineGetStringInput(String key) async => null;
+  @override Future<bool?> stateMachineGetBooleanInput(String key) async => null;
+  @override Future<Map<String, String>?> stateMachineGetInputs() async => null;
+  @override Future<String?> stateMachineCurrentState() async => null;
+  @override Future<String?> getStateMachine(String id) async => null;
+
+  @override
+  Future<void> dispose() async => _ffi.dispose();
+}
+
+// ---------------------------------------------------------------------------
+// Desktop widget
+// ---------------------------------------------------------------------------
+
+class _DotLottieDesktopWidget extends StatefulWidget {
+  final String sourceType;
+  final String source;
+  final bool autoplay;
+  final bool loop;
+  final int loopCount;
+  final double speed;
+  final String mode;
+  final bool useFrameInterpolation;
+  final double logicalWidth;
+  final double logicalHeight;
+  final double devicePixelRatio;
+  final Function(DotLottieViewController)? onViewCreated;
+  final VoidCallback? onLoad;
+  final VoidCallback? onLoadError;
+  final VoidCallback? onPlay;
+  final VoidCallback? onPause;
+  final VoidCallback? onStop;
+  final VoidCallback? onComplete;
+  final Function(double frameNo)? onFrame;
+  final Function(double frameNo)? onRender;
+  final Function(int loopCount)? onLoop;
+
+  const _DotLottieDesktopWidget({
+    required this.sourceType,
+    required this.source,
+    required this.autoplay,
+    required this.loop,
+    required this.loopCount,
+    required this.speed,
+    required this.mode,
+    required this.useFrameInterpolation,
+    required this.logicalWidth,
+    required this.logicalHeight,
+    required this.devicePixelRatio,
+    this.onViewCreated,
+    this.onLoad,
+    this.onLoadError,
+    this.onPlay,
+    this.onPause,
+    this.onStop,
+    this.onComplete,
+    this.onFrame,
+    this.onRender,
+    this.onLoop,
+  });
+
+  @override
+  State<_DotLottieDesktopWidget> createState() =>
+      _DotLottieDesktopWidgetState();
+}
+
+class _DotLottieDesktopWidgetState extends State<_DotLottieDesktopWidget>
+    with SingleTickerProviderStateMixin {
+  late final DotLottieFfiPlayer _ffi;
+  late final Ticker _ticker;
+  ui.Image? _currentImage;
+  bool _decodePending = false;
+  Duration? _lastElapsed;
+
+  @override
+  void initState() {
+    super.initState();
+    _ffi = DotLottieFfiPlayer();
+    _ffi.configure(
+      loop: widget.loop,
+      speed: widget.speed,
+      autoplay: widget.autoplay,
+      loopCount: widget.loopCount,
+      mode: widget.mode,
+      useFrameInterpolation: widget.useFrameInterpolation,
+    );
+    _applySize();
+    _ticker = createTicker(_onTick);
+    _loadAndStart();
+  }
+
+  @override
+  void didUpdateWidget(_DotLottieDesktopWidget old) {
+    super.didUpdateWidget(old);
+    final sizeChanged = widget.logicalWidth != old.logicalWidth ||
+        widget.logicalHeight != old.logicalHeight ||
+        widget.devicePixelRatio != old.devicePixelRatio;
+    if (sizeChanged) {
+      _applySize();
+      _ffi.render();
+    }
+    if (widget.source != old.source || widget.sourceType != old.sourceType) {
+      _loadAnimation();
+    }
+  }
+
+  void _applySize() {
+    final w = (widget.logicalWidth * widget.devicePixelRatio).round().clamp(1, 16384);
+    final h = (widget.logicalHeight * widget.devicePixelRatio).round().clamp(1, 16384);
+    _ffi.setSize(w, h);
+  }
+
+  Future<void> _loadAndStart() async {
+    await _loadAnimation();
+    if (widget.onViewCreated != null) {
+      widget.onViewCreated!(DotLottieDesktopViewController._(_ffi));
+    }
+    if (mounted) _ticker.start();
+  }
+
+  Future<void> _loadAnimation() async {
+    switch (widget.sourceType) {
+      case 'json':
+        _ffi.loadJson(widget.source);
+      case 'url':
+        try {
+          await _ffi.loadUrl(widget.source);
+        } catch (e) {
+          debugPrint('dotlottie: failed to download ${widget.source}: $e');
+        }
+      case 'asset':
+        try {
+          final data = await rootBundle.load('assets/${widget.source}');
+          final bytes = data.buffer.asUint8List();
+          if (widget.source.toLowerCase().endsWith('.json')) {
+            _ffi.loadJson(utf8.decode(bytes));
+          } else {
+            _ffi.loadBytes(bytes);
+          }
+        } catch (e) {
+          debugPrint('dotlottie: failed to load asset ${widget.source}: $e');
+        }
+    }
+  }
+
+  void _onTick(Duration elapsed) {
+    final dt = _lastElapsed == null
+        ? 0.0
+        : (elapsed - _lastElapsed!).inMicroseconds / 1000.0;
+    _lastElapsed = elapsed;
+
+    final rendered = _ffi.tick(dt);
+    if (rendered && !_decodePending) {
+      _decodeAndUpdate();
+    }
+
+    _ffi.pollEvents(
+      onLoad: widget.onLoad,
+      onLoadError: widget.onLoadError,
+      onPlay: widget.onPlay,
+      onPause: widget.onPause,
+      onStop: widget.onStop,
+      onComplete: widget.onComplete,
+      onFrame: widget.onFrame,
+      onRender: widget.onRender,
+      onLoop: widget.onLoop,
+    );
+  }
+
+  Future<void> _decodeAndUpdate() async {
+    _decodePending = true;
+    try {
+      final pixelView = _ffi.getRawPixels();
+      if (pixelView == null) return;
+      // Copy before any await — the FFI buffer can be overwritten by the next tick.
+      final pixelCopy = Uint8List.fromList(pixelView);
+      final w = _ffi.width;
+      final h = _ffi.height;
+
+      final buffer = await ui.ImmutableBuffer.fromUint8List(pixelCopy);
+      final descriptor = ui.ImageDescriptor.raw(
+        buffer,
+        width: w,
+        height: h,
+        // ARGB8888 on LE = [B,G,R,A] in memory = Flutter's bgra8888.
+        pixelFormat: ui.PixelFormat.bgra8888,
+      );
+      final codec = await descriptor.instantiateCodec(
+        targetWidth: w,
+        targetHeight: h,
+      );
+      final frame = await codec.getNextFrame();
+      codec.dispose();
+      descriptor.dispose();
+      buffer.dispose();
+
+      if (!mounted) {
+        frame.image.dispose();
+        return;
+      }
+      setState(() {
+        _currentImage?.dispose();
+        _currentImage = frame.image;
+      });
+    } catch (e) {
+      debugPrint('dotlottie: frame decode error: $e');
+    } finally {
+      _decodePending = false;
+    }
+  }
+
+  @override
+  void dispose() {
+    _ticker.dispose();
+    _ffi.dispose();
+    _currentImage?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      painter: _AnimationPainter(_currentImage),
+      size: Size(widget.logicalWidth, widget.logicalHeight),
+    );
+  }
+}
+
+class _AnimationPainter extends CustomPainter {
+  final ui.Image? image;
+
+  _AnimationPainter(this.image);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (image == null) return;
+    final src = Rect.fromLTWH(
+        0, 0, image!.width.toDouble(), image!.height.toDouble());
+    final dst = Rect.fromLTWH(0, 0, size.width, size.height);
+    canvas.drawImageRect(image!, src, dst, Paint());
+  }
+
+  @override
+  bool shouldRepaint(_AnimationPainter old) => old.image != image;
 }
