@@ -108,7 +108,7 @@ class DotLottieWebView {
         final config = Map<String, dynamic>.from(call.arguments as Map);
         _creationParams[viewId] = config;
         await _waitForDotLottieAsync();
-        initialize(config);
+        await initialize(config);
         return null;
 
       case 'play':
@@ -338,7 +338,7 @@ class DotLottieWebView {
   }
 
   /// Initialize the DotLottie player with config from Dart
-  void initialize(Map<String, dynamic> config) {
+  Future<void> initialize(Map<String, dynamic> config) async {
     if (isDisposed) {
       return;
     }
@@ -375,7 +375,8 @@ class DotLottieWebView {
             playerConfig['data'.toJS] = source.toJS;
             break;
           case 'asset':
-            playerConfig['src'.toJS] = 'assets/$source'.toJS;
+            final bytes = await rootBundle.load(source);
+            playerConfig['data'.toJS] = bytes.buffer.toJS;
             break;
         }
       }
