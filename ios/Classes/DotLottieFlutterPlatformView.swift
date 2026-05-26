@@ -120,11 +120,6 @@ class FlutterStateMachineObserver: StateMachineObserver {
 }
 
 class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
-    // Serialises all dotlottie_load_dotlottie_data FFI calls across every instance.
-    private static let animationLoadQueue = DispatchQueue(
-        label: "com.dotlottie.flutter.animationLoad",
-        qos: .userInitiated
-    )
     private static let urlSession: URLSession = {
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = 15
@@ -258,11 +253,10 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
 
         switch sourceType {
         case "url":
-            // Download the data ourselves so we can control when dotlottie_load_dotlottie_data
-            // is called. By serialising through animationLoadQueue we guarantee only
-            // one load runs at a time.  The hosting view is also added only after the load
-            // finishes, so the MTKView display link cannot race with the load on the same
-            // animation.
+            // After download, create the animation on the main thread so it can never
+            // run concurrently with the display-link tick(), which also runs on the main
+            // thread.  Concurrent FFI calls into ThorVG from different threads corrupt its
+            // internal memory pool and cause a SIGSEGV in _setCell.
             guard let urlString = source, let url = URL(string: urlString) else {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
                     guard let self = self, !self.isDisposed else { return }
@@ -279,14 +273,11 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
                     }
                     return
                 }
-                Self.animationLoadQueue.async { [weak self] in
+                DispatchQueue.main.async { [weak self] in
                     guard let self = self, !self.isDisposed else { return }
                     let animation = DotLottieAnimation(dotLottieData: data, config: config)
-                    DispatchQueue.main.async { [weak self] in
-                        guard let self = self, !self.isDisposed else { return }
-                        self.mountAnimation(animation)
-                        self.methodChannel.invokeMethod("onLoad", arguments: nil)
-                    }
+                    self.mountAnimation(animation)
+                    self.methodChannel.invokeMethod("onLoad", arguments: nil)
                 }
             }
             pendingURLTask = task
@@ -805,12 +796,10 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
         view.subviews.forEach { $0.removeFromSuperview() }
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-            Self.animationLoadQueue.async {
-                _ = animToRelease
-            }
+            _ = animToRelease
         }
     }
-    
+
     deinit {
         dispose()
     }

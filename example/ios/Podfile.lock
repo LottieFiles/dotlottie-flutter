@@ -3,14 +3,11 @@ PODS:
     - Flutter
     - LottieFiles-dotLottie-iOS (~> 0.15.4)
   - Flutter (1.0.0)
-  - integration_test (0.0.1):
-    - Flutter
   - LottieFiles-dotLottie-iOS (0.15.4)
 
 DEPENDENCIES:
   - dotlottie_flutter (from `.symlinks/plugins/dotlottie_flutter/ios`)
   - Flutter (from `Flutter`)
-  - integration_test (from `.symlinks/plugins/integration_test/ios`)
 
 SPEC REPOS:
   trunk:
@@ -21,13 +18,10 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/dotlottie_flutter/ios"
   Flutter:
     :path: Flutter
-  integration_test:
-    :path: ".symlinks/plugins/integration_test/ios"
 
 SPEC CHECKSUMS:
   dotlottie_flutter: 517fe94299c2fc74ece43a51fc8f8ed2dcac6aff
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
-  integration_test: 4a889634ef21a45d28d50d622cf412dc6d9f586e
   LottieFiles-dotLottie-iOS: 044d32af28bc38871c944c8daa9d9fde8f7e2d99
 
 PODFILE CHECKSUM: 3c63482e143d1b91d2d2560aee9fb04ecc74ac7e
