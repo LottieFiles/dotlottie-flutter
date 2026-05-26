@@ -1,3 +1,7 @@
+## 0.1.1
+
+* fix: Moved animation loading from url to main thread
+
 ## 0.1.0
 
 * feat: Windows and Linux support
