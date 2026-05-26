@@ -375,7 +375,7 @@ class DotLottieWebView {
             playerConfig['data'.toJS] = source.toJS;
             break;
           case 'asset':
-            final bytes = await rootBundle.load(source);
+            final bytes = await rootBundle.load('assets/$source');
             playerConfig['data'.toJS] = bytes.buffer.toJS;
             break;
         }
