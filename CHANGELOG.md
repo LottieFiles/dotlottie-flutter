@@ -1,3 +1,7 @@
+## 0.1.2
+
+* fix: Load web asset via rootBundle
+
 ## 0.1.1
 
 * fix: Moved animation loading from url to main thread
