@@ -1,3 +1,7 @@
+## 0.1.3
+
+* chore: bumped dotlottie-ios dep. to v0.15.6
+
 ## 0.1.2
 
 * fix: Load web asset via rootBundle
