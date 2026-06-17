@@ -12,13 +12,15 @@ let package = Package(
         .library(name: "dotlottie-flutter", targets: ["dotlottie_flutter"])
     ],
     dependencies: [
-        .package(url: "https://github.com/LottieFiles/dotlottie-ios.git", from: "0.15.6")
+        .package(url: "https://github.com/LottieFiles/dotlottie-ios.git", from: "0.15.6"),
+        .package(name: "FlutterFramework", path: "../FlutterFramework")
     ],
     targets: [
         .target(
             name: "dotlottie_flutter",
             dependencies: [
-                .product(name: "DotLottie", package: "dotlottie-ios")
+                .product(name: "DotLottie", package: "dotlottie-ios"),
+                .product(name: "FlutterFramework", package: "FlutterFramework")
             ],
             resources: [
                 .process("PrivacyInfo.xcprivacy")
