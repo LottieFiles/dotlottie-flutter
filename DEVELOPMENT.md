@@ -74,9 +74,25 @@ flutter run
 #### Prerequisites
 - Xcode installed (from Mac App Store)
 - Xcode Command Line Tools installed
-- CocoaPods installed
+- CocoaPods installed (only needed for the CocoaPods fallback path, see below)
 
-#### Install CocoaPods (if needed)
+#### Dependency management: Swift Package Manager
+
+The Apple (iOS/macOS) native code is distributed as a **Swift Package**
+(`ios/dotlottie_flutter/Package.swift` and `macos/dotlottie_flutter/Package.swift`), which
+pulls the native renderer from [`LottieFiles/dotlottie-ios`](https://github.com/LottieFiles/dotlottie-ios).
+
+Swift Package Manager is opt-in in Flutter. Enable it once globally:
+```bash
+flutter config --enable-swift-package-manager
+```
+With it enabled, `flutter run`/`flutter build` resolve the Swift package automatically — no
+`pod install` step is required.
+
+The plugin also ships updated `.podspec` files, so apps that have **not** enabled Swift Package
+Manager continue to build via CocoaPods (the fallback path documented below).
+
+#### Install CocoaPods (only for the CocoaPods fallback path)
 ```bash
 sudo gem install cocoapods
 ```
@@ -84,16 +100,14 @@ sudo gem install cocoapods
 #### iOS Setup Steps
 ```bash
 # From the example directory
-cd example/ios
+cd example
 
-# Install CocoaPods dependencies
-pod install
-
-# Go back to example directory
-cd ..
-
-# Run on iOS simulator
+# With Swift Package Manager enabled, just run:
 flutter run -d ios
+
+# CocoaPods fallback (only if Swift Package Manager is disabled):
+#   cd ios && pod install && cd ..
+#   flutter run -d ios
 ```
 
 #### First-Time Xcode Setup
