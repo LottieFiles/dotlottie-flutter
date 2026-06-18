@@ -588,7 +588,27 @@ class DotLottieFlutterPlatformView: NSObject {
             } else {
                 result(FlutterError(code: "INVALID_ARGS", message: "Invalid resize arguments", details: nil))
             }
-            
+
+        case "setLayout":
+            if let args = call.arguments as? [String: Any],
+               let fitString = args["fit"] as? String {
+                let fit: Fit
+                switch fitString {
+                case "fill":      fit = .fill
+                case "cover":     fit = .cover
+                case "fitWidth":  fit = .fitWidth
+                case "fitHeight": fit = .fitHeight
+                case "none":      fit = Fit.none
+                default:          fit = .contain
+                }
+                let alignX = Float(args["alignX"] as? Double ?? 0.5)
+                let alignY = Float(args["alignY"] as? Double ?? 0.5)
+                animation.setLayout(layout: DotLottie.Layout(fit: fit, alignX: alignX, alignY: alignY))
+                result(nil)
+            } else {
+                result(FlutterError(code: "INVALID_ARGS", message: "Invalid layout arguments", details: nil))
+            }
+
         case "stateMachineLoad":
             if let args = call.arguments as? [String: Any],
                let stateMachineId = args["stateMachineId"] as? String {

@@ -4,7 +4,7 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'dotlottie_flutter'
-  s.version          = '0.1.3'
+  s.version          = '0.1.4'
   s.summary          = 'Render dotLottie and Lottie animations in Flutter.'
   s.description      = <<-DESC
 Render dotLottie and Lottie animations in Flutter. Supports playback control,
@@ -16,7 +16,7 @@ theming and state machines.
   s.source           = { :path => '.' }
   s.source_files = 'dotlottie_flutter/Sources/dotlottie_flutter/**/*.swift'
   s.dependency 'Flutter'
-  s.dependency 'LottieFiles-dotLottie-iOS', '~> 0.15.6'
+  s.dependency 'LottieFiles-dotLottie-iOS', '~> 0.15.7'
   s.platform = :ios, '13.0'
   
 

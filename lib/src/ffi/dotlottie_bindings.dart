@@ -41,6 +41,14 @@ const int kStatusPlaying = 0;
 const int kStatusPaused = 1;
 const int kStatusStopped = 2;
 
+// dotlottieFit
+const int kFitContain = 0;
+const int kFitFill = 1;
+const int kFitCover = 2;
+const int kFitWidth = 3;
+const int kFitHeight = 4;
+const int kFitNone = 5;
+
 // dotlottieDotLottieResult
 const int kResultSuccess = 0;
 
@@ -70,6 +78,14 @@ final class DotLottiePlayerEvent extends Struct {
   @Int32()
   external int eventType;
   external DotLottiePlayerEventData data;
+}
+
+// dotlottieLayout { dotlottieFit fit; float align[2]; }
+final class DotLottieLayout extends Struct {
+  @Int32()
+  external int fit;
+  @Array(2)
+  external Array<Float> align;
 }
 
 // ---------------------------------------------------------------------------
@@ -191,6 +207,12 @@ final dotlottieSetUseFrameInterpolation = _lib.lookupFunction<
     Int32 Function(Pointer<DotLottiePlayer>, Bool),
     int Function(Pointer<DotLottiePlayer>,
         bool)>('dotlottie_set_use_frame_interpolation');
+
+// Layout (fit + alignment) — struct passed by value.
+final dotlottieSetLayout = _lib.lookupFunction<
+    Int32 Function(Pointer<DotLottiePlayer>, DotLottieLayout),
+    int Function(
+        Pointer<DotLottiePlayer>, DotLottieLayout)>('dotlottie_set_layout');
 
 // Event polling
 final dotlottiePollEvent = _lib.lookupFunction<

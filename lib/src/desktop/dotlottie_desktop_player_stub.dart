@@ -33,6 +33,7 @@ class DotLottieFfiPlayer {
   void setLoop(bool loop) {}
   void setMode(String mode) {}
   void setFrameInterpolation(bool use) {}
+  void setLayout(String fit, double alignX, double alignY) {}
   bool seekFrame(double frame) => false;
   bool isPlaying() => false;
   bool isPaused() => false;
