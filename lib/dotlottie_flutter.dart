@@ -13,6 +13,7 @@ import 'package:flutter/scheduler.dart';
 
 import 'src/desktop/dotlottie_desktop_player_stub.dart'
     if (dart.library.ffi) 'src/desktop/dotlottie_desktop_player.dart';
+import 'src/state_machine_interactions.dart';
 
 /// A Flutter widget that renders a dotLottie or Lottie animation.
 ///
@@ -409,6 +410,7 @@ class _DotLottieViewState extends State<DotLottieView> {
           logicalWidth: w,
           logicalHeight: h,
           devicePixelRatio: dpr,
+          stateMachineId: widget.stateMachineId,
           onViewCreated: widget.onViewCreated,
           onLoad: widget.onLoad,
           onLoadError: widget.onLoadError,
@@ -419,6 +421,20 @@ class _DotLottieViewState extends State<DotLottieView> {
           onFrame: widget.onFrame,
           onRender: widget.onRender,
           onLoop: widget.onLoop,
+          stateMachineOnBooleanInputValueChange:
+              widget.stateMachineOnBooleanInputValueChange,
+          stateMachineOnError: widget.stateMachineOnError,
+          stateMachineOnNumericInputValueChange:
+              widget.stateMachineOnNumericInputValueChange,
+          stateMachineOnStart: widget.stateMachineOnStart,
+          stateMachineOnStop: widget.stateMachineOnStop,
+          stateMachineOnInputFired: widget.stateMachineOnInputFired,
+          stateMachineOnStringInputValueChange:
+              widget.stateMachineOnStringInputValueChange,
+          stateMachineOnCustomEvent: widget.stateMachineOnCustomEvent,
+          stateMachineOnStateEntered: widget.stateMachineOnStateEntered,
+          stateMachineOnStateExit: widget.stateMachineOnStateExit,
+          stateMachineOnTransition: widget.stateMachineOnTransition,
         );
       },
     );
@@ -1708,20 +1724,23 @@ class DotLottieDesktopViewController extends DotLottieViewController {
   @override Future<void> resize(int width, int height) async {}
   @override Future<bool?> setSlots(String slots) async => false;
 
-  // State machine — not in the C API yet
-  @override Future<bool?> stateMachineLoad(String stateMachineId) async => false;
-  @override Future<bool?> stateMachineStart() async => false;
-  @override Future<bool?> stateMachineStop() async => false;
-  @override Future<void> stateMachineFire(String event) async {}
-  @override Future<bool?> stateMachineSetNumericInput(String key, double value) async => false;
-  @override Future<bool?> stateMachineSetStringInput(String key, String value) async => false;
-  @override Future<bool?> stateMachineSetBooleanInput(String key, bool value) async => false;
-  @override Future<double?> stateMachineGetNumericInput(String key) async => null;
-  @override Future<String?> stateMachineGetStringInput(String key) async => null;
-  @override Future<bool?> stateMachineGetBooleanInput(String key) async => null;
+  // State machine — wired to FFI
+  @override Future<bool?> stateMachineLoad(String stateMachineId) async =>
+      _ffi.loadStateMachine(stateMachineId);
+  @override Future<bool?> stateMachineLoadData(String data) async =>
+      _ffi.loadStateMachineData(data);
+  @override Future<bool?> stateMachineStart() async => _ffi.startStateMachine();
+  @override Future<bool?> stateMachineStop() async => _ffi.stopStateMachine();
+  @override Future<void> stateMachineFire(String event) async => _ffi.fireEvent(event);
+  @override Future<bool?> stateMachineSetNumericInput(String key, double value) async => _ffi.setNumericInput(key, value);
+  @override Future<bool?> stateMachineSetStringInput(String key, String value) async => _ffi.setStringInput(key, value);
+  @override Future<bool?> stateMachineSetBooleanInput(String key, bool value) async => _ffi.setBooleanInput(key, value);
+  @override Future<double?> stateMachineGetNumericInput(String key) async => _ffi.getNumericInput(key);
+  @override Future<String?> stateMachineGetStringInput(String key) async => _ffi.getStringInput(key);
+  @override Future<bool?> stateMachineGetBooleanInput(String key) async => _ffi.getBooleanInput(key);
   @override Future<Map<String, String>?> stateMachineGetInputs() async => null;
-  @override Future<String?> stateMachineCurrentState() async => null;
-  @override Future<String?> getStateMachine(String id) async => null;
+  @override Future<String?> stateMachineCurrentState() async => _ffi.currentState();
+  @override Future<String?> getStateMachine(String id) async => _ffi.getStateMachine(id);
 
   @override
   Future<void> dispose() async => _ffi.dispose();
@@ -1743,6 +1762,7 @@ class _DotLottieDesktopWidget extends StatefulWidget {
   final double logicalWidth;
   final double logicalHeight;
   final double devicePixelRatio;
+  final String? stateMachineId;
   final Function(DotLottieViewController)? onViewCreated;
   final VoidCallback? onLoad;
   final VoidCallback? onLoadError;
@@ -1753,6 +1773,21 @@ class _DotLottieDesktopWidget extends StatefulWidget {
   final Function(double frameNo)? onFrame;
   final Function(double frameNo)? onRender;
   final Function(int loopCount)? onLoop;
+  final Function(String inputName, bool oldValue, bool newValue)?
+      stateMachineOnBooleanInputValueChange;
+  final Function(String message)? stateMachineOnError;
+  final Function(String inputName, double oldValue, double newValue)?
+      stateMachineOnNumericInputValueChange;
+  final VoidCallback? stateMachineOnStart;
+  final VoidCallback? stateMachineOnStop;
+  final Function(String inputName)? stateMachineOnInputFired;
+  final Function(String inputName, String oldValue, String newValue)?
+      stateMachineOnStringInputValueChange;
+  final Function(String message)? stateMachineOnCustomEvent;
+  final Function(String enteringState)? stateMachineOnStateEntered;
+  final Function(String leavingState)? stateMachineOnStateExit;
+  final Function(String previousState, String newState)?
+      stateMachineOnTransition;
 
   const _DotLottieDesktopWidget({
     required this.sourceType,
@@ -1766,6 +1801,7 @@ class _DotLottieDesktopWidget extends StatefulWidget {
     required this.logicalWidth,
     required this.logicalHeight,
     required this.devicePixelRatio,
+    this.stateMachineId,
     this.onViewCreated,
     this.onLoad,
     this.onLoadError,
@@ -1776,6 +1812,17 @@ class _DotLottieDesktopWidget extends StatefulWidget {
     this.onFrame,
     this.onRender,
     this.onLoop,
+    this.stateMachineOnBooleanInputValueChange,
+    this.stateMachineOnError,
+    this.stateMachineOnNumericInputValueChange,
+    this.stateMachineOnStart,
+    this.stateMachineOnStop,
+    this.stateMachineOnInputFired,
+    this.stateMachineOnStringInputValueChange,
+    this.stateMachineOnCustomEvent,
+    this.stateMachineOnStateEntered,
+    this.stateMachineOnStateExit,
+    this.stateMachineOnTransition,
   });
 
   @override
@@ -1790,6 +1837,18 @@ class _DotLottieDesktopWidgetState extends State<_DotLottieDesktopWidget>
   ui.Image? _currentImage;
   bool _decodePending = false;
   Duration? _lastElapsed;
+
+  // InteractionType bit flags (kInteraction*) declaring which pointer listeners
+  // the active state machine needs. 0 when no state machine is interactive, so
+  // the pointer layer is omitted entirely (no per-frame move/hover forwarding).
+  int _interactionFlags = 0;
+  // Whether a state machine was active on the previous tick, so we re-read the
+  // interaction flags exactly once when one is loaded/unloaded at runtime.
+  bool _smActiveTracked = false;
+  // Tracks the pointer-down location to synthesize click events.
+  Offset? _pointerDownPos;
+  // Max pointer travel (logical px) between down and up to still count as a click.
+  static const double _clickSlop = 12.0;
 
   @override
   void initState() {
@@ -1821,6 +1880,18 @@ class _DotLottieDesktopWidgetState extends State<_DotLottieDesktopWidget>
     if (widget.source != old.source || widget.sourceType != old.sourceType) {
       _loadAnimation();
     }
+    if (widget.stateMachineId != old.stateMachineId) {
+      final smId = widget.stateMachineId;
+      if (smId != null && smId.isNotEmpty) {
+        if (_ffi.loadStateMachine(smId)) _ffi.startStateMachine();
+      } else {
+        _ffi.releaseStateMachine();
+      }
+      // Re-read interaction flags now, since swapping between two state machines
+      // keeps stateMachineActive true and wouldn't trip the tick-loop transition.
+      _smActiveTracked = _ffi.stateMachineActive;
+      _refreshInteractionFlags();
+    }
   }
 
   void _applySize() {
@@ -1831,10 +1902,29 @@ class _DotLottieDesktopWidgetState extends State<_DotLottieDesktopWidget>
 
   Future<void> _loadAndStart() async {
     await _loadAnimation();
+    // Auto-load + start the state machine when an id is supplied, matching the
+    // platform-view behaviour where `stateMachineId` is a creation parameter.
+    final smId = widget.stateMachineId;
+    if (smId != null && smId.isNotEmpty) {
+      if (_ffi.loadStateMachine(smId)) {
+        _ffi.startStateMachine();
+        // Interaction flags are read on the first tick (see _onTick), which also
+        // covers state machines loaded later via the controller.
+      }
+    }
     if (widget.onViewCreated != null) {
       widget.onViewCreated!(DotLottieDesktopViewController._(_ffi));
     }
     if (mounted) _ticker.start();
+  }
+
+  /// Re-reads which pointer interactions the active state machine declares and
+  /// rebuilds the pointer layer if they changed.
+  void _refreshInteractionFlags() {
+    final flags = _ffi.stateMachineActive ? _ffi.frameworkSetup() : 0;
+    if (flags != _interactionFlags && mounted) {
+      setState(() => _interactionFlags = flags);
+    }
   }
 
   Future<void> _loadAnimation() async {
@@ -1868,7 +1958,10 @@ class _DotLottieDesktopWidgetState extends State<_DotLottieDesktopWidget>
         : (elapsed - _lastElapsed!).inMicroseconds / 1000.0;
     _lastElapsed = elapsed;
 
-    final rendered = _ffi.tick(dt);
+    // When a state machine is active it drives playback, so tick it instead of
+    // the plain player tick.
+    final smActive = _ffi.stateMachineActive;
+    final rendered = smActive ? _ffi.stateMachineTick(dt) : _ffi.tick(dt);
     if (rendered && !_decodePending) {
       _decodeAndUpdate();
     }
@@ -1884,6 +1977,28 @@ class _DotLottieDesktopWidgetState extends State<_DotLottieDesktopWidget>
       onRender: widget.onRender,
       onLoop: widget.onLoop,
     );
+
+    if (smActive) {
+      _ffi.pollStateMachineEvents(
+        onStart: widget.stateMachineOnStart,
+        onStop: widget.stateMachineOnStop,
+        onTransition: widget.stateMachineOnTransition,
+        onStateEntered: widget.stateMachineOnStateEntered,
+        onStateExit: widget.stateMachineOnStateExit,
+        onCustomEvent: widget.stateMachineOnCustomEvent,
+        onError: widget.stateMachineOnError,
+        onStringInputValueChange: widget.stateMachineOnStringInputValueChange,
+        onNumericInputValueChange: widget.stateMachineOnNumericInputValueChange,
+        onBooleanInputValueChange: widget.stateMachineOnBooleanInputValueChange,
+        onInputFired: widget.stateMachineOnInputFired,
+      );
+    }
+
+    // Pick up state machines loaded/unloaded via the controller after init.
+    if (smActive != _smActiveTracked) {
+      _smActiveTracked = smActive;
+      _refreshInteractionFlags();
+    }
   }
 
   Future<void> _decodeAndUpdate() async {
@@ -1936,12 +2051,69 @@ class _DotLottieDesktopWidgetState extends State<_DotLottieDesktopWidget>
     super.dispose();
   }
 
+  // Converts a widget-local logical position into the state machine's
+  // device-pixel coordinate space (the render surface is logical * dpr).
+  void _forward(void Function(double x, double y) post, Offset local) {
+    post(local.dx * widget.devicePixelRatio, local.dy * widget.devicePixelRatio);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
+    Widget child = CustomPaint(
       painter: _AnimationPainter(_currentImage),
       size: Size(widget.logicalWidth, widget.logicalHeight),
     );
+
+    final flags = _interactionFlags;
+    if (flags == 0) return child; // No interactive state machine — no listeners.
+
+    final wantsDown = flags & kInteractionPointerDown != 0;
+    final wantsUp = flags & kInteractionPointerUp != 0;
+    final wantsMove = flags & kInteractionPointerMove != 0;
+    final wantsEnter = flags & kInteractionPointerEnter != 0;
+    final wantsExit = flags & kInteractionPointerExit != 0;
+    final wantsClick = flags & kInteractionClick != 0;
+
+    // A click is synthesized from a down/up pair, so we must observe both even
+    // when those individual events aren't independently requested.
+    child = Listener(
+      onPointerDown: (wantsDown || wantsClick)
+          ? (e) {
+              if (wantsClick) _pointerDownPos = e.localPosition;
+              if (wantsDown) _forward(_ffi.postPointerDown, e.localPosition);
+            }
+          : null,
+      onPointerMove:
+          wantsMove ? (e) => _forward(_ffi.postPointerMove, e.localPosition) : null,
+      onPointerUp: (wantsUp || wantsClick)
+          ? (e) {
+              if (wantsUp) _forward(_ffi.postPointerUp, e.localPosition);
+              if (wantsClick) {
+                final down = _pointerDownPos;
+                _pointerDownPos = null;
+                if (down != null &&
+                    (e.localPosition - down).distance <= _clickSlop) {
+                  _forward(_ffi.postClick, e.localPosition);
+                }
+              }
+            }
+          : null,
+      child: child,
+    );
+
+    if (wantsEnter || wantsExit || wantsMove) {
+      child = MouseRegion(
+        onEnter:
+            wantsEnter ? (e) => _forward(_ffi.postPointerEnter, e.localPosition) : null,
+        onExit:
+            wantsExit ? (e) => _forward(_ffi.postPointerExit, e.localPosition) : null,
+        onHover:
+            wantsMove ? (e) => _forward(_ffi.postPointerMove, e.localPosition) : null,
+        child: child,
+      );
+    }
+
+    return child;
   }
 }
 
