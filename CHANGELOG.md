@@ -1,6 +1,6 @@
 ## 0.1.4
 
-* chore: spm integration, bumped dotlottie-ios dep. to v0.15.7 for layout fixes
+* chore: spm integration, bumped dotlottie-ios dep. to v0.16.0 for layout fixes
 * feat: live layout updates — `DotLottieViewController.setLayout()` and automatic
   re-layout when `DotLottieView.fit` changes (iOS, macOS, Android, web, desktop)
 
