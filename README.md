@@ -386,7 +386,13 @@ The Windows and Linux implementations use [dotlottie-rs](https://github.com/Lott
 | Themes | ✅ |
 | Markers / Segments | ✅ |
 | Multi-animation manifest | ✅ |
-| State machines | ❌ |
+| State machines | ✅ |
+| State machine pointer interactivity (hover / click / drag) | ✅ |
+
+Pointer events are forwarded to the state machine from Flutter directly (there is no
+native view managing them on desktop). To avoid unnecessary work, only the pointer
+listeners a state machine actually declares — via its framework setup — are attached, so
+move/hover events are not forwarded unless the state machine uses them.
 
 ## Contributing
 

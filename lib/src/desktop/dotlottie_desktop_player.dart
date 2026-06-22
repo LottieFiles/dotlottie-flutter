@@ -10,11 +10,18 @@ class DotLottieFfiPlayer {
   Pointer<Uint32>? _pixelBuffer;
   // Pre-allocated event struct — reused every tick to avoid per-frame malloc.
   late final Pointer<DotLottiePlayerEvent> _eventPtr;
+  // Pre-allocated state machine event struct — reused every tick.
+  late final Pointer<DotLottieStateMachineEvent> _smEventPtr;
   // Pre-allocated scratch for scalar results.
   late final Pointer<Float> _floatOut;
   late final Pointer<Uint32> _uint32Out;
+  late final Pointer<Uint16> _uint16Out;
   late final Pointer<Bool> _boolOut;
   late final Pointer<UintPtr> _sizeOut;
+
+  // Non-null only while a state machine is loaded. The state machine borrows the
+  // player, so it must be stopped + released before the player is destroyed.
+  Pointer<DotLottieStateMachine>? _sm;
 
   int _width = 0;
   int _height = 0;
@@ -25,8 +32,10 @@ class DotLottieFfiPlayer {
     _ptr = dotlottieNewPlayer(1);
     if (_ptr == nullptr) throw StateError('dotlottie_new_player returned null');
     _eventPtr = malloc<DotLottiePlayerEvent>();
+    _smEventPtr = malloc<DotLottieStateMachineEvent>();
     _floatOut = malloc<Float>();
     _uint32Out = malloc<Uint32>();
+    _uint16Out = malloc<Uint16>();
     _boolOut = malloc<Bool>();
     _sizeOut = malloc<UintPtr>();
   }
@@ -339,6 +348,271 @@ class DotLottieFfiPlayer {
       );
 
   // ---------------------------------------------------------------------------
+  // State machine
+  // ---------------------------------------------------------------------------
+
+  /// True while a state machine is loaded. Pointer events and the state machine
+  /// tick are only valid in this state.
+  bool get stateMachineActive => _sm != null && _sm != nullptr;
+
+  bool loadStateMachine(String stateMachineId) {
+    releaseStateMachine();
+    final ptr = stateMachineId.toNativeUtf8();
+    try {
+      final sm = dotlottieStateMachineLoad(_ptr, ptr);
+      if (sm == nullptr) return false;
+      _sm = sm;
+      return true;
+    } finally {
+      malloc.free(ptr);
+    }
+  }
+
+  bool loadStateMachineData(String data) {
+    releaseStateMachine();
+    final ptr = data.toNativeUtf8();
+    try {
+      final sm = dotlottieStateMachineLoadData(_ptr, ptr);
+      if (sm == nullptr) return false;
+      _sm = sm;
+      return true;
+    } finally {
+      malloc.free(ptr);
+    }
+  }
+
+  bool startStateMachine() {
+    if (!stateMachineActive) return false;
+    return dotlottieStateMachineStart(_sm!, nullptr.cast<Utf8>(), false) ==
+        kResultSuccess;
+  }
+
+  bool stopStateMachine() {
+    if (!stateMachineActive) return false;
+    return dotlottieStateMachineStop(_sm!) == kResultSuccess;
+  }
+
+  /// Stops and destroys the state machine, releasing the player borrow.
+  void releaseStateMachine() {
+    if (!stateMachineActive) return;
+    dotlottieStateMachineStop(_sm!);
+    dotlottieStateMachineRelease(_sm!);
+    _sm = null;
+  }
+
+  /// Advances the state machine by [dtMs] milliseconds (also renders).
+  /// Returns true if a new frame was rendered into the pixel buffer.
+  bool stateMachineTick(double dtMs) {
+    if (!stateMachineActive) return false;
+    if (_pixelBuffer == null || _width == 0 || _height == 0) return false;
+    dotlottieStateMachineTick(_sm!, dtMs, _boolOut);
+    return _boolOut.value;
+  }
+
+  void postPointerDown(double x, double y) {
+    if (stateMachineActive) dotlottieStateMachinePostPointerDown(_sm!, x, y);
+  }
+
+  void postPointerUp(double x, double y) {
+    if (stateMachineActive) dotlottieStateMachinePostPointerUp(_sm!, x, y);
+  }
+
+  void postPointerMove(double x, double y) {
+    if (stateMachineActive) dotlottieStateMachinePostPointerMove(_sm!, x, y);
+  }
+
+  void postPointerEnter(double x, double y) {
+    if (stateMachineActive) dotlottieStateMachinePostPointerEnter(_sm!, x, y);
+  }
+
+  void postPointerExit(double x, double y) {
+    if (stateMachineActive) dotlottieStateMachinePostPointerExit(_sm!, x, y);
+  }
+
+  void postClick(double x, double y) {
+    if (stateMachineActive) dotlottieStateMachinePostClick(_sm!, x, y);
+  }
+
+  bool fireEvent(String event) {
+    if (!stateMachineActive) return false;
+    final ptr = event.toNativeUtf8();
+    try {
+      return dotlottieStateMachineFireEvent(_sm!, ptr) == kResultSuccess;
+    } finally {
+      malloc.free(ptr);
+    }
+  }
+
+  bool setNumericInput(String key, double value) {
+    if (!stateMachineActive) return false;
+    final ptr = key.toNativeUtf8();
+    try {
+      return dotlottieStateMachineSetNumericInput(_sm!, ptr, value) ==
+          kResultSuccess;
+    } finally {
+      malloc.free(ptr);
+    }
+  }
+
+  bool setStringInput(String key, String value) {
+    if (!stateMachineActive) return false;
+    final keyPtr = key.toNativeUtf8();
+    final valPtr = value.toNativeUtf8();
+    try {
+      return dotlottieStateMachineSetStringInput(_sm!, keyPtr, valPtr) ==
+          kResultSuccess;
+    } finally {
+      malloc.free(keyPtr);
+      malloc.free(valPtr);
+    }
+  }
+
+  bool setBooleanInput(String key, bool value) {
+    if (!stateMachineActive) return false;
+    final ptr = key.toNativeUtf8();
+    try {
+      return dotlottieStateMachineSetBooleanInput(_sm!, ptr, value) ==
+          kResultSuccess;
+    } finally {
+      malloc.free(ptr);
+    }
+  }
+
+  double? getNumericInput(String key) {
+    if (!stateMachineActive) return null;
+    final ptr = key.toNativeUtf8();
+    try {
+      if (dotlottieStateMachineGetNumericInput(_sm!, ptr, _floatOut) !=
+          kResultSuccess) {
+        return null;
+      }
+      return _floatOut.value;
+    } finally {
+      malloc.free(ptr);
+    }
+  }
+
+  String? getStringInput(String key) {
+    if (!stateMachineActive) return null;
+    final keyPtr = key.toNativeUtf8();
+    try {
+      return _readNativeString(
+        (buf, sizeOut) =>
+            dotlottieStateMachineGetStringInput(_sm!, keyPtr, buf, sizeOut),
+      );
+    } finally {
+      malloc.free(keyPtr);
+    }
+  }
+
+  bool? getBooleanInput(String key) {
+    if (!stateMachineActive) return null;
+    final ptr = key.toNativeUtf8();
+    try {
+      if (dotlottieStateMachineGetBooleanInput(_sm!, ptr, _boolOut) !=
+          kResultSuccess) {
+        return null;
+      }
+      return _boolOut.value;
+    } finally {
+      malloc.free(ptr);
+    }
+  }
+
+  String? currentState() {
+    if (!stateMachineActive) return null;
+    return _readNativeString(
+      (buf, sizeOut) =>
+          dotlottieStateMachineGetCurrentState(_sm!, buf, sizeOut),
+    );
+  }
+
+  String? getStateMachine(String id) {
+    final idPtr = id.toNativeUtf8();
+    try {
+      return _readNativeString(
+        (buf, sizeOut) => dotlottieGetStateMachine(_ptr, idPtr, buf, sizeOut),
+      );
+    } finally {
+      malloc.free(idPtr);
+    }
+  }
+
+  /// Returns the InteractionType bit flags (kInteraction*) declaring which
+  /// pointer listeners the loaded state machine needs, or 0 if unavailable.
+  int frameworkSetup() {
+    if (!stateMachineActive) return 0;
+    if (dotlottieStateMachineGetFrameworkSetup(_sm!, _uint16Out) !=
+        kResultSuccess) {
+      return 0;
+    }
+    return _uint16Out.value;
+  }
+
+  void pollStateMachineEvents({
+    void Function()? onStart,
+    void Function()? onStop,
+    void Function(String previousState, String newState)? onTransition,
+    void Function(String enteringState)? onStateEntered,
+    void Function(String leavingState)? onStateExit,
+    void Function(String message)? onCustomEvent,
+    void Function(String message)? onError,
+    void Function(String name, String oldValue, String newValue)?
+        onStringInputValueChange,
+    void Function(String name, double oldValue, double newValue)?
+        onNumericInputValueChange,
+    void Function(String name, bool oldValue, bool newValue)?
+        onBooleanInputValueChange,
+    void Function(String name)? onInputFired,
+  }) {
+    if (!stateMachineActive) return;
+    // String pointers in the event are only valid until the next poll call, so
+    // each branch reads them immediately.
+    while (dotlottieStateMachinePollEvent(_sm!, _smEventPtr) == 1) {
+      final e = _smEventPtr.ref;
+      switch (e.eventType) {
+        case kSmEventStart:
+          onStart?.call();
+        case kSmEventStop:
+          onStop?.call();
+        case kSmEventTransition:
+          onTransition?.call(
+            e.data.transition.previousState.toDartString(),
+            e.data.transition.newState.toDartString(),
+          );
+        case kSmEventStateEntered:
+          onStateEntered?.call(e.data.state.state.toDartString());
+        case kSmEventStateExit:
+          onStateExit?.call(e.data.state.state.toDartString());
+        case kSmEventCustomEvent:
+          onCustomEvent?.call(e.data.message.message.toDartString());
+        case kSmEventError:
+          onError?.call(e.data.message.message.toDartString());
+        case kSmEventStringInputChange:
+          onStringInputValueChange?.call(
+            e.data.stringInput.name.toDartString(),
+            e.data.stringInput.oldValue.toDartString(),
+            e.data.stringInput.newValue.toDartString(),
+          );
+        case kSmEventNumericInputChange:
+          onNumericInputValueChange?.call(
+            e.data.numericInput.name.toDartString(),
+            e.data.numericInput.oldValue,
+            e.data.numericInput.newValue,
+          );
+        case kSmEventBooleanInputChange:
+          onBooleanInputValueChange?.call(
+            e.data.booleanInput.name.toDartString(),
+            e.data.booleanInput.oldValue,
+            e.data.booleanInput.newValue,
+          );
+        case kSmEventInputFired:
+          onInputFired?.call(e.data.inputFired.name.toDartString());
+      }
+    }
+  }
+
+  // ---------------------------------------------------------------------------
   // Private helpers
   // ---------------------------------------------------------------------------
 
@@ -361,13 +635,17 @@ class DotLottieFfiPlayer {
   void dispose() {
     if (_disposed) return;
     _disposed = true;
+    // The state machine borrows the player — release it before destroying.
+    releaseStateMachine();
     if (_pixelBuffer != null) {
       malloc.free(_pixelBuffer!);
       _pixelBuffer = null;
     }
     malloc.free(_eventPtr);
+    malloc.free(_smEventPtr);
     malloc.free(_floatOut);
     malloc.free(_uint32Out);
+    malloc.free(_uint16Out);
     malloc.free(_boolOut);
     malloc.free(_sizeOut);
     dotlottieDestroy(_ptr);
