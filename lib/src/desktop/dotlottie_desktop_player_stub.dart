@@ -33,6 +33,7 @@ class DotLottieFfiPlayer {
   void setLoop(bool loop) {}
   void setMode(String mode) {}
   void setFrameInterpolation(bool use) {}
+  void setLayout(String fit, double alignX, double alignY) {}
   bool seekFrame(double frame) => false;
   bool isPlaying() => false;
   bool isPaused() => false;
@@ -74,6 +75,47 @@ class DotLottieFfiPlayer {
   bool loadAnimation(String animationId) => false;
   String? getAnimationId() => null;
   String? getManifest() => null;
+
+  // State machine
+  bool get stateMachineActive => false;
+  bool loadStateMachine(String stateMachineId) => false;
+  bool loadStateMachineData(String data) => false;
+  bool startStateMachine() => false;
+  bool stopStateMachine() => false;
+  void releaseStateMachine() {}
+  bool stateMachineTick(double dtMs) => false;
+  void postPointerDown(double x, double y) {}
+  void postPointerUp(double x, double y) {}
+  void postPointerMove(double x, double y) {}
+  void postPointerEnter(double x, double y) {}
+  void postPointerExit(double x, double y) {}
+  void postClick(double x, double y) {}
+  bool fireEvent(String event) => false;
+  bool setNumericInput(String key, double value) => false;
+  bool setStringInput(String key, String value) => false;
+  bool setBooleanInput(String key, bool value) => false;
+  double? getNumericInput(String key) => null;
+  String? getStringInput(String key) => null;
+  bool? getBooleanInput(String key) => null;
+  String? currentState() => null;
+  String? getStateMachine(String id) => null;
+  int frameworkSetup() => 0;
+  void pollStateMachineEvents({
+    void Function()? onStart,
+    void Function()? onStop,
+    void Function(String previousState, String newState)? onTransition,
+    void Function(String enteringState)? onStateEntered,
+    void Function(String leavingState)? onStateExit,
+    void Function(String message)? onCustomEvent,
+    void Function(String message)? onError,
+    void Function(String name, String oldValue, String newValue)?
+        onStringInputValueChange,
+    void Function(String name, double oldValue, double newValue)?
+        onNumericInputValueChange,
+    void Function(String name, bool oldValue, bool newValue)?
+        onBooleanInputValueChange,
+    void Function(String name)? onInputFired,
+  }) {}
 
   void dispose() {}
 }

@@ -22,6 +22,10 @@ DynamicLibrary _openLibrary() {
 
 final class DotLottiePlayer extends Opaque {}
 
+// Opaque state machine handle. Borrows the player; must be released before the
+// player is destroyed.
+final class DotLottieStateMachine extends Opaque {}
+
 // ---------------------------------------------------------------------------
 // Constants (C enums map to int in Dart FFI)
 // ---------------------------------------------------------------------------
@@ -41,6 +45,14 @@ const int kStatusPlaying = 0;
 const int kStatusPaused = 1;
 const int kStatusStopped = 2;
 
+// dotlottieFit
+const int kFitContain = 0;
+const int kFitFill = 1;
+const int kFitCover = 2;
+const int kFitWidth = 3;
+const int kFitHeight = 4;
+const int kFitNone = 5;
+
 // dotlottieDotLottieResult
 const int kResultSuccess = 0;
 
@@ -54,6 +66,23 @@ const int kEventFrame = 5;
 const int kEventRender = 6;
 const int kEventLoop = 7;
 const int kEventComplete = 8;
+
+// dotlottieStateMachineEventType
+const int kSmEventStart = 0;
+const int kSmEventStop = 1;
+const int kSmEventTransition = 2;
+const int kSmEventStateEntered = 3;
+const int kSmEventStateExit = 4;
+const int kSmEventCustomEvent = 5;
+const int kSmEventError = 6;
+const int kSmEventStringInputChange = 7;
+const int kSmEventNumericInputChange = 8;
+const int kSmEventBooleanInputChange = 9;
+const int kSmEventInputFired = 10;
+
+// Interaction bit flags (kInteraction*) returned by
+// dotlottie_state_machine_get_framework_setup live in state_machine_interactions.dart
+// so they can also be used by the web-safe widget layer.
 
 // ---------------------------------------------------------------------------
 // Event struct
@@ -70,6 +99,76 @@ final class DotLottiePlayerEvent extends Struct {
   @Int32()
   external int eventType;
   external DotLottiePlayerEventData data;
+}
+
+// dotlottieLayout { dotlottieFit fit; float align[2]; }
+final class DotLottieLayout extends Struct {
+  @Int32()
+  external int fit;
+  @Array(2)
+  external Array<Float> align;
+}
+
+// ---------------------------------------------------------------------------
+// State machine event struct
+//
+// All `const char*` string pointers below are only valid until the next
+// dotlottie_state_machine_poll_event call — read them immediately.
+// ---------------------------------------------------------------------------
+
+final class SmTransitionData extends Struct {
+  external Pointer<Utf8> previousState;
+  external Pointer<Utf8> newState;
+}
+
+final class SmStateData extends Struct {
+  external Pointer<Utf8> state;
+}
+
+final class SmMessageData extends Struct {
+  external Pointer<Utf8> message;
+}
+
+final class SmStringInputData extends Struct {
+  external Pointer<Utf8> name;
+  external Pointer<Utf8> oldValue;
+  external Pointer<Utf8> newValue;
+}
+
+final class SmNumericInputData extends Struct {
+  external Pointer<Utf8> name;
+  @Float()
+  external double oldValue;
+  @Float()
+  external double newValue;
+}
+
+final class SmBooleanInputData extends Struct {
+  external Pointer<Utf8> name;
+  @Bool()
+  external bool oldValue;
+  @Bool()
+  external bool newValue;
+}
+
+final class SmInputFiredData extends Struct {
+  external Pointer<Utf8> name;
+}
+
+final class DotLottieStateMachineEventData extends Union {
+  external SmTransitionData transition;
+  external SmStateData state;
+  external SmMessageData message;
+  external SmStringInputData stringInput;
+  external SmNumericInputData numericInput;
+  external SmBooleanInputData booleanInput;
+  external SmInputFiredData inputFired;
+}
+
+final class DotLottieStateMachineEvent extends Struct {
+  @Int32()
+  external int eventType;
+  external DotLottieStateMachineEventData data;
 }
 
 // ---------------------------------------------------------------------------
@@ -192,6 +291,12 @@ final dotlottieSetUseFrameInterpolation = _lib.lookupFunction<
     int Function(Pointer<DotLottiePlayer>,
         bool)>('dotlottie_set_use_frame_interpolation');
 
+// Layout (fit + alignment) — struct passed by value.
+final dotlottieSetLayout = _lib.lookupFunction<
+    Int32 Function(Pointer<DotLottiePlayer>, DotLottieLayout),
+    int Function(
+        Pointer<DotLottiePlayer>, DotLottieLayout)>('dotlottie_set_layout');
+
 // Event polling
 final dotlottiePollEvent = _lib.lookupFunction<
     Int32 Function(Pointer<DotLottiePlayer>, Pointer<DotLottiePlayerEvent>),
@@ -266,3 +371,137 @@ final dotlottieGetManifest = _lib.lookupFunction<
     Int32 Function(Pointer<DotLottiePlayer>, Pointer<Uint8>, Pointer<UintPtr>),
     int Function(Pointer<DotLottiePlayer>, Pointer<Uint8>,
         Pointer<UintPtr>)>('dotlottie_get_manifest');
+
+// ---------------------------------------------------------------------------
+// State machine
+// ---------------------------------------------------------------------------
+
+// Lifecycle
+final dotlottieStateMachineLoad = _lib.lookupFunction<
+    Pointer<DotLottieStateMachine> Function(
+        Pointer<DotLottiePlayer>, Pointer<Utf8>),
+    Pointer<DotLottieStateMachine> Function(Pointer<DotLottiePlayer>,
+        Pointer<Utf8>)>('dotlottie_state_machine_load');
+
+final dotlottieStateMachineLoadData = _lib.lookupFunction<
+    Pointer<DotLottieStateMachine> Function(
+        Pointer<DotLottiePlayer>, Pointer<Utf8>),
+    Pointer<DotLottieStateMachine> Function(Pointer<DotLottiePlayer>,
+        Pointer<Utf8>)>('dotlottie_state_machine_load_data');
+
+final dotlottieStateMachineStart = _lib.lookupFunction<
+    Int32 Function(Pointer<DotLottieStateMachine>, Pointer<Utf8>, Bool),
+    int Function(Pointer<DotLottieStateMachine>, Pointer<Utf8>,
+        bool)>('dotlottie_state_machine_start');
+
+final dotlottieStateMachineStop = _lib.lookupFunction<
+    Int32 Function(Pointer<DotLottieStateMachine>),
+    int Function(
+        Pointer<DotLottieStateMachine>)>('dotlottie_state_machine_stop');
+
+final dotlottieStateMachineRelease = _lib.lookupFunction<
+    Void Function(Pointer<DotLottieStateMachine>),
+    void Function(
+        Pointer<DotLottieStateMachine>)>('dotlottie_state_machine_release');
+
+// Tick
+final dotlottieStateMachineTick = _lib.lookupFunction<
+    Int32 Function(Pointer<DotLottieStateMachine>, Float, Pointer<Bool>),
+    int Function(Pointer<DotLottieStateMachine>, double,
+        Pointer<Bool>)>('dotlottie_state_machine_tick');
+
+// Pointer events (all take float x, y)
+final dotlottieStateMachinePostPointerDown = _lib.lookupFunction<
+    Int32 Function(Pointer<DotLottieStateMachine>, Float, Float),
+    int Function(Pointer<DotLottieStateMachine>, double,
+        double)>('dotlottie_state_machine_post_pointer_down');
+
+final dotlottieStateMachinePostPointerUp = _lib.lookupFunction<
+    Int32 Function(Pointer<DotLottieStateMachine>, Float, Float),
+    int Function(Pointer<DotLottieStateMachine>, double,
+        double)>('dotlottie_state_machine_post_pointer_up');
+
+final dotlottieStateMachinePostPointerMove = _lib.lookupFunction<
+    Int32 Function(Pointer<DotLottieStateMachine>, Float, Float),
+    int Function(Pointer<DotLottieStateMachine>, double,
+        double)>('dotlottie_state_machine_post_pointer_move');
+
+final dotlottieStateMachinePostPointerEnter = _lib.lookupFunction<
+    Int32 Function(Pointer<DotLottieStateMachine>, Float, Float),
+    int Function(Pointer<DotLottieStateMachine>, double,
+        double)>('dotlottie_state_machine_post_pointer_enter');
+
+final dotlottieStateMachinePostPointerExit = _lib.lookupFunction<
+    Int32 Function(Pointer<DotLottieStateMachine>, Float, Float),
+    int Function(Pointer<DotLottieStateMachine>, double,
+        double)>('dotlottie_state_machine_post_pointer_exit');
+
+final dotlottieStateMachinePostClick = _lib.lookupFunction<
+    Int32 Function(Pointer<DotLottieStateMachine>, Float, Float),
+    int Function(Pointer<DotLottieStateMachine>, double,
+        double)>('dotlottie_state_machine_post_click');
+
+// Inputs
+final dotlottieStateMachineFireEvent = _lib.lookupFunction<
+    Int32 Function(Pointer<DotLottieStateMachine>, Pointer<Utf8>),
+    int Function(Pointer<DotLottieStateMachine>,
+        Pointer<Utf8>)>('dotlottie_state_machine_fire_event');
+
+final dotlottieStateMachineSetNumericInput = _lib.lookupFunction<
+    Int32 Function(Pointer<DotLottieStateMachine>, Pointer<Utf8>, Float),
+    int Function(Pointer<DotLottieStateMachine>, Pointer<Utf8>,
+        double)>('dotlottie_state_machine_set_numeric_input');
+
+final dotlottieStateMachineSetStringInput = _lib.lookupFunction<
+    Int32 Function(
+        Pointer<DotLottieStateMachine>, Pointer<Utf8>, Pointer<Utf8>),
+    int Function(Pointer<DotLottieStateMachine>, Pointer<Utf8>,
+        Pointer<Utf8>)>('dotlottie_state_machine_set_string_input');
+
+final dotlottieStateMachineSetBooleanInput = _lib.lookupFunction<
+    Int32 Function(Pointer<DotLottieStateMachine>, Pointer<Utf8>, Bool),
+    int Function(Pointer<DotLottieStateMachine>, Pointer<Utf8>,
+        bool)>('dotlottie_state_machine_set_boolean_input');
+
+final dotlottieStateMachineGetNumericInput = _lib.lookupFunction<
+    Int32 Function(Pointer<DotLottieStateMachine>, Pointer<Utf8>, Pointer<Float>),
+    int Function(Pointer<DotLottieStateMachine>, Pointer<Utf8>,
+        Pointer<Float>)>('dotlottie_state_machine_get_numeric_input');
+
+final dotlottieStateMachineGetStringInput = _lib.lookupFunction<
+    Int32 Function(Pointer<DotLottieStateMachine>, Pointer<Utf8>, Pointer<Uint8>,
+        Pointer<UintPtr>),
+    int Function(Pointer<DotLottieStateMachine>, Pointer<Utf8>, Pointer<Uint8>,
+        Pointer<UintPtr>)>('dotlottie_state_machine_get_string_input');
+
+final dotlottieStateMachineGetBooleanInput = _lib.lookupFunction<
+    Int32 Function(Pointer<DotLottieStateMachine>, Pointer<Utf8>, Pointer<Bool>),
+    int Function(Pointer<DotLottieStateMachine>, Pointer<Utf8>,
+        Pointer<Bool>)>('dotlottie_state_machine_get_boolean_input');
+
+// Status
+final dotlottieStateMachineGetCurrentState = _lib.lookupFunction<
+    Int32 Function(
+        Pointer<DotLottieStateMachine>, Pointer<Uint8>, Pointer<UintPtr>),
+    int Function(Pointer<DotLottieStateMachine>, Pointer<Uint8>,
+        Pointer<UintPtr>)>('dotlottie_state_machine_get_current_state');
+
+final dotlottieStateMachineGetFrameworkSetup = _lib.lookupFunction<
+    Int32 Function(Pointer<DotLottieStateMachine>, Pointer<Uint16>),
+    int Function(Pointer<DotLottieStateMachine>,
+        Pointer<Uint16>)>('dotlottie_state_machine_get_framework_setup');
+
+// Event polling
+final dotlottieStateMachinePollEvent = _lib.lookupFunction<
+    Int32 Function(
+        Pointer<DotLottieStateMachine>, Pointer<DotLottieStateMachineEvent>),
+    int Function(Pointer<DotLottieStateMachine>,
+        Pointer<DotLottieStateMachineEvent>)>(
+    'dotlottie_state_machine_poll_event');
+
+// Definition fetch (player-level)
+final dotlottieGetStateMachine = _lib.lookupFunction<
+    Int32 Function(Pointer<DotLottiePlayer>, Pointer<Utf8>, Pointer<Uint8>,
+        Pointer<UintPtr>),
+    int Function(Pointer<DotLottiePlayer>, Pointer<Utf8>, Pointer<Uint8>,
+        Pointer<UintPtr>)>('dotlottie_get_state_machine');

@@ -244,6 +244,14 @@ class DotLottieWebView {
         resize(width, height);
         return null;
 
+      case 'setLayout':
+        final args = call.arguments as Map;
+        final fit = args['fit'] as String;
+        final alignX = (args['alignX'] as num?)?.toDouble() ?? 0.5;
+        final alignY = (args['alignY'] as num?)?.toDouble() ?? 0.5;
+        setLayout(fit, alignX, alignY);
+        return null;
+
       case 'stateMachineLoad':
         final stateMachineId =
             (call.arguments as Map)['stateMachineId'] as String;
@@ -1076,6 +1084,28 @@ class DotLottieWebView {
         final method = player['setMode'.toJS] as JSFunction;
         method.callAsFunction(player, mode.toJS);
       } catch (e) {} // ignore: empty_catches
+    }
+  }
+
+  void setLayout(String fit, double alignX, double alignY) {
+    if (dotLottiePlayer != null && !isDisposed) {
+      try {
+        final player = dotLottiePlayer as JSObject;
+        final method = player['setLayout'.toJS] as JSFunction;
+        final layoutObj = JSObject();
+        // dotlottie-web expects kebab-case fit values for fit-width/fit-height.
+        layoutObj['fit'.toJS] = _fitToWebString(fit).toJS;
+        layoutObj['align'.toJS] = [alignX.toJS, alignY.toJS].toJS;
+        method.callAsFunction(player, layoutObj);
+      } catch (e) {} // ignore: empty_catches
+    }
+  }
+
+  static String _fitToWebString(String fit) {
+    switch (fit) {
+      case 'fitWidth':  return 'fit-width';
+      case 'fitHeight': return 'fit-height';
+      default:          return fit; // contain, cover, fill, none
     }
   }
 
