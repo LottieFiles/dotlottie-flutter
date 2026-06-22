@@ -555,6 +555,30 @@ class DotLottiePlatformView(
                         result.error("INVALID_ARGS", "Invalid resize arguments", null)
                     }
                 }
+                "setLayout" -> {
+                    val fitString = call.argument<String>("fit")
+                    if (fitString != null) {
+                        val fit = when (fitString.lowercase()) {
+                            "fill"      -> Fit.FILL
+                            "cover"     -> Fit.COVER
+                            "fitwidth"  -> Fit.FIT_WIDTH
+                            "fitheight" -> Fit.FIT_HEIGHT
+                            "none"      -> Fit.NONE
+                            else        -> Fit.CONTAIN
+                        }
+                        val alignX = (call.argument<Double>("alignX") ?: 0.5).toFloat()
+                        val alignY = (call.argument<Double>("alignY") ?: 0.5).toFloat()
+                        try {
+                            player.setLayout(fit, alignX, alignY)
+                            result.success(null)
+                        } catch (e: Exception) {
+                            Log.w("🔴 DotLottie", "setLayout not available", e)
+                            result.success(null)
+                        }
+                    } else {
+                        result.error("INVALID_ARGS", "Invalid layout arguments", null)
+                    }
+                }
                 "stateMachineLoad" -> {
                     val stateMachineId = call.argument<String>("stateMachineId")
                     if (stateMachineId != null) {

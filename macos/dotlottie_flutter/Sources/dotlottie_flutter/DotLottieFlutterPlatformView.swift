@@ -1,5 +1,5 @@
-import Flutter
-import UIKit
+import FlutterMacOS
+import AppKit
 import DotLottie
 import SwiftUI
 
@@ -119,7 +119,7 @@ class FlutterStateMachineObserver: StateMachineObserver {
     }
 }
 
-class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
+class DotLottieFlutterPlatformView: NSObject {
     private static let urlSession: URLSession = {
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = 15
@@ -127,7 +127,7 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
         return URLSession(configuration: config)
     }()
 
-    private var _view: UIView
+    private var _view: NSView
     private var dotLottieAnimation: DotLottieAnimation?
     private lazy var animationObserver: AnimationObserver = {
         return AnimationObserver(methodChannel: methodChannel)
@@ -135,9 +135,10 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
     private lazy var stateMachineObserver: FlutterStateMachineObserver = {
         return FlutterStateMachineObserver(methodChannel: methodChannel)
     }()
-    private var hostingController: UIHostingController<DotLottieView>?
+    private var hostingController: NSHostingController<DotLottieView>?
     private var methodChannel: FlutterMethodChannel
     private var isDisposed = false
+    private var viewId: Int64
     private var pendingURLTask: URLSessionDataTask?
     
     init(
@@ -146,8 +147,10 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
         arguments args: Any?,
         binaryMessenger messenger: FlutterBinaryMessenger
     ) {
-        _view = UIView(frame: frame)
-        _view.backgroundColor = UIColor.clear
+        self.viewId = viewId
+        _view = NSView(frame: frame)
+        _view.wantsLayer = true
+        _view.layer?.backgroundColor = NSColor.clear.cgColor
         
         methodChannel = FlutterMethodChannel(
             name: "dotlottie_view_\(viewId)",
@@ -155,6 +158,7 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
         )
         
         super.init()
+        
         
         if let arguments = args as? [String: Any] {
             setupAnimation(with: arguments)
@@ -165,7 +169,7 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
         }
     }
     
-    func view() -> UIView {
+    func view() -> NSView {
         return _view
     }
     
@@ -239,25 +243,27 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
             stateMachineId: stateMachineId
         )
         config.animationId = animationId
-        
+
         if let w = width {
             config.width = w
         }
         if let h = height {
             config.height = h
-        }
-        
+        }   
+
         if let bgColor = backgroundColor, let color = parseColor(bgColor) {
-            _view.backgroundColor = color
+            _view.layer?.backgroundColor = color.cgColor
         }
 
         switch sourceType {
         case "url":
             // After download, create the animation on the main thread so it can never
             // run concurrently with the display-link tick(), which also runs on the main
-            // thread.  Concurrent FFI calls into ThorVG from different threads corrupt its
-            // internal memory pool and cause a SIGSEGV in _setCell.
+            // thread.
             guard let urlString = source, let url = URL(string: urlString) else {
+                // Defer by one run-loop turn so _onPlatformViewCreated on the Dart
+                // side has a chance to register its setMethodCallHandler before we
+                // invoke the channel, otherwise the message is silently dropped.
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
                     guard let self = self, !self.isDisposed else { return }
                     self.methodChannel.invokeMethod("onLoadError", arguments: nil)
@@ -314,10 +320,11 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
         let _ = animation.stateMachineSubscribe(stateMachineObserver)
 
         let animationView = animation.view() as DotLottieView
-        let hosting = UIHostingController(rootView: animationView)
-        hosting.view.backgroundColor = UIColor.clear
+        let hosting = NSHostingController(rootView: animationView)
+        hosting.view.wantsLayer = true
+        hosting.view.layer?.backgroundColor = .clear
         hosting.view.frame = _view.bounds
-        hosting.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        hosting.view.autoresizingMask = [.width, .height]
         _view.addSubview(hosting.view)
         hostingController = hosting
     }
@@ -487,8 +494,14 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
             if let args = call.arguments as? [String: Any],
                let colorString = args["color"] as? String,
                let color = parseColor(colorString) {
-                // Convert UIColor to CIImage
-                let ciColor = CIColor(color: color)
+                // Convert NSColor to CIImage
+                var red: CGFloat = 0
+                var green: CGFloat = 0
+                var blue: CGFloat = 0
+                var alpha: CGFloat = 0
+                color.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+                
+                let ciColor = CIColor(red: red, green: green, blue: blue, alpha: alpha)
                 let ciImage = CIImage(color: ciColor)
                 animation.setBackgroundColor(bgColor: ciImage)
                 result(nil)
@@ -575,7 +588,27 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
             } else {
                 result(FlutterError(code: "INVALID_ARGS", message: "Invalid resize arguments", details: nil))
             }
-            
+
+        case "setLayout":
+            if let args = call.arguments as? [String: Any],
+               let fitString = args["fit"] as? String {
+                let fit: Fit
+                switch fitString {
+                case "fill":      fit = .fill
+                case "cover":     fit = .cover
+                case "fitWidth":  fit = .fitWidth
+                case "fitHeight": fit = .fitHeight
+                case "none":      fit = Fit.none
+                default:          fit = .contain
+                }
+                let alignX = Float(args["alignX"] as? Double ?? 0.5)
+                let alignY = Float(args["alignY"] as? Double ?? 0.5)
+                animation.setLayout(layout: DotLottie.Layout(fit: fit, alignX: alignX, alignY: alignY))
+                result(nil)
+            } else {
+                result(FlutterError(code: "INVALID_ARGS", message: "Invalid layout arguments", details: nil))
+            }
+
         case "stateMachineLoad":
             if let args = call.arguments as? [String: Any],
                let stateMachineId = args["stateMachineId"] as? String {
@@ -643,31 +676,31 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
             
         case "stateMachineGetNumericInput":
             if let args = call.arguments as? [String: Any],
-                let key = args["key"] as? String {
+               let key = args["key"] as? String {
                 let value = animation.stateMachineGetNumericInput(key: key)
                 result(Double(value))
             } else {
                 result(FlutterError(code: "INVALID_ARGS", message: "Invalid key argument", details: nil))
             }
-
+            
         case "stateMachineGetStringInput":
             if let args = call.arguments as? [String: Any],
-                let key = args["key"] as? String {
+               let key = args["key"] as? String {
                 let value = animation.stateMachineGetStringInput(key: key)
                 result(value)
             } else {
                 result(FlutterError(code: "INVALID_ARGS", message: "Invalid key argument", details: nil))
             }
-
+            
         case "stateMachineGetBooleanInput":
             if let args = call.arguments as? [String: Any],
-                let key = args["key"] as? String {
+               let key = args["key"] as? String {
                 let value = animation.stateMachineGetBooleanInput(key: key)
                 result(value)
             } else {
                 result(FlutterError(code: "INVALID_ARGS", message: "Invalid key argument", details: nil))
             }
-
+            
         case "stateMachineGetInputs":
             let inputs = animation.stateMachineGetInputs()
             result(inputs)
@@ -700,7 +733,6 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
                     manifestDict["initial"] = initialDict
                 }
                 
-                // Convert ManifestAnimation array
                 manifestDict["animations"] = manifest.animations.map { animation in
                     var animDict: [String: Any?] = [:]
                     animDict["id"] = animation.id
@@ -745,7 +777,7 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
         }
     }
     
-    private func parseColor(_ colorString: String) -> UIColor? {
+    private func parseColor(_ colorString: String) -> NSColor? {
         var hexString = colorString.trimmingCharacters(in: .whitespacesAndNewlines)
         hexString = hexString.replacingOccurrences(of: "#", with: "")
         
@@ -769,7 +801,7 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
             return nil
         }
         
-        return UIColor(red: r, green: g, blue: b, alpha: a)
+        return NSColor(red: r, green: g, blue: b, alpha: a)
     }
     
     private func dispose() {
@@ -784,8 +816,8 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
         let _ = dotLottieAnimation?.stateMachineUnsubscribe(self.stateMachineObserver)
         dotLottieAnimation?.unsubscribe(observer: self.animationObserver)
 
-        // Tear down the hosting view synchronously so the display link stops driving
-        // the SwiftUI render tree before we release the C++ objects.
+        // Tear down the hosting view synchronously so the Metal/CV display link stops
+        // driving the SwiftUI render tree before we release the C++ objects.
         let hc = hostingController
         let view = _view
         let animToRelease = dotLottieAnimation

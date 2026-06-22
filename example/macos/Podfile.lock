@@ -1,29 +1,16 @@
 PODS:
-  - dotlottie_flutter (0.0.2):
-    - FlutterMacOS
-    - LottieFiles-dotLottie-iOS (= 0.15.4)
   - FlutterMacOS (1.0.0)
-  - LottieFiles-dotLottie-iOS (0.15.4)
 
 DEPENDENCIES:
-  - dotlottie_flutter (from `Flutter/ephemeral/.symlinks/plugins/dotlottie_flutter/macos`)
   - FlutterMacOS (from `Flutter/ephemeral`)
 
-SPEC REPOS:
-  trunk:
-    - LottieFiles-dotLottie-iOS
-
 EXTERNAL SOURCES:
-  dotlottie_flutter:
-    :path: Flutter/ephemeral/.symlinks/plugins/dotlottie_flutter/macos
   FlutterMacOS:
     :path: Flutter/ephemeral
 
 SPEC CHECKSUMS:
-  dotlottie_flutter: 5ad537703fd014c3c9a9f4c1eb55314bf0e9a497
   FlutterMacOS: d0db08ddef1a9af05a5ec4b724367152bb0500b1
-  LottieFiles-dotLottie-iOS: 044d32af28bc38871c944c8daa9d9fde8f7e2d99
 
 PODFILE CHECKSUM: 346bfb2deb41d4a6ebd6f6799f92188bde2d246f
 
-COCOAPODS: 1.16.2
+COCOAPODS: 1.15.2

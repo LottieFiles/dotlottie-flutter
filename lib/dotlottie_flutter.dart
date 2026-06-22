@@ -15,6 +15,22 @@ import 'src/desktop/dotlottie_desktop_player_stub.dart'
     if (dart.library.ffi) 'src/desktop/dotlottie_desktop_player.dart';
 import 'src/state_machine_interactions.dart';
 
+/// Maps a Flutter [BoxFit] to the fit string understood by the native players.
+/// Returns `null` when [fit] is `null`. `scaleDown` has no native equivalent and
+/// is approximated by `contain`.
+String? _boxFitToFitString(BoxFit? fit) {
+  switch (fit) {
+    case BoxFit.contain:   return 'contain';
+    case BoxFit.cover:     return 'cover';
+    case BoxFit.fill:      return 'fill';
+    case BoxFit.fitWidth:  return 'fitWidth';
+    case BoxFit.fitHeight: return 'fitHeight';
+    case BoxFit.none:      return 'none';
+    case BoxFit.scaleDown: return 'contain';
+    case null:             return null;
+  }
+}
+
 /// A Flutter widget that renders a dotLottie or Lottie animation.
 ///
 /// Supports loading animations from a URL, an asset file, or a raw JSON string.
@@ -236,6 +252,10 @@ class _DotLottieViewState extends State<DotLottieView> {
         _platformViewGeneration++;
         _creationParamsFuture = _getCreationParams();
       });
+    } else if (oldWidget.fit != widget.fit && widget.fit != null) {
+      // A live fit change doesn't require rebuilding the platform view — push it
+      // to the native player via setLayout so it takes effect on the next frame.
+      _controller?.setLayout(widget.fit!);
     }
   }
 
@@ -440,19 +460,6 @@ class _DotLottieViewState extends State<DotLottieView> {
     );
   }
 
-  static String? _boxFitToString(BoxFit? fit) {
-    switch (fit) {
-      case BoxFit.contain:   return 'contain';
-      case BoxFit.cover:     return 'cover';
-      case BoxFit.fill:      return 'fill';
-      case BoxFit.fitWidth:  return 'fitWidth';
-      case BoxFit.fitHeight: return 'fitHeight';
-      case BoxFit.none:      return 'none';
-      case BoxFit.scaleDown: return 'contain';
-      case null:             return null;
-    }
-  }
-
   Future<Map<String, dynamic>> _getCreationParams() async {
     Map<String, dynamic> params = {
       'autoplay': widget.autoplay,
@@ -464,7 +471,7 @@ class _DotLottieViewState extends State<DotLottieView> {
       if (widget.segment != null) 'segment': widget.segment,
       if (widget.backgroundColor != null)
         'backgroundColor': widget.backgroundColor,
-      if (widget.fit != null) 'fit': _boxFitToString(widget.fit),
+      if (widget.fit != null) 'fit': _boxFitToFitString(widget.fit),
       if (widget.marker != null) 'marker': widget.marker,
       if (widget.themeId != null) 'themeId': widget.themeId,
       if (widget.stateMachineId != null)
@@ -1041,6 +1048,29 @@ class DotLottieViewController {
       await _channel.invokeMethod('resize', {'width': width, 'height': height});
     } catch (e) {
       debugPrint('Error calling resize: $e');
+    }
+  }
+
+  /// Updates how the animation is fitted and aligned within the view at runtime.
+  ///
+  /// [fit] controls scaling (mapped from [BoxFit]); [alignment] positions the
+  /// animation within any leftover space and defaults to [Alignment.center].
+  /// The change takes effect on the next rendered frame without recreating the
+  /// view. This is invoked automatically when [DotLottieView.fit] changes.
+  Future<void> setLayout(
+    BoxFit fit, {
+    Alignment alignment = Alignment.center,
+  }) async {
+    try {
+      await _channel.invokeMethod('setLayout', {
+        'fit': _boxFitToFitString(fit),
+        // Native players expect alignment in the 0..1 range, whereas Flutter's
+        // Alignment is -1..1; convert here.
+        'alignX': (alignment.x + 1) / 2,
+        'alignY': (alignment.y + 1) / 2,
+      });
+    } catch (e) {
+      debugPrint('Error calling setLayout: $e');
     }
   }
 
@@ -1723,6 +1753,17 @@ class DotLottieDesktopViewController extends DotLottieViewController {
 
   @override Future<void> resize(int width, int height) async {}
   @override Future<bool?> setSlots(String slots) async => false;
+
+  @override
+  Future<void> setLayout(
+    BoxFit fit, {
+    Alignment alignment = Alignment.center,
+  }) async =>
+      _ffi.setLayout(
+        _boxFitToFitString(fit) ?? 'contain',
+        (alignment.x + 1) / 2,
+        (alignment.y + 1) / 2,
+      );
 
   // State machine — wired to FFI
   @override Future<bool?> stateMachineLoad(String stateMachineId) async =>

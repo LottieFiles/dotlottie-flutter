@@ -1,5 +1,5 @@
-import FlutterMacOS
-import AppKit
+import Flutter
+import UIKit
 import DotLottie
 import SwiftUI
 
@@ -119,7 +119,7 @@ class FlutterStateMachineObserver: StateMachineObserver {
     }
 }
 
-class DotLottieFlutterPlatformView: NSObject {
+class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
     private static let urlSession: URLSession = {
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = 15
@@ -127,7 +127,7 @@ class DotLottieFlutterPlatformView: NSObject {
         return URLSession(configuration: config)
     }()
 
-    private var _view: NSView
+    private var _view: UIView
     private var dotLottieAnimation: DotLottieAnimation?
     private lazy var animationObserver: AnimationObserver = {
         return AnimationObserver(methodChannel: methodChannel)
@@ -135,10 +135,9 @@ class DotLottieFlutterPlatformView: NSObject {
     private lazy var stateMachineObserver: FlutterStateMachineObserver = {
         return FlutterStateMachineObserver(methodChannel: methodChannel)
     }()
-    private var hostingController: NSHostingController<DotLottieView>?
+    private var hostingController: UIHostingController<DotLottieView>?
     private var methodChannel: FlutterMethodChannel
     private var isDisposed = false
-    private var viewId: Int64
     private var pendingURLTask: URLSessionDataTask?
     
     init(
@@ -147,10 +146,8 @@ class DotLottieFlutterPlatformView: NSObject {
         arguments args: Any?,
         binaryMessenger messenger: FlutterBinaryMessenger
     ) {
-        self.viewId = viewId
-        _view = NSView(frame: frame)
-        _view.wantsLayer = true
-        _view.layer?.backgroundColor = NSColor.clear.cgColor
+        _view = UIView(frame: frame)
+        _view.backgroundColor = UIColor.clear
         
         methodChannel = FlutterMethodChannel(
             name: "dotlottie_view_\(viewId)",
@@ -158,7 +155,6 @@ class DotLottieFlutterPlatformView: NSObject {
         )
         
         super.init()
-        
         
         if let arguments = args as? [String: Any] {
             setupAnimation(with: arguments)
@@ -169,7 +165,7 @@ class DotLottieFlutterPlatformView: NSObject {
         }
     }
     
-    func view() -> NSView {
+    func view() -> UIView {
         return _view
     }
     
@@ -243,27 +239,25 @@ class DotLottieFlutterPlatformView: NSObject {
             stateMachineId: stateMachineId
         )
         config.animationId = animationId
-
+        
         if let w = width {
             config.width = w
         }
         if let h = height {
             config.height = h
-        }   
-
+        }
+        
         if let bgColor = backgroundColor, let color = parseColor(bgColor) {
-            _view.layer?.backgroundColor = color.cgColor
+            _view.backgroundColor = color
         }
 
         switch sourceType {
         case "url":
             // After download, create the animation on the main thread so it can never
             // run concurrently with the display-link tick(), which also runs on the main
-            // thread.
+            // thread.  Concurrent FFI calls into ThorVG from different threads corrupt its
+            // internal memory pool and cause a SIGSEGV in _setCell.
             guard let urlString = source, let url = URL(string: urlString) else {
-                // Defer by one run-loop turn so _onPlatformViewCreated on the Dart
-                // side has a chance to register its setMethodCallHandler before we
-                // invoke the channel, otherwise the message is silently dropped.
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
                     guard let self = self, !self.isDisposed else { return }
                     self.methodChannel.invokeMethod("onLoadError", arguments: nil)
@@ -320,11 +314,10 @@ class DotLottieFlutterPlatformView: NSObject {
         let _ = animation.stateMachineSubscribe(stateMachineObserver)
 
         let animationView = animation.view() as DotLottieView
-        let hosting = NSHostingController(rootView: animationView)
-        hosting.view.wantsLayer = true
-        hosting.view.layer?.backgroundColor = .clear
+        let hosting = UIHostingController(rootView: animationView)
+        hosting.view.backgroundColor = UIColor.clear
         hosting.view.frame = _view.bounds
-        hosting.view.autoresizingMask = [.width, .height]
+        hosting.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         _view.addSubview(hosting.view)
         hostingController = hosting
     }
@@ -494,14 +487,8 @@ class DotLottieFlutterPlatformView: NSObject {
             if let args = call.arguments as? [String: Any],
                let colorString = args["color"] as? String,
                let color = parseColor(colorString) {
-                // Convert NSColor to CIImage
-                var red: CGFloat = 0
-                var green: CGFloat = 0
-                var blue: CGFloat = 0
-                var alpha: CGFloat = 0
-                color.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
-                
-                let ciColor = CIColor(red: red, green: green, blue: blue, alpha: alpha)
+                // Convert UIColor to CIImage
+                let ciColor = CIColor(color: color)
                 let ciImage = CIImage(color: ciColor)
                 animation.setBackgroundColor(bgColor: ciImage)
                 result(nil)
@@ -588,7 +575,27 @@ class DotLottieFlutterPlatformView: NSObject {
             } else {
                 result(FlutterError(code: "INVALID_ARGS", message: "Invalid resize arguments", details: nil))
             }
-            
+
+        case "setLayout":
+            if let args = call.arguments as? [String: Any],
+               let fitString = args["fit"] as? String {
+                let fit: Fit
+                switch fitString {
+                case "fill":      fit = .fill
+                case "cover":     fit = .cover
+                case "fitWidth":  fit = .fitWidth
+                case "fitHeight": fit = .fitHeight
+                case "none":      fit = Fit.none
+                default:          fit = .contain
+                }
+                let alignX = Float(args["alignX"] as? Double ?? 0.5)
+                let alignY = Float(args["alignY"] as? Double ?? 0.5)
+                animation.setLayout(layout: DotLottie.Layout(fit: fit, alignX: alignX, alignY: alignY))
+                result(nil)
+            } else {
+                result(FlutterError(code: "INVALID_ARGS", message: "Invalid layout arguments", details: nil))
+            }
+
         case "stateMachineLoad":
             if let args = call.arguments as? [String: Any],
                let stateMachineId = args["stateMachineId"] as? String {
@@ -656,31 +663,31 @@ class DotLottieFlutterPlatformView: NSObject {
             
         case "stateMachineGetNumericInput":
             if let args = call.arguments as? [String: Any],
-               let key = args["key"] as? String {
+                let key = args["key"] as? String {
                 let value = animation.stateMachineGetNumericInput(key: key)
                 result(Double(value))
             } else {
                 result(FlutterError(code: "INVALID_ARGS", message: "Invalid key argument", details: nil))
             }
-            
+
         case "stateMachineGetStringInput":
             if let args = call.arguments as? [String: Any],
-               let key = args["key"] as? String {
+                let key = args["key"] as? String {
                 let value = animation.stateMachineGetStringInput(key: key)
                 result(value)
             } else {
                 result(FlutterError(code: "INVALID_ARGS", message: "Invalid key argument", details: nil))
             }
-            
+
         case "stateMachineGetBooleanInput":
             if let args = call.arguments as? [String: Any],
-               let key = args["key"] as? String {
+                let key = args["key"] as? String {
                 let value = animation.stateMachineGetBooleanInput(key: key)
                 result(value)
             } else {
                 result(FlutterError(code: "INVALID_ARGS", message: "Invalid key argument", details: nil))
             }
-            
+
         case "stateMachineGetInputs":
             let inputs = animation.stateMachineGetInputs()
             result(inputs)
@@ -713,6 +720,7 @@ class DotLottieFlutterPlatformView: NSObject {
                     manifestDict["initial"] = initialDict
                 }
                 
+                // Convert ManifestAnimation array
                 manifestDict["animations"] = manifest.animations.map { animation in
                     var animDict: [String: Any?] = [:]
                     animDict["id"] = animation.id
@@ -757,7 +765,7 @@ class DotLottieFlutterPlatformView: NSObject {
         }
     }
     
-    private func parseColor(_ colorString: String) -> NSColor? {
+    private func parseColor(_ colorString: String) -> UIColor? {
         var hexString = colorString.trimmingCharacters(in: .whitespacesAndNewlines)
         hexString = hexString.replacingOccurrences(of: "#", with: "")
         
@@ -781,7 +789,7 @@ class DotLottieFlutterPlatformView: NSObject {
             return nil
         }
         
-        return NSColor(red: r, green: g, blue: b, alpha: a)
+        return UIColor(red: r, green: g, blue: b, alpha: a)
     }
     
     private func dispose() {
@@ -796,8 +804,8 @@ class DotLottieFlutterPlatformView: NSObject {
         let _ = dotLottieAnimation?.stateMachineUnsubscribe(self.stateMachineObserver)
         dotLottieAnimation?.unsubscribe(observer: self.animationObserver)
 
-        // Tear down the hosting view synchronously so the Metal/CV display link stops
-        // driving the SwiftUI render tree before we release the C++ objects.
+        // Tear down the hosting view synchronously so the display link stops driving
+        // the SwiftUI render tree before we release the C++ objects.
         let hc = hostingController
         let view = _view
         let animToRelease = dotLottieAnimation

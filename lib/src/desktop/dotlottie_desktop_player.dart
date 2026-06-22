@@ -117,6 +117,24 @@ class DotLottieFfiPlayer {
   void setFrameInterpolation(bool use) =>
       dotlottieSetUseFrameInterpolation(_ptr, use);
 
+  /// Updates how the animation is fitted and aligned within the render target.
+  /// [fit] is the same camelCase string used across the platform channel
+  /// (`contain`, `cover`, `fill`, `fitWidth`, `fitHeight`, `none`); [alignX]
+  /// and [alignY] are in the 0..1 range ([0.5, 0.5] = centered).
+  void setLayout(String fit, double alignX, double alignY) {
+    final layout = malloc<DotLottieLayout>();
+    try {
+      layout.ref.fit = _fitFromString(fit);
+      layout.ref.align[0] = alignX;
+      layout.ref.align[1] = alignY;
+      dotlottieSetLayout(_ptr, layout.ref);
+      // Force a redraw so the new layout is visible even while paused/stopped.
+      render();
+    } finally {
+      malloc.free(layout);
+    }
+  }
+
   bool isPlaying() => dotlottieGetPlaybackStatus(_ptr) == kStatusPlaying;
   bool isPaused() => dotlottieGetPlaybackStatus(_ptr) == kStatusPaused;
   bool isStopped() => dotlottieGetPlaybackStatus(_ptr) == kStatusStopped;
@@ -638,5 +656,14 @@ class DotLottieFfiPlayer {
     'bounce'        => kModeBounce,
     'reverseBounce' => kModeReverseBounce,
     _               => kModeForward,
+  };
+
+  static int _fitFromString(String fit) => switch (fit) {
+    'fill'       => kFitFill,
+    'cover'      => kFitCover,
+    'fitWidth'   => kFitWidth,
+    'fitHeight'  => kFitHeight,
+    'none'       => kFitNone,
+    _            => kFitContain,
   };
 }

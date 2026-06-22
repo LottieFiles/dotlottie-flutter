@@ -26,10 +26,22 @@ class _MyAppState extends State<MyApp> {
   double _totalFrames = 0;
 
   BoxFit _selectedFit = BoxFit.contain;
+  // Alignment in the native 0..1 range ([0.5, 0.5] = centered).
+  double _alignX = 0.5;
+  double _alignY = 0.5;
 
   @override
   void initState() {
     super.initState();
+  }
+
+  /// Pushes the selected fit + alignment to the native player at runtime.
+  /// Flutter's Alignment is -1..1, so map the 0..1 slider values across.
+  void _applyLayout() {
+    _controller?.setLayout(
+      _selectedFit,
+      alignment: Alignment(_alignX * 2 - 1, _alignY * 2 - 1),
+    );
   }
 
   Future<void> _loadManifest() async {
@@ -185,12 +197,18 @@ class _MyAppState extends State<MyApp> {
                     ),
                   ),
                 ),
+                // A wide, non-square frame (with a visible border) makes the
+                // BoxFit differences obvious. No ValueKey here: changing the fit
+                // keeps the same view instance, so it updates live via setLayout
+                // instead of recreating the platform view.
                 Container(
-                  width: 300,
-                  height: 300,
-                  color: Colors.grey[200],
+                  width: 320,
+                  height: 180,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    border: Border.all(color: Colors.blueAccent, width: 1),
+                  ),
                   child: DotLottieView(
-                    key: ValueKey(_selectedFit),
                     // multitheme
                     // sourceType: 'url',
                     // source:
@@ -264,9 +282,66 @@ class _MyAppState extends State<MyApp> {
                         return FilterChip(
                           label: Text(fit.name),
                           selected: isSelected,
-                          onSelected: (_) => setState(() => _selectedFit = fit),
+                          // Changing the `fit` prop updates the layout live via
+                          // didUpdateWidget -> setLayout (centered), so reset the
+                          // alignment sliders to match.
+                          onSelected: (_) => setState(() {
+                            _selectedFit = fit;
+                            _alignX = 0.5;
+                            _alignY = 0.5;
+                          }),
                         );
                       }).toList(),
+                ),
+                const SizedBox(height: 16),
+
+                // Alignment sliders — call controller.setLayout(...) directly.
+                // Only affects fits that leave empty space (contain, fitWidth,
+                // fitHeight, none).
+                const Text(
+                  'Alignment:',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          SizedBox(
+                            width: 64,
+                            child: Text('X: ${_alignX.toStringAsFixed(2)}'),
+                          ),
+                          Expanded(
+                            child: Slider(
+                              value: _alignX,
+                              onChanged: (v) {
+                                setState(() => _alignX = v);
+                                _applyLayout();
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          SizedBox(
+                            width: 64,
+                            child: Text('Y: ${_alignY.toStringAsFixed(2)}'),
+                          ),
+                          Expanded(
+                            child: Slider(
+                              value: _alignY,
+                              onChanged: (v) {
+                                setState(() => _alignY = v);
+                                _applyLayout();
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 20),
 

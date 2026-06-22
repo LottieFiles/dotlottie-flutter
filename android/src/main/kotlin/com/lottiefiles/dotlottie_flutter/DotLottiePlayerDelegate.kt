@@ -1,6 +1,7 @@
 package com.lottiefiles.dotlottie_flutter
 
 import android.view.View
+import com.dotlottie.dlplayer.Fit
 import com.dotlottie.dlplayer.Manifest
 import com.dotlottie.dlplayer.Marker
 import com.dotlottie.dlplayer.Mode
@@ -70,6 +71,7 @@ interface DotLottiePlayerDelegate {
     // Animation
     fun loadAnimation(animationId: String)
     fun resize(width: Int, height: Int)
+    fun setLayout(fit: Fit, alignX: Float, alignY: Float)
     fun manifest(): Manifest?
 
     // State machine
@@ -138,6 +140,7 @@ class StandardPlayerAdapter(private val view: DotLottieAnimation) : DotLottiePla
     override fun setSlots(slots: String) = view.setSlots(slots)
     override fun loadAnimation(animationId: String) = view.loadAnimation(animationId)
     override fun resize(width: Int, height: Int) = view.resize(width, height)
+    override fun setLayout(fit: Fit, alignX: Float, alignY: Float) = view.setLayout(fit, Pair(alignX, alignY))
     override fun manifest(): Manifest? = view.manifest()
 
     override fun stateMachineLoad(stateMachineId: String): Boolean = view.stateMachineLoad(stateMachineId)
@@ -205,6 +208,7 @@ class GLPlayerAdapter(private val view: DotLottieGLAnimation) : DotLottiePlayerD
     override fun setSlots(slots: String) = view.setSlots(slots)
     override fun loadAnimation(animationId: String) = view.loadAnimation(animationId)
     override fun resize(width: Int, height: Int) = view.resize(width, height)
+    override fun setLayout(fit: Fit, alignX: Float, alignY: Float) = view.setLayout(fit, Pair(alignX, alignY))
     override fun manifest(): Manifest? = view.manifest()
 
     override fun stateMachineLoad(stateMachineId: String): Boolean = view.stateMachineLoad(stateMachineId)
