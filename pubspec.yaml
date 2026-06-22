@@ -1,6 +1,6 @@
 name: dotlottie_flutter
 description: "Render dotLottie and Lottie animations in Flutter. Supports playback control, theming and state machines on Android, iOS, macOS and Web."
-version: 0.1.3
+version: 0.1.4
 homepage: "https://lottiefiles.com"
 repository: "https://github.com/lottiefiles/dotlottie-flutter"
 
