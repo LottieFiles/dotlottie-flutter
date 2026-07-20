@@ -1,3 +1,7 @@
+## 0.1.5
+
+* chore: upgrading macos and ios deps to fix SPM error related to wgpu
+
 ## 0.1.4
 
 * chore: spm integration, bumped dotlottie-ios dep. to v0.15.7 for layout fixes
