@@ -1,6 +1,11 @@
 # dotLottie Flutter
 
+> [!TIP]
+> Looking for animations to use with this player? Browse **[100,000+ free Lottie animations](https://lottiefiles.com/free-animations?utm_source=npm&utm_medium=readme)** and grab any of them as `.lottie` or `.json`, or create your own with [Lottie Creator](https://lottiefiles.com/lottie-creator?utm_source=npm&utm_medium=readme).
+
 A Flutter plugin for rendering Lottie and dotLottie animations with full playback control, state machine support, and cross-platform compatibility.
+
+> Full documentation is available at [docs.lottiefiles.com](https://docs.lottiefiles.com/en/runtimes/distributions/flutter).
 
 **Platforms supported:** iOS, Android, macOS, Web, Windows, and Linux
 
