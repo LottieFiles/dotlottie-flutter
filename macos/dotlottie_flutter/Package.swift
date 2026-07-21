@@ -12,7 +12,7 @@ let package = Package(
         .library(name: "dotlottie-flutter", targets: ["dotlottie_flutter"])
     ],
     dependencies: [
-        .package(url: "https://github.com/LottieFiles/dotlottie-ios.git", from: "0.15.7"),
+        .package(url: "https://github.com/LottieFiles/dotlottie-ios.git", from: "0.16.5"),
         .package(name: "FlutterFramework", path: "../FlutterFramework")
     ],
     targets: [
