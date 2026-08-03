@@ -315,6 +315,14 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
 
         let animationView = animation.view() as DotLottieView
         let hosting = UIHostingController(rootView: animationView)
+
+        // The hosting controller is not installed in a view-controller hierarchy, so
+        // UIKit's safe-area propagation can inset the hosted MTKView inside the platform
+        // view's bounds — the animation then renders smaller and lower than the box
+        // Flutter laid out. Opting out keeps the SwiftUI content pinned to the bounds.
+        if #available(iOS 16.4, *) {
+            hosting.safeAreaRegions = []
+        }
         hosting.view.backgroundColor = UIColor.clear
         hosting.view.frame = _view.bounds
         hosting.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
