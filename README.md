@@ -73,7 +73,7 @@ The Linux renderer uses the pre-built `libdotlottie_rs.so` bundled with the plug
 
 ## Quick Start
 
-```
+```dart
 import 'package:flutter/material.dart';
 import 'package:dotlottie_flutter/dotlottie_flutter.dart';
 
