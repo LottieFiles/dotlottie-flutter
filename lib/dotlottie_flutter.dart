@@ -261,6 +261,16 @@ class _DotLottieViewState extends State<DotLottieView> {
 
   @override
   Widget build(BuildContext context) {
+    final view = _buildPlatformView();
+    if (widget.width == null && widget.height == null) return view;
+    return SizedBox(
+      width: widget.width?.toDouble(),
+      height: widget.height?.toDouble(),
+      child: view,
+    );
+  }
+
+  Widget _buildPlatformView() {
     if (kIsWeb) {
       return _buildWebView();
     } else if (defaultTargetPlatform == TargetPlatform.android) {
