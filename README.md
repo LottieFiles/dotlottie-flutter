@@ -1,4 +1,12 @@
-# dotLottie Flutter
+<p align="center">
+  <img
+    src="https://lottie.host/407e5312-d8d3-41f8-a917-f0ea1c94adb2/Tm9pP2T8eL.svg"
+    alt="dotLottie Flutter"
+    width="300"
+  />
+</p>
+
+<h1 align="center">dotLottie Flutter</h1>
 
 > [!TIP]
 > Looking for animations to use with this player? Browse **[100,000+ free Lottie animations](https://lottiefiles.com/free-animations?utm_source=npm&utm_medium=readme)** and grab any of them as `.lottie` or `.json`, or create your own with [Lottie Creator](https://lottiefiles.com/lottie-creator?utm_source=npm&utm_medium=readme).
