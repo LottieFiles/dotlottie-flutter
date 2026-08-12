@@ -256,7 +256,8 @@ class _DotLottieViewState extends State<DotLottieView> {
     // needs a fresh platform view rather than a method call.
     if (oldWidget.source != widget.source ||
         oldWidget.sourceType != widget.sourceType ||
-        oldWidget.useWebGPU != widget.useWebGPU) {
+        oldWidget.useWebGPU != widget.useWebGPU ||
+        oldWidget.useOpenGL != widget.useOpenGL) {
       setState(() {
         _platformViewGeneration++;
         _creationParamsFuture = _getCreationParams();
@@ -712,6 +713,29 @@ class DotLottieViewController {
 
   DotLottieViewController._(this._viewId) {
     _channel = MethodChannel('dotlottie_view_$_viewId');
+  }
+
+  /// The native renderer backing this view.
+  ///
+  /// * `'sw'` — the default CPU rasteriser
+  /// * `'gl'` — OpenGL, from [DotLottieView.useOpenGL] (Android)
+  /// * `'wg'` — WebGPU/Metal, from [DotLottieView.useWebGPU] (iOS and macOS)
+  ///
+  /// This is how you confirm a GPU renderer took effect: a request is not a guarantee,
+  /// and where the platform cannot support it — [DotLottieView.useWebGPU] on Mac
+  /// Catalyst or a device with no Metal device, [DotLottieView.useOpenGL] off Android —
+  /// the default renderer is used instead. The choice is made once, when the native
+  /// view is created, and never changes for the lifetime of that view.
+  ///
+  /// Implemented on Android, iOS and macOS. Returns `null` on other platforms, and
+  /// while a URL source is still downloading.
+  Future<String?> renderer() async {
+    try {
+      return await _channel.invokeMethod<String>('renderer');
+    } catch (e) {
+      debugPrint('Error calling renderer: $e');
+      return null;
+    }
   }
 
   /// Starts or resumes playback. Returns `true` on success.

@@ -24,7 +24,7 @@ class DotLottiePlatformView(
         context: Context,
         private val viewId: Int,
         creationParams: Map<String, Any>?,
-        useOpenGL: Boolean = false
+        private val useOpenGL: Boolean = false
 ) : PlatformView {
     private val player: DotLottiePlayerDelegate = createPlayer(context, useOpenGL)
     private val methodChannel: MethodChannel
@@ -803,6 +803,9 @@ class DotLottiePlatformView(
                         Log.e("🔴 DotLottie", "Error getting manifest", e)
                         result.success(null)
                     }
+                }
+                "renderer" -> {
+                    result.success(if (useOpenGL) "gl" else "sw")
                 }
                 "dispose" -> {
                     dispose()

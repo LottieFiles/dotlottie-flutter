@@ -336,6 +336,10 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
         }
         
         switch call.method {
+        case "renderer":
+            result(renderer?.kind.rawValue)
+            return
+
         case "dispose":
             dispose()
             result(nil)
