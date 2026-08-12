@@ -1,3 +1,11 @@
+## 0.1.6
+
+* fix: `DotLottieView` now honours its `width` and `height` — the platform view is
+  wrapped in a `SizedBox` when either is set, instead of expanding to the parent
+* fix(ios): opt out of `UIHostingController` safe-area insets so the animation stays
+  inside the platform view's bounds (iOS 16.4+)
+* fix(example): removed a duplicate plugin package that broke SPM resolution
+
 ## 0.1.5
 
 * chore: upgrading macos and ios deps to fix SPM error related to wgpu
