@@ -20,7 +20,7 @@ theming and state machines.
   s.resource_bundles = { 'dotlottie_flutter_privacy' => ['dotlottie_flutter/Sources/dotlottie_flutter/PrivacyInfo.xcprivacy'] }
 
   s.dependency 'FlutterMacOS'
-  s.dependency 'LottieFiles-dotLottie-iOS', '~> 0.16.5'
+  s.dependency 'LottieFiles-dotLottie-iOS', '~> 0.16.8'
 
   s.platform = :osx, '11.0'
   s.osx.deployment_target  = '11.0'
