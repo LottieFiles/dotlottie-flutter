@@ -1,3 +1,17 @@
+## 0.1.7
+
+* chore(android): migrate to Flutter's Built-in Kotlin. The Android plugin no
+  longer applies the Kotlin Gradle Plugin (KGP) itself; Flutter's Gradle plugin
+  auto-applies KGP on the plugin subproject instead. This silences the
+  `Your app uses the following plugins that apply Kotlin Gradle Plugin (KGP)`
+  warning that Flutter prints for consumers of `dotlottie_flutter`, and
+  prepares the plugin for AGP 9. Matches the pattern used across all current
+  `flutter/packages` plugins (video_player, camera_android_camerax,
+  shared_preferences_android, url_launcher_android, etc.).
+* **Breaking**: minimum supported Flutter is now 3.44 / Dart 3.12 (required by
+  the Built-in Kotlin migration). Consumers on older Flutter must stay on
+  `dotlottie_flutter: ^0.1.6`.
+
 ## 0.1.6
 
 * fix: `DotLottieView` now honours its `width` and `height` — the platform view is
