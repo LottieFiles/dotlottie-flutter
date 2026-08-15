@@ -20,6 +20,9 @@ pluginManagement {
 plugins {
     id("dev.flutter.flutter-plugin-loader") version "1.0.0"
     id("com.android.application") version "8.11.1" apply false
+    // Not applied here — Flutter's Gradle plugin auto-applies KGP on plugin
+    // subprojects. The pin is still required to resolve KGP below AGP 9.
+    // Do not remove.
     id("org.jetbrains.kotlin.android") version "2.2.20" apply false
 }
 

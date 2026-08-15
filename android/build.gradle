@@ -11,6 +11,9 @@ buildscript {
 
     dependencies {
         classpath("com.android.tools.build:gradle:8.11.1")
+        // This plugin is never applied here — Flutter's Gradle plugin
+        // auto-applies KGP on this subproject. The classpath entry is still
+        // required to resolve KGP below AGP 9. Do not remove.
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version")
     }
 }

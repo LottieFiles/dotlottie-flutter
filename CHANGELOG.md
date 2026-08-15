@@ -8,9 +8,9 @@
   prepares the plugin for AGP 9. Matches the pattern used across all current
   `flutter/packages` plugins (video_player, camera_android_camerax,
   shared_preferences_android, url_launcher_android, etc.).
-* **Breaking**: minimum supported Flutter is now 3.44 / Dart 3.12 (required by
-  the Built-in Kotlin migration). Consumers on older Flutter must stay on
-  `dotlottie_flutter: ^0.1.6`.
+* Raises the minimum supported Flutter to 3.44 / Dart 3.12, as required by the
+  Built-in Kotlin migration. No Dart API changed: pub resolves consumers on
+  older SDKs to `dotlottie_flutter: 0.1.6` automatically.
 
 ## 0.1.6
 
