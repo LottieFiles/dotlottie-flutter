@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:dotlottie_flutter/dotlottie_flutter.dart';
 import 'carousel_page.dart';
+import 'cpu_gpu_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -30,6 +32,15 @@ class _MyAppState extends State<MyApp> {
   double _alignX = 0.5;
   double _alignY = 0.5;
 
+  bool _useGpuRenderer = false;
+  String? _activeRenderer;
+
+  String? get _gpuRendererName => switch (defaultTargetPlatform) {
+    TargetPlatform.android => 'OpenGL',
+    TargetPlatform.iOS || TargetPlatform.macOS => 'WebGPU',
+    _ => null,
+  };
+
   @override
   void initState() {
     super.initState();
@@ -42,6 +53,14 @@ class _MyAppState extends State<MyApp> {
       _selectedFit,
       alignment: Alignment(_alignX * 2 - 1, _alignY * 2 - 1),
     );
+  }
+
+  /// Reads back which native renderer actually took effect. `useWebGPU` is a request,
+  /// not a guarantee — the plugin falls back when no WebGPU context can be created.
+  Future<void> _readActiveRenderer() async {
+    final renderer = await _controller?.renderer();
+    if (!mounted) return;
+    setState(() => _activeRenderer = renderer);
   }
 
   Future<void> _loadManifest() async {
@@ -188,12 +207,30 @@ class _MyAppState extends State<MyApp> {
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   child: Builder(
-                    builder: (ctx) => ElevatedButton.icon(
-                      onPressed: () => Navigator.of(ctx).push(
-                        MaterialPageRoute(builder: (_) => const CarouselPage()),
-                      ),
-                      icon: const Icon(Icons.view_carousel),
-                      label: const Text('Carousel Example'),
+                    builder: (ctx) => Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      alignment: WrapAlignment.center,
+                      children: [
+                        ElevatedButton.icon(
+                          onPressed: () => Navigator.of(ctx).push(
+                            MaterialPageRoute(
+                              builder: (_) => const CarouselPage(),
+                            ),
+                          ),
+                          icon: const Icon(Icons.view_carousel),
+                          label: const Text('Carousel Example'),
+                        ),
+                        ElevatedButton.icon(
+                          onPressed: () => Navigator.of(ctx).push(
+                            MaterialPageRoute(
+                              builder: (_) => const CpuGpuPage(),
+                            ),
+                          ),
+                          icon: const Icon(Icons.speed),
+                          label: const Text('Test (CPU vs GPU)'),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -224,7 +261,8 @@ class _MyAppState extends State<MyApp> {
                     // sourceType: 'asset',
                     // source: 'test.json',
                     autoplay: true,
-                    useOpenGL: true,
+                    useOpenGL: _useGpuRenderer,
+                    useWebGPU: _useGpuRenderer,
                     loop: true,
                     fit: _selectedFit,
                     onViewCreated: (controller) {
@@ -235,6 +273,7 @@ class _MyAppState extends State<MyApp> {
                     onLoad: () {
                       _loadManifest();
                       _handleTotalFrames();
+                      _readActiveRenderer();
                       print('🟢 Dart: Animation loaded!');
                     },
                     onLoadError: () {
@@ -258,6 +297,26 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 const SizedBox(height: 16),
+
+                if (_gpuRendererName != null)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: SwitchListTile(
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      title: Text('$_gpuRendererName renderer'),
+                      subtitle: Text(
+                        _activeRenderer != null
+                            ? 'active: $_activeRenderer'
+                            : 'GPU: $_gpuRendererName',
+                      ),
+                      value: _useGpuRenderer,
+                      onChanged: (value) => setState(() {
+                        _useGpuRenderer = value;
+                        _activeRenderer = null;
+                      }),
+                    ),
+                  ),
 
                 // Fit mode selector
                 const Text(

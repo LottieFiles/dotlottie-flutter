@@ -16,7 +16,7 @@ theming and state machines.
   s.source           = { :path => '.' }
   s.source_files = 'dotlottie_flutter/Sources/dotlottie_flutter/**/*.swift'
   s.dependency 'Flutter'
-  s.dependency 'LottieFiles-dotLottie-iOS', '~> 0.16.5'
+  s.dependency 'LottieFiles-dotLottie-iOS', '~> 0.16.8'
   s.platform = :ios, '13.0'
   
 

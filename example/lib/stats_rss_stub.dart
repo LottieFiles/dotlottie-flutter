@@ -1,0 +1,1 @@
+int currentRssBytes() => 0;

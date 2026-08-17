@@ -39,6 +39,7 @@ Built on top of native implementations:
 - [Methods](#methods)
 - [Events](#events)
 - [State Machines](#state-machine-example)
+- [GPU Rendering](#gpu-rendering)
 - [Platform Notes](#platform-notes)
 - [Developer Setup](#developer-setup-guide)
 
@@ -199,6 +200,8 @@ class _MyAppState extends State<MyApp> {
 |----------|------|-------------|
 | `themeId` | `String?` | ID of a theme to apply to the animation |
 | `stateMachineId` | `String?` | ID of a state machine to load and start automatically |
+| `useOpenGL` | `bool` | Android only. Renders through OpenGL instead of the default renderer. see [OpenGL renderer](#opengl-renderer-experimental-android-only) |
+| `useWebGPU` | `bool` | iOS and macOS only. Renders through WebGPU (Metal) instead of the default renderer. see [WebGPU renderer](#ios--macos--webgpu-renderer-experimental) |
 
 ## Example Usage
 ```dart
@@ -248,6 +251,12 @@ Access these methods via the controller:
 DotLottieViewController? _controller;
 await _controller?.play();
 ```
+
+#### Renderer
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `renderer()` | `Future<String?>` | The native renderer backing the view: `'sw'` (CPU), `'gl'` (OpenGL), or `'wg'` (WebGPU). Android, iOS and macOS only; `null` elsewhere. |
 
 #### Playback Control
 
@@ -382,6 +391,49 @@ DotLottieView(
 | `stateMachineOnInputFired` → `void Function(String inputName)?`                                               | Called when an input event is fired.             |
 | `stateMachineOnCustomEvent` → `void Function(String message)?`                                                | Called when a custom state machine event occurs. |
 | `stateMachineOnError` → `void Function(String message)?`                                                      | Called when a state machine error occurs.        |
+
+## GPU Rendering
+
+### OpenGL renderer (experimental, Android only)
+
+By default the animation is rasterised on the CPU. Setting `useOpenGL: true` switches to
+`DotLottieGLAnimation` from
+[dotlottie-android](https://github.com/LottieFiles/dotlottie-android/), which rasterises
+on the GPU instead.
+
+```dart
+DotLottieView(
+  source: 'animation.lottie',
+  sourceType: 'asset',
+  autoplay: true,
+  loop: true,
+  useOpenGL: true, // Ignored on non-Android platform.
+)
+```
+
+#### Note
+- **Behavior**: The GL renderer draws into a `TextureView`. Flutter's default Texture Layer Hybrid Composition misses that output on the first frame, so the plugin switches to full Hybrid Composition (`initExpensiveAndroidView`) whenever `useOpenGL` is set. Hybrid Composition costs more than the default path.
+
+
+
+### WebGPU renderer (experimental, iOS & macOS only)
+By default, each frame is rasterised on the CPU. Setting
+`useWebGPU: true` switches to the WebGPU (Metal) renderer via `DotLottieWebGPUPlayerView` from [dotlottie-ios](https://github.com/LottieFiles/dotlottie-ios/).
+
+```dart
+DotLottieView(
+  source: 'animation.lottie',
+  sourceType: 'asset',
+  autoplay: true,
+  loop: true,
+  useWebGPU: true, // Ignored on non-Apple platform.
+)
+```
+
+#### Note
+
+- **Behavior**: The default renderer rasterises each frame on the CPU and then has to upload those pixels to the GPU; The WebGPU renderer rasterises straight into a `CAMetalLayer`, so the upload disappears along with the per-frame `CGImage` and Core Image work it required.
+- **Background**: the WebGPU surface renders opaque, so the animation paints over whatever is behind it. (Transparent is not supported as well)
 
 ## Platform Notes
 
