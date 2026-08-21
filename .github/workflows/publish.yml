@@ -1,0 +1,19 @@
+name: Publish to pub.dev
+
+# Publishing is authorised by a short-lived OIDC token minted per run, not by a
+# stored secret. pub.dev only honours that token for tag-triggered runs, so this
+# workflow must stay on `push: tags` — a `workflow_dispatch` or `release` trigger
+# would fail authentication.
+#
+# Requires "Automated publishing" to be enabled on pub.dev for this repository
+# with the tag pattern below (Admin tab of the dotlottie_flutter package).
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  publish:
+    permissions:
+      id-token: write
+    uses: dart-lang/setup-dart/.github/workflows/publish.yml@v1
