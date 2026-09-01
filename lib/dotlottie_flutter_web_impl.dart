@@ -181,6 +181,7 @@ class DotLottieWebView {
         return setProgress(progress);
 
       case 'setSegment':
+      case 'setSegments':
         final args = call.arguments as Map;
         final start = args['start'] as double;
         final end = args['end'] as double;
