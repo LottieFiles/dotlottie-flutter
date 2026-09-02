@@ -1,4 +1,5 @@
 // ignore: avoid_web_libraries_in_flutter
+import 'dart:convert';
 import 'dart:js_interop';
 import 'dart:ui_web' as ui_web;
 
@@ -1251,7 +1252,9 @@ class DotLottieWebView {
         final player = dotLottiePlayer as JSObject;
         final method = player['setSlots'.toJS] as JSFunction?;
         if (method != null) {
-          method.callAsFunction(player, slots.toJS);
+          Map<String, dynamic> slotsMap = jsonDecode(slots);
+          JSObject slotsJsObj = slotsMap.jsify() as JSObject;
+          method.callAsFunction(player, slotsJsObj);
           return true;
         }
       } catch (e) {
