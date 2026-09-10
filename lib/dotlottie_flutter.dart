@@ -13,6 +13,7 @@ import 'package:flutter/scheduler.dart';
 
 import 'src/desktop/dotlottie_desktop_player_stub.dart'
     if (dart.library.ffi) 'src/desktop/dotlottie_desktop_player.dart';
+import 'src/file_loader_stub.dart' if (dart.library.io) 'src/file_loader_io.dart';
 import 'src/state_machine_interactions.dart';
 
 /// Maps a Flutter [BoxFit] to the fit string understood by the native players.
@@ -33,7 +34,8 @@ String? _boxFitToFitString(BoxFit? fit) {
 
 /// A Flutter widget that renders a dotLottie or Lottie animation.
 ///
-/// Supports loading animations from a URL, an asset file, or a raw JSON string.
+/// Supports loading animations from a URL, an asset file, a local file path,
+/// or a raw JSON string.
 /// Use [onViewCreated] to obtain a [DotLottieViewController] for programmatic
 /// playback control after the native view is ready.
 ///
@@ -86,10 +88,11 @@ class DotLottieView extends StatefulWidget {
   /// ID of the animation to display when the file contains multiple animations.
   final String? animationId;
 
-  /// How [source] is interpreted. One of `'url'`, `'asset'`, or `'json'`.
+  /// How [source] is interpreted. One of `'url'`, `'asset'`, `'file'`, or `'json'`.
   final String sourceType;
 
-  /// The animation source — a URL, asset path relative to `assets/`, or raw JSON string.
+  /// The animation source — a URL, asset path relative to `assets/`, an absolute
+  /// local file path (when [sourceType] is `'file'`), or raw JSON string.
   final String source;
 
   /// Enables GPU-accelerated OpenGL rendering on Android via [DotLottieGLAnimation].
@@ -501,6 +504,19 @@ class _DotLottieViewState extends State<DotLottieView> {
       // Check if it's a JSON file
       if (widget.source.toLowerCase().endsWith('.json')) {
         // Convert bytes to string for JSON
+        final String jsonString = utf8.decode(bytes);
+        params['sourceType'] = 'json';
+        params['source'] = jsonString;
+      } else {
+        // It's a .lottie file (binary)
+        params['sourceType'] = 'data';
+        params['source'] = bytes;
+      }
+    } else if (widget.sourceType == 'file') {
+      final Uint8List bytes = await readFileBytes(widget.source);
+
+      // Check if it's a JSON file
+      if (widget.source.toLowerCase().endsWith('.json')) {
         final String jsonString = utf8.decode(bytes);
         params['sourceType'] = 'json';
         params['source'] = jsonString;

@@ -29,6 +29,9 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
 
+  # Used by the local file example page to let the user pick a .lottie/.json file.
+  file_picker: ^8.1.0
+
 dev_dependencies:
   integration_test:
     sdk: flutter
