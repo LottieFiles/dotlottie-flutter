@@ -289,6 +289,15 @@ await _controller?.play();
 | `setMarker(String marker)` | `Future<void>` | Sets a marker for playback. |
 | `setMode(String mode)` | `Future<void>` | Sets the playback mode. |
 | `setFrameInterpolation(bool useFrameInterpolation)` | `Future<void>` | Enables or disables frame interpolation. |
+| `setLoopCount(int loopCount)` | `Future<bool?>` | Sets the number of times the animation loops. |
+| `setBackgroundColor(String hexColor)` | `Future<bool?>` | Sets the background color from a hex string (e.g., `'#FF0000'`). |
+
+#### Audio Methods
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `setAudioVolume(double volume)` | `Future<bool?>` | Sets the volume of the animation's audio layers (0.0 to 1.0). |
+| `audioVolume()` | `Future<double?>` | Gets the volume of the animation's audio layers. |
 
 #### Theme Methods
 
@@ -316,6 +325,27 @@ await _controller?.play();
 | `getLayerBounds(String layerName)` | `Future<List<double>?>` | Gets the bounds of a specific layer. |
 | `manifest()` | `Future<Map<String, dynamic>?>` | Gets the animation manifest data. |
 
+#### Slot Methods
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `setSlot(String slotId, String json)` | `Future<bool?>` | Sets a slot from its Lottie JSON value. |
+| `setColorSlot(String slotId, double r, double g, double b)` | `Future<bool?>` | Sets a color slot (components 0.0 to 1.0). |
+| `setScalarSlot(String slotId, double value)` | `Future<bool?>` | Sets a scalar slot. |
+| `setTextSlot(String slotId, String text)` | `Future<bool?>` | Sets a text slot. |
+| `setVectorSlot(String slotId, double x, double y)` | `Future<bool?>` | Sets a vector slot. |
+| `setPositionSlot(String slotId, double x, double y)` | `Future<bool?>` | Sets a position slot. |
+| `setImageSlot(String slotId, String src)` | `Future<bool?>` | Sets an image slot from a path, URL or `data:` URI. |
+| `setBezierPathSlot(String slotId, {required List<List<double>> vertices, bool closed, List<List<double>>? inTangents, List<List<double>>? outTangents})` | `Future<bool?>` | Replaces the geometry of a path slot. |
+| `clearSlot(String slotId)` | `Future<bool?>` | Clears the custom value of a slot. |
+| `clearSlots()` | `Future<bool?>` | Clears the custom values of all slots. |
+| `resetSlot(String slotId)` | `Future<bool?>` | Resets a slot to the value from the animation. |
+| `resetSlots()` | `Future<bool?>` | Resets all slots to the values from the animation. |
+| `getSlotIds()` | `Future<List<String>?>` | Gets the IDs of all slots. |
+| `getSlotType(String slotId)` | `Future<String?>` | Gets the type of a slot (e.g., `'color'`). |
+| `getSlot(String slotId)` | `Future<String?>` | Gets the current value of a slot as a JSON string. |
+| `getSlots()` | `Future<String?>` | Gets the current values of all slots as a JSON string. |
+
 #### State Machine Methods
 
 | Method | Returns | Description |
@@ -333,6 +363,8 @@ await _controller?.play();
 | `stateMachineGetBooleanInput(String key)` | `Future<bool?>` | Gets a boolean input value. |
 | `stateMachineGetInputs()` | `Future<Map<String, String>?>` | Gets all input names and their types. |
 | `stateMachineCurrentState()` | `Future<String?>` | Gets the current state name. |
+| `stateMachineStatus()` | `Future<String?>` | Gets the state machine status (e.g., `'Running'`, `'Stopped'`). |
+| `stateMachineSetSeed(int seed)` | `Future<bool?>` | Seeds the state machine's random number generator. |
 | `getStateMachine(String id)` | `Future<String?>` | Gets state machine data by ID. |
 
 #### Cleanup
@@ -401,6 +433,9 @@ The Windows and Linux implementations use [dotlottie-rs](https://github.com/Lott
 | Multi-animation manifest | ✅ |
 | State machines | ✅ |
 | State machine pointer interactivity (hover / click / drag) | ✅ |
+| Audio volume | ✅ |
+| Slots | ✅ |
+| `setBezierPathSlot`, `stateMachineSetSeed` | ❌ (not in the bundled dotlottie-rs binary; return `false`) |
 
 Pointer events are forwarded to the state machine from Flutter directly (there is no
 native view managing them on desktop). To avoid unnecessary work, only the pointer

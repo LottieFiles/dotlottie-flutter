@@ -34,6 +34,10 @@ class DotLottieFfiPlayer {
   void setMode(String mode) {}
   void setFrameInterpolation(bool use) {}
   void setLayout(String fit, double alignX, double alignY) {}
+  bool setLoopCount(int loopCount) => false;
+  bool setBackgroundColor(int r, int g, int b, int a) => false;
+  bool setAudioVolume(double volume) => false;
+  double? audioVolume() => null;
   bool seekFrame(double frame) => false;
   bool isPlaying() => false;
   bool isPaused() => false;
@@ -63,6 +67,23 @@ class DotLottieFfiPlayer {
   bool setThemeData(String themeData) => false;
   bool resetTheme() => false;
   String? activeThemeId() => null;
+
+  bool setSlots(String slots) => false;
+  bool setSlot(String slotId, String json) => false;
+  bool setColorSlot(String slotId, double r, double g, double b) => false;
+  bool setScalarSlot(String slotId, double value) => false;
+  bool setTextSlot(String slotId, String text) => false;
+  bool setVectorSlot(String slotId, double x, double y) => false;
+  bool setPositionSlot(String slotId, double x, double y) => false;
+  bool setImageSlot(String slotId, String src) => false;
+  bool clearSlot(String slotId) => false;
+  bool clearSlots() => false;
+  bool resetSlot(String slotId) => false;
+  bool resetSlots() => false;
+  List<String> getSlotIds() => [];
+  String? getSlotType(String slotId) => null;
+  String? getSlot(String slotId) => null;
+  String? getSlots() => null;
 
   bool setMarker(String marker) => false;
   String? activeMarker() => null;
@@ -98,6 +119,7 @@ class DotLottieFfiPlayer {
   String? getStringInput(String key) => null;
   bool? getBooleanInput(String key) => null;
   String? currentState() => null;
+  String? stateMachineStatus() => null;
   String? getStateMachine(String id) => null;
   int frameworkSetup() => 0;
   void pollStateMachineEvents({

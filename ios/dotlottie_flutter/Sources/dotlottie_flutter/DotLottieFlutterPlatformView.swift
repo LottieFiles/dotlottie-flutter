@@ -183,7 +183,7 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
                 return Mode.reverse
             case "bounce":
                 return Mode.bounce
-            case "reverse-bounce":
+            case "reverse-bounce", "reverseBounce":
                 return Mode.reverseBounce
             default:
                 return .forward
@@ -471,7 +471,7 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
                     mode = .reverse
                 case "bounce":
                     mode = .bounce
-                case "reverseBounce":
+                case "reverseBounce", "reverse-bounce":
                     mode = .reverseBounce
                 default:
                     mode = .forward
@@ -491,6 +491,27 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
                 result(FlutterError(code: "INVALID_ARGS", message: "Invalid frameInterpolation argument", details: nil))
             }
             
+        case "setLoopCount":
+            if let args = call.arguments as? [String: Any],
+               let loopCount = args["loopCount"] as? Int {
+                animation.setLoopCount(loopCount)
+                result(true)
+            } else {
+                result(FlutterError(code: "INVALID_ARGS", message: "Invalid loopCount argument", details: nil))
+            }
+
+        case "setAudioVolume":
+            if let args = call.arguments as? [String: Any],
+               let volume = args["volume"] as? Double {
+                animation.setAudioVolume(volume: Float(volume))
+                result(true)
+            } else {
+                result(FlutterError(code: "INVALID_ARGS", message: "Invalid volume argument", details: nil))
+            }
+
+        case "audioVolume":
+            result(Double(animation.audioVolume()))
+
         case "setBackgroundColor":
             if let args = call.arguments as? [String: Any],
                let colorString = args["color"] as? String,
@@ -574,6 +595,137 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
                 result(FlutterError(code: "INVALID_ARGS", message: "Invalid slots argument", details: nil))
             }
             
+        case "setSlot":
+            if let args = call.arguments as? [String: Any],
+               let slotId = args["slotId"] as? String,
+               let json = args["json"] as? String {
+                result(animation.setSlot(slotId: slotId, json: json))
+            } else {
+                result(FlutterError(code: "INVALID_ARGS", message: "Invalid setSlot arguments", details: nil))
+            }
+
+        case "setColorSlot":
+            if let args = call.arguments as? [String: Any],
+               let slotId = args["slotId"] as? String,
+               let r = args["r"] as? Double,
+               let g = args["g"] as? Double,
+               let b = args["b"] as? Double {
+                result(animation.setColorSlot(slotId: slotId, r: Float(r), g: Float(g), b: Float(b)))
+            } else {
+                result(FlutterError(code: "INVALID_ARGS", message: "Invalid setColorSlot arguments", details: nil))
+            }
+
+        case "setScalarSlot":
+            if let args = call.arguments as? [String: Any],
+               let slotId = args["slotId"] as? String,
+               let value = args["value"] as? Double {
+                result(animation.setScalarSlot(slotId: slotId, value: Float(value)))
+            } else {
+                result(FlutterError(code: "INVALID_ARGS", message: "Invalid setScalarSlot arguments", details: nil))
+            }
+
+        case "setTextSlot":
+            if let args = call.arguments as? [String: Any],
+               let slotId = args["slotId"] as? String,
+               let text = args["text"] as? String {
+                result(animation.setTextSlot(slotId: slotId, text: text))
+            } else {
+                result(FlutterError(code: "INVALID_ARGS", message: "Invalid setTextSlot arguments", details: nil))
+            }
+
+        case "setVectorSlot":
+            if let args = call.arguments as? [String: Any],
+               let slotId = args["slotId"] as? String,
+               let x = args["x"] as? Double,
+               let y = args["y"] as? Double {
+                result(animation.setVectorSlot(slotId: slotId, x: Float(x), y: Float(y)))
+            } else {
+                result(FlutterError(code: "INVALID_ARGS", message: "Invalid setVectorSlot arguments", details: nil))
+            }
+
+        case "setPositionSlot":
+            if let args = call.arguments as? [String: Any],
+               let slotId = args["slotId"] as? String,
+               let x = args["x"] as? Double,
+               let y = args["y"] as? Double {
+                result(animation.setPositionSlot(slotId: slotId, x: Float(x), y: Float(y)))
+            } else {
+                result(FlutterError(code: "INVALID_ARGS", message: "Invalid setPositionSlot arguments", details: nil))
+            }
+
+        case "setImageSlot":
+            if let args = call.arguments as? [String: Any],
+               let slotId = args["slotId"] as? String,
+               let src = args["src"] as? String {
+                let success = src.hasPrefix("data:")
+                    ? animation.setImageSlotDataUrl(slotId: slotId, dataUrl: src)
+                    : animation.setImageSlotPath(slotId: slotId, path: src)
+                result(success)
+            } else {
+                result(FlutterError(code: "INVALID_ARGS", message: "Invalid setImageSlot arguments", details: nil))
+            }
+
+        case "setBezierPathSlot":
+            if let args = call.arguments as? [String: Any],
+               let slotId = args["slotId"] as? String,
+               let vertices = toPoints(args["vertices"]) {
+                let closed = args["closed"] as? Bool ?? false
+                let success = animation.setBezierPathSlot(
+                    slotId: slotId,
+                    vertices: vertices,
+                    closed: closed,
+                    inTangents: toPoints(args["inTangents"]),
+                    outTangents: toPoints(args["outTangents"])
+                )
+                result(success)
+            } else {
+                result(FlutterError(code: "INVALID_ARGS", message: "Invalid setBezierPathSlot arguments", details: nil))
+            }
+
+        case "clearSlot":
+            if let args = call.arguments as? [String: Any],
+               let slotId = args["slotId"] as? String {
+                result(animation.clearSlot(slotId: slotId))
+            } else {
+                result(FlutterError(code: "INVALID_ARGS", message: "Invalid slotId argument", details: nil))
+            }
+
+        case "clearSlots":
+            result(animation.clearSlots())
+
+        case "resetSlot":
+            if let args = call.arguments as? [String: Any],
+               let slotId = args["slotId"] as? String {
+                result(animation.resetSlot(slotId: slotId))
+            } else {
+                result(FlutterError(code: "INVALID_ARGS", message: "Invalid slotId argument", details: nil))
+            }
+
+        case "resetSlots":
+            result(animation.resetSlots())
+
+        case "getSlotIds":
+            result(animation.getSlotIds())
+
+        case "getSlotType":
+            if let args = call.arguments as? [String: Any],
+               let slotId = args["slotId"] as? String {
+                result(animation.getSlotType(slotId: slotId))
+            } else {
+                result(FlutterError(code: "INVALID_ARGS", message: "Invalid slotId argument", details: nil))
+            }
+
+        case "getSlot":
+            if let args = call.arguments as? [String: Any],
+               let slotId = args["slotId"] as? String {
+                result(animation.getSlot(slotId: slotId))
+            } else {
+                result(FlutterError(code: "INVALID_ARGS", message: "Invalid slotId argument", details: nil))
+            }
+
+        case "getSlots":
+            result(animation.getSlots())
+
         case "resize":
             if let args = call.arguments as? [String: Any],
                let width = args["width"] as? Int,
@@ -703,6 +855,17 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
         case "stateMachineCurrentState":
             result(animation.stateMachineCurrentState())
                         
+        case "stateMachineStatus":
+            result(animation.stateMachineStatus())
+
+        case "stateMachineSetSeed":
+            if let args = call.arguments as? [String: Any],
+               let seed = args["seed"] as? Int {
+                result(animation.stateMachineSetSeed(UInt64(bitPattern: Int64(seed))))
+            } else {
+                result(FlutterError(code: "INVALID_ARGS", message: "Invalid seed argument", details: nil))
+            }
+
         case "getStateMachine":
             if let args = call.arguments as? [String: Any],
                 let id = args["id"] as? String {
@@ -773,6 +936,16 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
         }
     }
     
+    private func toPoints(_ value: Any?) -> [CGPoint]? {
+        guard let pairs = value as? [[Double]] else { return nil }
+        var points: [CGPoint] = []
+        for pair in pairs {
+            guard pair.count >= 2 else { return nil }
+            points.append(CGPoint(x: pair[0], y: pair[1]))
+        }
+        return points
+    }
+
     private func parseColor(_ colorString: String) -> UIColor? {
         var hexString = colorString.trimmingCharacters(in: .whitespacesAndNewlines)
         hexString = hexString.replacingOccurrences(of: "#", with: "")

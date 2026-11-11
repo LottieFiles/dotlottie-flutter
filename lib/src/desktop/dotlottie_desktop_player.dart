@@ -117,6 +117,21 @@ class DotLottieFfiPlayer {
   void setFrameInterpolation(bool use) =>
       dotlottieSetUseFrameInterpolation(_ptr, use);
 
+  bool setLoopCount(int loopCount) =>
+      dotlottieSetLoopCount(_ptr, loopCount) == kResultSuccess;
+
+  /// Sets the background color from 0..255 RGBA components.
+  bool setBackgroundColor(int r, int g, int b, int a) =>
+      _renderOnSuccess(dotlottieSetBackground(_ptr, r, g, b, a));
+
+  bool setAudioVolume(double volume) =>
+      dotlottieSetAudioVolume(_ptr, volume) == kResultSuccess;
+
+  double? audioVolume() {
+    if (dotlottieGetAudioVolume(_ptr, _floatOut) != kResultSuccess) return null;
+    return _floatOut.value;
+  }
+
   /// Updates how the animation is fitted and aligned within the render target.
   /// [fit] is the same camelCase string used across the platform channel
   /// (`contain`, `cover`, `fill`, `fitWidth`, `fitHeight`, `none`); [alignX]
@@ -250,6 +265,158 @@ class DotLottieFfiPlayer {
 
   String? activeThemeId() => _readNativeString(
         (buf, sizeOut) => dotlottieGetThemeId(_ptr, buf, sizeOut),
+      );
+
+  // ---------------------------------------------------------------------------
+  // Slots
+  // ---------------------------------------------------------------------------
+
+  bool setSlots(String slots) {
+    final ptr = slots.toNativeUtf8();
+    try {
+      return _renderOnSuccess(dotlottieSetSlotsStr(_ptr, ptr));
+    } finally {
+      malloc.free(ptr);
+    }
+  }
+
+  bool setSlot(String slotId, String json) {
+    final idPtr = slotId.toNativeUtf8();
+    final valPtr = json.toNativeUtf8();
+    try {
+      return _renderOnSuccess(dotlottieSetSlotStr(_ptr, idPtr, valPtr));
+    } finally {
+      malloc.free(idPtr);
+      malloc.free(valPtr);
+    }
+  }
+
+  bool setColorSlot(String slotId, double r, double g, double b) {
+    final ptr = slotId.toNativeUtf8();
+    try {
+      return _renderOnSuccess(dotlottieSetColorSlot(_ptr, ptr, r, g, b));
+    } finally {
+      malloc.free(ptr);
+    }
+  }
+
+  bool setScalarSlot(String slotId, double value) {
+    final ptr = slotId.toNativeUtf8();
+    try {
+      return _renderOnSuccess(dotlottieSetScalarSlot(_ptr, ptr, value));
+    } finally {
+      malloc.free(ptr);
+    }
+  }
+
+  bool setTextSlot(String slotId, String text) {
+    final idPtr = slotId.toNativeUtf8();
+    final valPtr = text.toNativeUtf8();
+    try {
+      return _renderOnSuccess(dotlottieSetTextSlot(_ptr, idPtr, valPtr));
+    } finally {
+      malloc.free(idPtr);
+      malloc.free(valPtr);
+    }
+  }
+
+  bool setVectorSlot(String slotId, double x, double y) {
+    final ptr = slotId.toNativeUtf8();
+    try {
+      return _renderOnSuccess(dotlottieSetVectorSlot(_ptr, ptr, x, y));
+    } finally {
+      malloc.free(ptr);
+    }
+  }
+
+  bool setPositionSlot(String slotId, double x, double y) {
+    final ptr = slotId.toNativeUtf8();
+    try {
+      return _renderOnSuccess(dotlottieSetPositionSlot(_ptr, ptr, x, y));
+    } finally {
+      malloc.free(ptr);
+    }
+  }
+
+  /// Sets an image slot from a `data:` URL or a file path.
+  bool setImageSlot(String slotId, String src) {
+    final idPtr = slotId.toNativeUtf8();
+    final srcPtr = src.toNativeUtf8();
+    try {
+      return _renderOnSuccess(
+        src.startsWith('data:')
+            ? dotlottieSetImageSlotDataUrl(_ptr, idPtr, srcPtr)
+            : dotlottieSetImageSlotPath(_ptr, idPtr, srcPtr),
+      );
+    } finally {
+      malloc.free(idPtr);
+      malloc.free(srcPtr);
+    }
+  }
+
+  bool clearSlot(String slotId) {
+    final ptr = slotId.toNativeUtf8();
+    try {
+      return _renderOnSuccess(dotlottieClearSlot(_ptr, ptr));
+    } finally {
+      malloc.free(ptr);
+    }
+  }
+
+  bool clearSlots() => _renderOnSuccess(dotlottieClearSlots(_ptr));
+
+  bool resetSlot(String slotId) {
+    final ptr = slotId.toNativeUtf8();
+    try {
+      return _renderOnSuccess(dotlottieResetSlot(_ptr, ptr));
+    } finally {
+      malloc.free(ptr);
+    }
+  }
+
+  bool resetSlots() => _renderOnSuccess(dotlottieResetSlots(_ptr));
+
+  List<String> getSlotIds() {
+    if (dotlottieGetSlotIdsCount(_ptr, _uint32Out) != kResultSuccess) {
+      return [];
+    }
+    final count = _uint32Out.value;
+    final ids = <String>[];
+    for (int i = 0; i < count; i++) {
+      final id = _readNativeString(
+        (buf, sizeOut) => dotlottieGetSlotId(_ptr, i, buf, sizeOut),
+      );
+      if (id != null) ids.add(id);
+    }
+    return ids;
+  }
+
+  String? getSlotType(String slotId) {
+    final idPtr = slotId.toNativeUtf8();
+    try {
+      final value = _readNativeString(
+        (buf, sizeOut) => dotlottieGetSlotType(_ptr, idPtr, buf, sizeOut),
+      );
+      return (value == null || value.isEmpty) ? null : value;
+    } finally {
+      malloc.free(idPtr);
+    }
+  }
+
+  String? getSlot(String slotId) {
+    final idPtr = slotId.toNativeUtf8();
+    try {
+      final value = _readNativeString(
+        (buf, sizeOut) => dotlottieGetSlotStr(_ptr, idPtr, buf, sizeOut),
+      );
+      return (value == null || value.isEmpty) ? null : value;
+    } finally {
+      malloc.free(idPtr);
+    }
+  }
+
+  String? getSlots() => _readNativeString(
+        (buf, sizeOut) => dotlottieGetSlotsStr(_ptr, buf, sizeOut),
       );
 
   // ---------------------------------------------------------------------------
@@ -527,6 +694,13 @@ class DotLottieFfiPlayer {
     );
   }
 
+  String? stateMachineStatus() {
+    if (!stateMachineActive) return null;
+    return _readNativeString(
+      (buf, sizeOut) => dotlottieStateMachineGetStatus(_sm!, buf, sizeOut),
+    );
+  }
+
   String? getStateMachine(String id) {
     final idPtr = id.toNativeUtf8();
     try {
@@ -616,6 +790,15 @@ class DotLottieFfiPlayer {
   // Private helpers
   // ---------------------------------------------------------------------------
 
+  /// Re-renders after a successful change so it is visible even while paused.
+  /// Returns whether [result] was a success.
+  bool _renderOnSuccess(int result) {
+    if (result != kResultSuccess) return false;
+    dotlottieRender(_ptr);
+    _seekPending = true;
+    return true;
+  }
+
   /// Two-pass pattern for C functions that write a string into a caller-allocated buffer.
   /// First call with null buffer to get required size, then allocate and read.
   String? _readNativeString(
@@ -654,7 +837,7 @@ class DotLottieFfiPlayer {
   static int _modeFromString(String mode) => switch (mode) {
     'reverse'       => kModeReverse,
     'bounce'        => kModeBounce,
-    'reverseBounce' => kModeReverseBounce,
+    'reverseBounce' || 'reverse-bounce' => kModeReverseBounce,
     _               => kModeForward,
   };
 

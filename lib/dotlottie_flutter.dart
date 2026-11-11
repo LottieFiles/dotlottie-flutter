@@ -31,6 +31,17 @@ String? _boxFitToFitString(BoxFit? fit) {
   }
 }
 
+/// Parses a `#RRGGBB` or `#AARRGGBB` hex string into `[r, g, b, a]` components
+/// in the 0..255 range. Returns `null` when [color] is not a valid hex color.
+List<int>? _parseHexColor(String color) {
+  final hex = color.trim().replaceAll('#', '');
+  if (hex.length != 6 && hex.length != 8) return null;
+  final value = int.tryParse(hex, radix: 16);
+  if (value == null) return null;
+  final alpha = hex.length == 8 ? (value >> 24) & 0xFF : 0xFF;
+  return [(value >> 16) & 0xFF, (value >> 8) & 0xFF, value & 0xFF, alpha];
+}
+
 /// A Flutter widget that renders a dotLottie or Lottie animation.
 ///
 /// Supports loading animations from a URL, an asset file, or a raw JSON string.
@@ -963,6 +974,51 @@ class DotLottieViewController {
     }
   }
 
+  /// Sets the number of times the animation loops before stopping. Returns `true` on success.
+  Future<bool?> setLoopCount(int loopCount) async {
+    try {
+      return await _channel.invokeMethod<bool>('setLoopCount', {
+        'loopCount': loopCount,
+      });
+    } catch (e) {
+      debugPrint('Error calling setLoopCount: $e');
+      return false;
+    }
+  }
+
+  /// Sets the background color from a hex string, e.g. `'#FF0000'`. Returns `true` on success.
+  Future<bool?> setBackgroundColor(String hexColor) async {
+    try {
+      await _channel.invokeMethod('setBackgroundColor', {'color': hexColor});
+      return true;
+    } catch (e) {
+      debugPrint('Error calling setBackgroundColor: $e');
+      return false;
+    }
+  }
+
+  /// Sets the volume of the animation's audio layers, from `0.0` (muted) to `1.0`. Returns `true` on success.
+  Future<bool?> setAudioVolume(double volume) async {
+    try {
+      return await _channel.invokeMethod<bool>('setAudioVolume', {
+        'volume': volume,
+      });
+    } catch (e) {
+      debugPrint('Error calling setAudioVolume: $e');
+      return false;
+    }
+  }
+
+  /// Returns the volume of the animation's audio layers, between `0.0` and `1.0`.
+  Future<double?> audioVolume() async {
+    try {
+      return await _channel.invokeMethod<double>('audioVolume');
+    } catch (e) {
+      debugPrint('Error calling audioVolume: $e');
+      return null;
+    }
+  }
+
   /// Applies the theme with the given [themeId] from the dotLottie file. Returns `true` on success.
   Future<bool?> setTheme(String themeId) async {
     try {
@@ -1033,7 +1089,9 @@ class DotLottieViewController {
     try {
       final result = await _channel.invokeMethod('markers');
       if (result is List) {
-        return result.cast<Map<String, dynamic>>();
+        return result
+            .map((marker) => Map<String, dynamic>.from(marker as Map))
+            .toList();
       }
       return null;
     } catch (e) {
@@ -1049,6 +1107,213 @@ class DotLottieViewController {
     } catch (e) {
       debugPrint('Error calling setSlots: $e');
       return false;
+    }
+  }
+
+  /// Sets the slot [slotId] from its Lottie JSON value, e.g. `{"a":0,"k":[1,0,0,1]}`. Returns `true` on success.
+  Future<bool?> setSlot(String slotId, String json) async {
+    try {
+      return await _channel.invokeMethod<bool>('setSlot', {
+        'slotId': slotId,
+        'json': json,
+      });
+    } catch (e) {
+      debugPrint('Error calling setSlot: $e');
+      return false;
+    }
+  }
+
+  /// Sets the color slot [slotId] to an RGB color with components between `0.0` and `1.0`. Returns `true` on success.
+  Future<bool?> setColorSlot(String slotId, double r, double g, double b) async {
+    try {
+      return await _channel.invokeMethod<bool>('setColorSlot', {
+        'slotId': slotId,
+        'r': r,
+        'g': g,
+        'b': b,
+      });
+    } catch (e) {
+      debugPrint('Error calling setColorSlot: $e');
+      return false;
+    }
+  }
+
+  /// Sets the scalar slot [slotId] to [value]. Returns `true` on success.
+  Future<bool?> setScalarSlot(String slotId, double value) async {
+    try {
+      return await _channel.invokeMethod<bool>('setScalarSlot', {
+        'slotId': slotId,
+        'value': value,
+      });
+    } catch (e) {
+      debugPrint('Error calling setScalarSlot: $e');
+      return false;
+    }
+  }
+
+  /// Sets the text slot [slotId] to [text]. Returns `true` on success.
+  Future<bool?> setTextSlot(String slotId, String text) async {
+    try {
+      return await _channel.invokeMethod<bool>('setTextSlot', {
+        'slotId': slotId,
+        'text': text,
+      });
+    } catch (e) {
+      debugPrint('Error calling setTextSlot: $e');
+      return false;
+    }
+  }
+
+  /// Sets the vector slot [slotId] to `[x, y]`. Returns `true` on success.
+  Future<bool?> setVectorSlot(String slotId, double x, double y) async {
+    try {
+      return await _channel.invokeMethod<bool>('setVectorSlot', {
+        'slotId': slotId,
+        'x': x,
+        'y': y,
+      });
+    } catch (e) {
+      debugPrint('Error calling setVectorSlot: $e');
+      return false;
+    }
+  }
+
+  /// Sets the position slot [slotId] to `[x, y]`. Returns `true` on success.
+  Future<bool?> setPositionSlot(String slotId, double x, double y) async {
+    try {
+      return await _channel.invokeMethod<bool>('setPositionSlot', {
+        'slotId': slotId,
+        'x': x,
+        'y': y,
+      });
+    } catch (e) {
+      debugPrint('Error calling setPositionSlot: $e');
+      return false;
+    }
+  }
+
+  /// Sets the image slot [slotId] to [src] (a path, URL or `data:` URI). Returns `true` on success.
+  Future<bool?> setImageSlot(String slotId, String src) async {
+    try {
+      return await _channel.invokeMethod<bool>('setImageSlot', {
+        'slotId': slotId,
+        'src': src,
+      });
+    } catch (e) {
+      debugPrint('Error calling setImageSlot: $e');
+      return false;
+    }
+  }
+
+  /// Replaces the geometry of the path slot [slotId]. Returns `true` on success.
+  ///
+  /// [vertices], [inTangents] and [outTangents] are lists of `[x, y]` pairs.
+  /// Tangents are relative to the vertex at the same index; omitted tangents
+  /// are zero (straight segments).
+  Future<bool?> setBezierPathSlot(
+    String slotId, {
+    required List<List<double>> vertices,
+    bool closed = false,
+    List<List<double>>? inTangents,
+    List<List<double>>? outTangents,
+  }) async {
+    try {
+      return await _channel.invokeMethod<bool>('setBezierPathSlot', {
+        'slotId': slotId,
+        'vertices': vertices,
+        'closed': closed,
+        if (inTangents != null) 'inTangents': inTangents,
+        if (outTangents != null) 'outTangents': outTangents,
+      });
+    } catch (e) {
+      debugPrint('Error calling setBezierPathSlot: $e');
+      return false;
+    }
+  }
+
+  /// Clears the custom value of the slot [slotId]. Returns `true` on success.
+  Future<bool?> clearSlot(String slotId) async {
+    try {
+      return await _channel.invokeMethod<bool>('clearSlot', {'slotId': slotId});
+    } catch (e) {
+      debugPrint('Error calling clearSlot: $e');
+      return false;
+    }
+  }
+
+  /// Clears the custom values of all slots. Returns `true` on success.
+  Future<bool?> clearSlots() async {
+    try {
+      return await _channel.invokeMethod<bool>('clearSlots');
+    } catch (e) {
+      debugPrint('Error calling clearSlots: $e');
+      return false;
+    }
+  }
+
+  /// Resets the slot [slotId] to the value from the animation. Returns `true` on success.
+  Future<bool?> resetSlot(String slotId) async {
+    try {
+      return await _channel.invokeMethod<bool>('resetSlot', {'slotId': slotId});
+    } catch (e) {
+      debugPrint('Error calling resetSlot: $e');
+      return false;
+    }
+  }
+
+  /// Resets all slots to the values from the animation. Returns `true` on success.
+  Future<bool?> resetSlots() async {
+    try {
+      return await _channel.invokeMethod<bool>('resetSlots');
+    } catch (e) {
+      debugPrint('Error calling resetSlots: $e');
+      return false;
+    }
+  }
+
+  /// Returns the IDs of all slots in the animation.
+  Future<List<String>?> getSlotIds() async {
+    try {
+      final result = await _channel.invokeMethod('getSlotIds');
+      if (result is List) {
+        return result.cast<String>();
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Error calling getSlotIds: $e');
+      return null;
+    }
+  }
+
+  /// Returns the type of the slot [slotId] (e.g. `'color'`, `'scalar'`), or `null` if it does not exist.
+  Future<String?> getSlotType(String slotId) async {
+    try {
+      return await _channel.invokeMethod<String>('getSlotType', {
+        'slotId': slotId,
+      });
+    } catch (e) {
+      debugPrint('Error calling getSlotType: $e');
+      return null;
+    }
+  }
+
+  /// Returns the current value of the slot [slotId] as a JSON string, or `null` if it does not exist.
+  Future<String?> getSlot(String slotId) async {
+    try {
+      return await _channel.invokeMethod<String>('getSlot', {'slotId': slotId});
+    } catch (e) {
+      debugPrint('Error calling getSlot: $e');
+      return null;
+    }
+  }
+
+  /// Returns the current values of all slots as a JSON object string keyed by slot ID.
+  Future<String?> getSlots() async {
+    try {
+      return await _channel.invokeMethod<String>('getSlots');
+    } catch (e) {
+      debugPrint('Error calling getSlots: $e');
+      return null;
     }
   }
 
@@ -1234,6 +1499,28 @@ class DotLottieViewController {
     } catch (e) {
       debugPrint('Error calling stateMachineCurrentState: $e');
       return null;
+    }
+  }
+
+  /// Returns the status of the state machine (e.g. `'Running'`, `'Stopped'`).
+  Future<String?> stateMachineStatus() async {
+    try {
+      return await _channel.invokeMethod<String>('stateMachineStatus');
+    } catch (e) {
+      debugPrint('Error calling stateMachineStatus: $e');
+      return null;
+    }
+  }
+
+  /// Seeds the state machine's random number generator so random transitions are repeatable. Returns `true` on success.
+  Future<bool?> stateMachineSetSeed(int seed) async {
+    try {
+      return await _channel.invokeMethod<bool>('stateMachineSetSeed', {
+        'seed': seed,
+      });
+    } catch (e) {
+      debugPrint('Error calling stateMachineSetSeed: $e');
+      return false;
     }
   }
 
@@ -1762,7 +2049,61 @@ class DotLottieDesktopViewController extends DotLottieViewController {
   @override Future<String?> activeThemeId() async => _ffi.activeThemeId();
 
   @override Future<void> resize(int width, int height) async {}
-  @override Future<bool?> setSlots(String slots) async => false;
+
+  // Playback config
+  @override Future<bool?> setLoopCount(int loopCount) async =>
+      _ffi.setLoopCount(loopCount);
+  @override Future<bool?> setBackgroundColor(String hexColor) async {
+    final rgba = _parseHexColor(hexColor);
+    if (rgba == null) return false;
+    return _ffi.setBackgroundColor(rgba[0], rgba[1], rgba[2], rgba[3]);
+  }
+
+  // Audio
+  @override Future<bool?> setAudioVolume(double volume) async =>
+      _ffi.setAudioVolume(volume);
+  @override Future<double?> audioVolume() async => _ffi.audioVolume();
+
+  // Slots
+  @override Future<bool?> setSlots(String slots) async => _ffi.setSlots(slots);
+  @override Future<bool?> setSlot(String slotId, String json) async =>
+      _ffi.setSlot(slotId, json);
+  @override Future<bool?> setColorSlot(
+          String slotId, double r, double g, double b) async =>
+      _ffi.setColorSlot(slotId, r, g, b);
+  @override Future<bool?> setScalarSlot(String slotId, double value) async =>
+      _ffi.setScalarSlot(slotId, value);
+  @override Future<bool?> setTextSlot(String slotId, String text) async =>
+      _ffi.setTextSlot(slotId, text);
+  @override Future<bool?> setVectorSlot(
+          String slotId, double x, double y) async =>
+      _ffi.setVectorSlot(slotId, x, y);
+  @override Future<bool?> setPositionSlot(
+          String slotId, double x, double y) async =>
+      _ffi.setPositionSlot(slotId, x, y);
+  @override Future<bool?> setImageSlot(String slotId, String src) async =>
+      _ffi.setImageSlot(slotId, src);
+  // No C API equivalent in the bundled dotlottie-rs binary.
+  @override Future<bool?> setBezierPathSlot(
+    String slotId, {
+    required List<List<double>> vertices,
+    bool closed = false,
+    List<List<double>>? inTangents,
+    List<List<double>>? outTangents,
+  }) async =>
+      false;
+  @override Future<bool?> clearSlot(String slotId) async =>
+      _ffi.clearSlot(slotId);
+  @override Future<bool?> clearSlots() async => _ffi.clearSlots();
+  @override Future<bool?> resetSlot(String slotId) async =>
+      _ffi.resetSlot(slotId);
+  @override Future<bool?> resetSlots() async => _ffi.resetSlots();
+  @override Future<List<String>?> getSlotIds() async => _ffi.getSlotIds();
+  @override Future<String?> getSlotType(String slotId) async =>
+      _ffi.getSlotType(slotId);
+  @override Future<String?> getSlot(String slotId) async =>
+      _ffi.getSlot(slotId);
+  @override Future<String?> getSlots() async => _ffi.getSlots();
 
   @override
   Future<void> setLayout(
@@ -1791,6 +2132,9 @@ class DotLottieDesktopViewController extends DotLottieViewController {
   @override Future<bool?> stateMachineGetBooleanInput(String key) async => _ffi.getBooleanInput(key);
   @override Future<Map<String, String>?> stateMachineGetInputs() async => null;
   @override Future<String?> stateMachineCurrentState() async => _ffi.currentState();
+  @override Future<String?> stateMachineStatus() async => _ffi.stateMachineStatus();
+  // No C API equivalent in the bundled dotlottie-rs binary.
+  @override Future<bool?> stateMachineSetSeed(int seed) async => false;
   @override Future<String?> getStateMachine(String id) async => _ffi.getStateMachine(id);
 
   @override

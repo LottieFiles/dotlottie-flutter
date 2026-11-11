@@ -26,7 +26,7 @@ class DotLottieFlutterWeb extends DotLottieFlutterPlatform {
         web.document.createElement('script') as web.HTMLScriptElement;
     script.type = 'module';
     script.text = '''
-    import { DotLottie } from 'https://cdn.jsdelivr.net/npm/@lottiefiles/dotlottie-web@0.72.1/+esm';
+    import { DotLottie } from 'https://cdn.jsdelivr.net/npm/@lottiefiles/dotlottie-web@0.83.0/+esm';
     window.DotLottie = DotLottie;
     window.dispatchEvent(new Event('dotlottie-ready'));
   ''';
@@ -138,6 +138,9 @@ class DotLottieWebView {
       case 'totalFrames':
         return totalFrames();
 
+      case 'currentProgress':
+        return currentProgress();
+
       case 'duration':
         return duration();
 
@@ -181,6 +184,7 @@ class DotLottieWebView {
         return setProgress(progress);
 
       case 'setSegment':
+      case 'setSegments':
         final args = call.arguments as Map;
         final start = args['start'] as double;
         final end = args['end'] as double;
@@ -197,6 +201,17 @@ class DotLottieWebView {
             (call.arguments as Map)['useFrameInterpolation'] as bool;
         setUseFrameInterpolation(useFrameInterpolation);
         return null;
+
+      case 'setLoopCount':
+        final loopCount = (call.arguments as Map)['loopCount'] as num;
+        return setLoopCount(loopCount.toInt());
+
+      case 'setAudioVolume':
+        final volume = (call.arguments as Map)['volume'] as num;
+        return setAudioVolume(volume.toDouble());
+
+      case 'audioVolume':
+        return audioVolume();
 
       case 'setBackgroundColor':
         final color = (call.arguments as Map)['color'] as String;
@@ -236,6 +251,84 @@ class DotLottieWebView {
       case 'setSlots':
         final slots = (call.arguments as Map)['slots'] as String;
         return setSlots(slots);
+
+      case 'setSlot':
+        final args = call.arguments as Map;
+        return setSlot(args['slotId'] as String, args['json'] as String);
+
+      case 'setColorSlot':
+        final args = call.arguments as Map;
+        return setColorSlot(
+          args['slotId'] as String,
+          (args['r'] as num).toDouble(),
+          (args['g'] as num).toDouble(),
+          (args['b'] as num).toDouble(),
+        );
+
+      case 'setScalarSlot':
+        final args = call.arguments as Map;
+        return setScalarSlot(
+          args['slotId'] as String,
+          (args['value'] as num).toDouble(),
+        );
+
+      case 'setTextSlot':
+        final args = call.arguments as Map;
+        return setTextSlot(args['slotId'] as String, args['text'] as String);
+
+      case 'setVectorSlot':
+      case 'setPositionSlot':
+        final args = call.arguments as Map;
+        return setVectorSlot(
+          args['slotId'] as String,
+          (args['x'] as num).toDouble(),
+          (args['y'] as num).toDouble(),
+        );
+
+      case 'setImageSlot':
+        final args = call.arguments as Map;
+        return await setImageSlot(
+          args['slotId'] as String,
+          args['src'] as String,
+        );
+
+      case 'setBezierPathSlot':
+        final args = call.arguments as Map;
+        return setBezierPathSlot(
+          args['slotId'] as String,
+          args['vertices'] as List,
+          args['closed'] as bool? ?? false,
+          args['inTangents'] as List?,
+          args['outTangents'] as List?,
+        );
+
+      case 'clearSlot':
+        final slotId = (call.arguments as Map)['slotId'] as String;
+        return _callSlotMethod('clearSlot', slotId);
+
+      case 'clearSlots':
+        return _callSlotMethod('clearSlots');
+
+      case 'resetSlot':
+        final slotId = (call.arguments as Map)['slotId'] as String;
+        return _callSlotMethod('resetSlot', slotId);
+
+      case 'resetSlots':
+        return _callSlotMethod('resetSlots');
+
+      case 'getSlotIds':
+        return getSlotIds();
+
+      case 'getSlotType':
+        final slotId = (call.arguments as Map)['slotId'] as String;
+        return getSlotType(slotId);
+
+      case 'getSlot':
+        final slotId = (call.arguments as Map)['slotId'] as String;
+        return getSlot(slotId);
+
+      case 'getSlots':
+        return getSlots();
 
       case 'resize':
         final args = call.arguments as Map;
@@ -307,6 +400,13 @@ class DotLottieWebView {
 
       case 'stateMachineCurrentState':
         return stateMachineCurrentState();
+
+      case 'stateMachineStatus':
+        return stateMachineStatus();
+
+      case 'stateMachineSetSeed':
+        final seed = (call.arguments as Map)['seed'] as num;
+        return stateMachineSetSeed(seed.toInt());
 
       case 'getStateMachine':
         final id = (call.arguments as Map)['id'] as String;
@@ -399,7 +499,7 @@ class DotLottieWebView {
       playerConfig['loopCount'.toJS] = loopCount.toJS;
 
       final mode = config['mode'] as String? ?? 'forward';
-      playerConfig['mode'.toJS] = mode.toJS;
+      playerConfig['mode'.toJS] = _modeToWebString(mode).toJS;
 
       final speed = (config['speed'] as num? ?? 1.0).toDouble();
       playerConfig['speed'.toJS] = speed.toJS;
@@ -1036,6 +1136,47 @@ class DotLottieWebView {
     }
   }
 
+  bool setLoopCount(int loopCount) {
+    if (dotLottiePlayer != null && !isDisposed) {
+      try {
+        final player = dotLottiePlayer as JSObject;
+        final method = player['setLoopCount'.toJS] as JSFunction;
+        method.callAsFunction(player, loopCount.toJS);
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+    return false;
+  }
+
+  bool setAudioVolume(double volume) {
+    if (dotLottiePlayer != null && !isDisposed) {
+      try {
+        final player = dotLottiePlayer as JSObject;
+        final method = player['setVolume'.toJS] as JSFunction;
+        method.callAsFunction(player, volume.toJS);
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+    return false;
+  }
+
+  double? audioVolume() {
+    if (dotLottiePlayer != null && !isDisposed) {
+      try {
+        final player = dotLottiePlayer as JSObject;
+        final result = player['volume'.toJS];
+        return (result as JSNumber).toDartDouble;
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  }
+
   bool setFrame(double frame) {
     if (dotLottiePlayer != null && !isDisposed) {
       try {
@@ -1082,7 +1223,7 @@ class DotLottieWebView {
       try {
         final player = dotLottiePlayer as JSObject;
         final method = player['setMode'.toJS] as JSFunction;
-        method.callAsFunction(player, mode.toJS);
+        method.callAsFunction(player, _modeToWebString(mode).toJS);
       } catch (e) {} // ignore: empty_catches
     }
   }
@@ -1098,6 +1239,13 @@ class DotLottieWebView {
         layoutObj['align'.toJS] = [alignX.toJS, alignY.toJS].toJS;
         method.callAsFunction(player, layoutObj);
       } catch (e) {} // ignore: empty_catches
+    }
+  }
+
+  static String _modeToWebString(String mode) {
+    switch (mode) {
+      case 'reverseBounce': return 'reverse-bounce';
+      default:              return mode; // forward, reverse, bounce, reverse-bounce
     }
   }
 
@@ -1233,8 +1381,14 @@ class DotLottieWebView {
           final markers = <Map<String, dynamic>>[];
           final length = array.length;
           for (var i = 0; i < length; i++) {
-            final marker = array[i] as JSObject;
-            markers.add(_jsObjectToMap(marker));
+            final marker = _jsObjectToMap(array[i] as JSObject);
+            final start = marker['start'];
+            final end = marker['end'];
+            if (start is num && end is num) {
+              marker.putIfAbsent('time', () => start);
+              marker.putIfAbsent('duration', () => end - start);
+            }
+            markers.add(marker);
           }
           return markers;
         }
@@ -1251,7 +1405,7 @@ class DotLottieWebView {
         final player = dotLottiePlayer as JSObject;
         final method = player['setSlots'.toJS] as JSFunction?;
         if (method != null) {
-          method.callAsFunction(player, slots.toJS);
+          method.callAsFunction(player, _jsonParse(slots));
           return true;
         }
       } catch (e) {
@@ -1259,6 +1413,190 @@ class DotLottieWebView {
       }
     }
     return false;
+  }
+
+  bool setSlot(String slotId, String json) {
+    if (dotLottiePlayer != null && !isDisposed) {
+      try {
+        final player = dotLottiePlayer as JSObject;
+        final method = player['setSlots'.toJS] as JSFunction;
+        // dotlottie-web has no single-slot JSON setter; setSlots takes
+        // `{slotId: {p: value}}` and only touches the slots it is given.
+        final slot = JSObject();
+        slot['p'.toJS] = _jsonParse(json);
+        final slots = JSObject();
+        slots[slotId.toJS] = slot;
+        method.callAsFunction(player, slots);
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+    return false;
+  }
+
+  bool setColorSlot(String slotId, double r, double g, double b) {
+    return _callSlotMethod('setColorSlot', slotId, [r.toJS, g.toJS, b.toJS].toJS);
+  }
+
+  bool setScalarSlot(String slotId, double value) {
+    return _callSlotMethod('setScalarSlot', slotId, value.toJS);
+  }
+
+  bool setVectorSlot(String slotId, double x, double y) {
+    return _callSlotMethod('setVectorSlot', slotId, [x.toJS, y.toJS].toJS);
+  }
+
+  bool setTextSlot(String slotId, String text) {
+    final document = JSObject();
+    document['t'.toJS] = text.toJS;
+    return _callSlotMethod('setTextSlot', slotId, document);
+  }
+
+  bool setBezierPathSlot(
+    String slotId,
+    List vertices,
+    bool closed,
+    List? inTangents,
+    List? outTangents,
+  ) {
+    final path = JSObject();
+    path['v'.toJS] = _pointsToJS(vertices);
+    path['c'.toJS] = closed.toJS;
+    if (inTangents != null) path['i'.toJS] = _pointsToJS(inTangents);
+    if (outTangents != null) path['o'.toJS] = _pointsToJS(outTangents);
+    return _callSlotMethod('setBezierPathSlot', slotId, path);
+  }
+
+  Future<bool> setImageSlot(String slotId, String src) async {
+    if (dotLottiePlayer != null && !isDisposed) {
+      try {
+        final player = dotLottiePlayer as JSObject;
+        final method = player['setImageSlot'.toJS] as JSFunction;
+        final promise = method.callAsFunction(player, slotId.toJS, src.toJS);
+        final result = await (promise as JSPromise<JSAny?>).toDart;
+        return (result as JSBoolean?)?.toDart ?? false;
+      } catch (e) {
+        return false;
+      }
+    }
+    return false;
+  }
+
+  List<String>? getSlotIds() {
+    if (dotLottiePlayer != null && !isDisposed) {
+      try {
+        final player = dotLottiePlayer as JSObject;
+        final method = player['getSlotIds'.toJS] as JSFunction;
+        final result = method.callAsFunction(player);
+        if (result != null) {
+          final array = result as JSArray;
+          final ids = <String>[];
+          final length = array.length;
+          for (var i = 0; i < length; i++) {
+            ids.add((array[i] as JSString).toDart);
+          }
+          return ids;
+        }
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  String? getSlotType(String slotId) {
+    if (dotLottiePlayer != null && !isDisposed) {
+      try {
+        final player = dotLottiePlayer as JSObject;
+        final method = player['getSlotType'.toJS] as JSFunction;
+        final result = method.callAsFunction(player, slotId.toJS);
+        return (result as JSString?)?.toDart;
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  String? getSlot(String slotId) {
+    if (dotLottiePlayer != null && !isDisposed) {
+      try {
+        final player = dotLottiePlayer as JSObject;
+        final method = player['getSlot'.toJS] as JSFunction;
+        final result = method.callAsFunction(player, slotId.toJS);
+        if (result != null && !result.typeofEquals('undefined')) {
+          return _jsonStringify(result);
+        }
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  String? getSlots() {
+    if (dotLottiePlayer != null && !isDisposed) {
+      try {
+        final player = dotLottiePlayer as JSObject;
+        final method = player['getSlots'.toJS] as JSFunction;
+        final result = method.callAsFunction(player);
+        if (result != null && !result.typeofEquals('undefined')) {
+          return _jsonStringify(result);
+        }
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  /// Calls a dotlottie-web slot method that returns a boolean, passing
+  /// [slotId] and [value] when they are provided.
+  bool _callSlotMethod(String name, [String? slotId, JSAny? value]) {
+    if (dotLottiePlayer != null && !isDisposed) {
+      try {
+        final player = dotLottiePlayer as JSObject;
+        final method = player[name.toJS] as JSFunction;
+        final JSAny? result;
+        if (slotId == null) {
+          result = method.callAsFunction(player);
+        } else if (value == null) {
+          result = method.callAsFunction(player, slotId.toJS);
+        } else {
+          result = method.callAsFunction(player, slotId.toJS, value);
+        }
+        return (result as JSBoolean?)?.toDart ?? false;
+      } catch (e) {
+        return false;
+      }
+    }
+    return false;
+  }
+
+  JSArray<JSArray<JSNumber>> _pointsToJS(List points) {
+    final result = <JSArray<JSNumber>>[];
+    for (final point in points) {
+      final pair = point as List;
+      result.add([
+        (pair[0] as num).toDouble().toJS,
+        (pair[1] as num).toDouble().toJS,
+      ].toJS);
+    }
+    return result.toJS;
+  }
+
+  JSAny? _jsonParse(String json) {
+    final jsonObj = (web.window as JSObject)['JSON'.toJS] as JSObject;
+    final parseMethod = jsonObj['parse'.toJS] as JSFunction;
+    return parseMethod.callAsFunction(jsonObj, json.toJS);
+  }
+
+  String? _jsonStringify(JSAny? value) {
+    final jsonObj = (web.window as JSObject)['JSON'.toJS] as JSObject;
+    final stringifyMethod = jsonObj['stringify'.toJS] as JSFunction;
+    final result = stringifyMethod.callAsFunction(jsonObj, value);
+    return (result as JSString?)?.toDart;
   }
 
   void resize(int width, int height) {
@@ -1459,13 +1797,42 @@ class DotLottieWebView {
     if (dotLottiePlayer != null && !isDisposed) {
       try {
         final player = dotLottiePlayer as JSObject;
-        final result = player['stateMachineGetCurrentState'.toJS];
+        final method = player['stateMachineGetCurrentState'.toJS] as JSFunction;
+        final result = method.callAsFunction(player);
         return (result as JSString?)?.toDart;
       } catch (e) {
         return null;
       }
     }
     return null;
+  }
+
+  String? stateMachineStatus() {
+    if (dotLottiePlayer != null && !isDisposed) {
+      try {
+        final player = dotLottiePlayer as JSObject;
+        final method = player['stateMachineGetStatus'.toJS] as JSFunction;
+        final result = method.callAsFunction(player);
+        return (result as JSString?)?.toDart;
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  bool stateMachineSetSeed(int seed) {
+    if (dotLottiePlayer != null && !isDisposed) {
+      try {
+        final player = dotLottiePlayer as JSObject;
+        final method = player['stateMachineSetSeed'.toJS] as JSFunction;
+        final result = method.callAsFunction(player, seed.toJS);
+        return (result as JSBoolean?)?.toDart ?? false;
+      } catch (e) {
+        return false;
+      }
+    }
+    return false;
   }
 
   String? getStateMachine(String id) {

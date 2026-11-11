@@ -1,3 +1,23 @@
+## Unreleased
+
+* feat: audio volume — `DotLottieViewController.setAudioVolume()` and `audioVolume()`
+* feat: slots — `setSlot()`, `setColorSlot()`, `setScalarSlot()`, `setTextSlot()`,
+  `setVectorSlot()`, `setPositionSlot()`, `setImageSlot()`, `setBezierPathSlot()`,
+  `clearSlot()`, `clearSlots()`, `resetSlot()`, `resetSlots()`, `getSlotIds()`,
+  `getSlotType()`, `getSlot()` and `getSlots()`
+* feat: state machines — `stateMachineStatus()` and `stateMachineSetSeed()`
+* feat: playback — `setLoopCount()` and `setBackgroundColor()`
+* feat(desktop): `setSlots()` is now wired to the FFI player. `setBezierPathSlot()` and
+  `stateMachineSetSeed()` return `false` on Windows/Linux until the bundled binary is updated
+* fix(android): `setTheme()`, `setThemeData()` and `setSlots()` no longer report failure;
+  `stateMachineLoadData()` and `getStateMachine()` are implemented; the `loopCount`, `marker`
+  and `themeId` properties are applied on load; `stateMachineOnInputFired` no longer throws
+* fix(web): `setSlots()`, `setSegments()`, `currentProgress()` and `stateMachineCurrentState()`
+* fix: `markers()` no longer throws when reading a marker. Markers on Android and web now
+  also carry `start` and `end` alongside `time` and `duration`
+* fix: `'reverse-bounce'` and `'reverseBounce'` are both accepted as the playback mode
+* chore: bumped dotlottie-android to 0.18.0, dotlottie-ios to 0.17.0 and dotlottie-web to 0.83.0
+
 ## 0.1.7
 
 * chore(android): migrate to Flutter's Built-in Kotlin. The Android plugin no
