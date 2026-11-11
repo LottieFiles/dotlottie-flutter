@@ -1,5 +1,6 @@
 package com.lottiefiles.dotlottie_flutter
 
+import android.graphics.PointF
 import android.view.View
 import com.dotlottie.dlplayer.Fit
 import com.dotlottie.dlplayer.Manifest
@@ -61,12 +62,39 @@ interface DotLottiePlayerDelegate {
     fun setUseFrameInterpolation(enable: Boolean)
     fun setBackgroundColor(color: Int)
     fun setMarker(marker: String)
+    fun setLoopCount(loopCount: UInt)
+
+    // Audio
+    val audioVolume: Float
+    fun setAudioVolume(volume: Float)
 
     // Theme / slots
     fun setTheme(themeId: String)
     fun setThemeData(themeData: String)
     fun resetTheme()
     fun setSlots(slots: String)
+    fun setSlot(slotId: String, json: String): Boolean
+    fun setColorSlot(slotId: String, color: Int): Boolean
+    fun setScalarSlot(slotId: String, value: Float): Boolean
+    fun setTextSlot(slotId: String, text: String): Boolean
+    fun setVectorSlot(slotId: String, vector: PointF): Boolean
+    fun setPositionSlot(slotId: String, position: PointF): Boolean
+    fun setImageSlotSrc(slotId: String, src: String): Boolean
+    fun setBezierPathSlot(
+        slotId: String,
+        vertices: List<PointF>,
+        closed: Boolean,
+        inTangents: List<PointF>?,
+        outTangents: List<PointF>?
+    ): Boolean
+    fun clearSlot(slotId: String): Boolean
+    fun clearSlots(): Boolean
+    fun resetSlot(slotId: String): Boolean
+    fun resetSlots(): Boolean
+    fun getSlotIds(): List<String>
+    fun getSlotType(slotId: String): String?
+    fun getSlot(slotId: String): String?
+    fun getSlots(): String
 
     // Animation
     fun loadAnimation(animationId: String)
@@ -76,6 +104,7 @@ interface DotLottiePlayerDelegate {
 
     // State machine
     fun stateMachineLoad(stateMachineId: String): Boolean
+    fun stateMachineLoadData(data: String): Boolean
     fun stateMachineStart(): Boolean
     fun stateMachineStop(): Boolean
     fun stateMachineFireEvent(event: String)
@@ -86,6 +115,12 @@ interface DotLottiePlayerDelegate {
     fun stateMachineGetStringInput(key: String): String?
     fun stateMachineGetBooleanInput(key: String): Boolean?
     fun stateMachineCurrentState(): String?
+    fun stateMachineStatus(): String?
+    fun stateMachineSetSeed(seed: Long): Boolean
+    fun stateMachineOverrideCurrentState(state: String, immediate: Boolean): Boolean
+    fun stateMachineResetInput(key: String): Boolean
+    fun stateMachineGetInputs(): Map<String, String>
+    fun getStateMachine(stateMachineId: String): String?
 
     // Event listeners
     fun addEventListener(listener: DotLottieEventListener)
@@ -134,16 +169,42 @@ class StandardPlayerAdapter(private val view: DotLottieAnimation) : DotLottiePla
     override fun setUseFrameInterpolation(enable: Boolean) = view.setUseFrameInterpolation(enable)
     override fun setBackgroundColor(color: Int) = view.setBackgroundColor(color)
     override fun setMarker(marker: String) = view.setMarker(marker)
+    override fun setLoopCount(loopCount: UInt) = view.setLoopCount(loopCount)
+    override val audioVolume get() = view.audioVolume
+    override fun setAudioVolume(volume: Float) = view.setAudioVolume(volume)
     override fun setTheme(themeId: String) = view.setTheme(themeId)
     override fun setThemeData(themeData: String) = view.setThemeData(themeData)
     override fun resetTheme() = view.resetTheme()
     override fun setSlots(slots: String) = view.setSlots(slots)
+    override fun setSlot(slotId: String, json: String): Boolean = view.setSlot(slotId, json)
+    override fun setColorSlot(slotId: String, color: Int): Boolean = view.setColorSlot(slotId, color)
+    override fun setScalarSlot(slotId: String, value: Float): Boolean = view.setScalarSlot(slotId, value)
+    override fun setTextSlot(slotId: String, text: String): Boolean = view.setTextSlot(slotId, text)
+    override fun setVectorSlot(slotId: String, vector: PointF): Boolean = view.setVectorSlot(slotId, vector)
+    override fun setPositionSlot(slotId: String, position: PointF): Boolean = view.setPositionSlot(slotId, position)
+    override fun setImageSlotSrc(slotId: String, src: String): Boolean = view.setImageSlotSrc(slotId, src)
+    override fun setBezierPathSlot(
+        slotId: String,
+        vertices: List<PointF>,
+        closed: Boolean,
+        inTangents: List<PointF>?,
+        outTangents: List<PointF>?
+    ): Boolean = view.setBezierPathSlot(slotId, vertices, closed, inTangents, outTangents)
+    override fun clearSlot(slotId: String): Boolean = view.clearSlot(slotId)
+    override fun clearSlots(): Boolean = view.clearSlots()
+    override fun resetSlot(slotId: String): Boolean = view.resetSlot(slotId)
+    override fun resetSlots(): Boolean = view.resetSlots()
+    override fun getSlotIds(): List<String> = view.getSlotIds()
+    override fun getSlotType(slotId: String): String? = view.getSlotType(slotId)
+    override fun getSlot(slotId: String): String? = view.getSlot(slotId)
+    override fun getSlots(): String = view.getSlots()
     override fun loadAnimation(animationId: String) = view.loadAnimation(animationId)
     override fun resize(width: Int, height: Int) = view.resize(width, height)
     override fun setLayout(fit: Fit, alignX: Float, alignY: Float) = view.setLayout(fit, Pair(alignX, alignY))
     override fun manifest(): Manifest? = view.manifest()
 
     override fun stateMachineLoad(stateMachineId: String): Boolean = view.stateMachineLoad(stateMachineId)
+    override fun stateMachineLoadData(data: String): Boolean = view.stateMachineLoadData(data)
     override fun stateMachineStart(): Boolean = view.stateMachineStart()
     override fun stateMachineStop(): Boolean = view.stateMachineStop()
     override fun stateMachineFireEvent(event: String) = view.stateMachineFireEvent(event)
@@ -154,6 +215,12 @@ class StandardPlayerAdapter(private val view: DotLottieAnimation) : DotLottiePla
     override fun stateMachineGetStringInput(key: String): String? = view.stateMachineGetStringInput(key)
     override fun stateMachineGetBooleanInput(key: String): Boolean? = view.stateMachineGetBooleanInput(key)
     override fun stateMachineCurrentState(): String? = view.stateMachineCurrentState()
+    override fun stateMachineStatus(): String? = view.stateMachineStatus()
+    override fun stateMachineSetSeed(seed: Long): Boolean = view.stateMachineSetSeed(seed)
+    override fun stateMachineOverrideCurrentState(state: String, immediate: Boolean): Boolean = view.stateMachineOverrideCurrentState(state, immediate)
+    override fun stateMachineResetInput(key: String): Boolean = view.stateMachineResetInput(key)
+    override fun stateMachineGetInputs(): Map<String, String> = view.stateMachineGetInputs()
+    override fun getStateMachine(stateMachineId: String): String? = view.getStateMachine(stateMachineId)
 
     override fun addEventListener(listener: DotLottieEventListener) = view.addEventListener(listener)
     override fun addStateMachineEventListener(listener: StateMachineEventListener) = view.addStateMachineEventListener(listener)
@@ -202,16 +269,42 @@ class GLPlayerAdapter(private val view: DotLottieGLAnimation) : DotLottiePlayerD
     override fun setUseFrameInterpolation(enable: Boolean) = view.setUseFrameInterpolation(enable)
     override fun setBackgroundColor(color: Int) = view.setBackgroundColor(color)
     override fun setMarker(marker: String) = view.setMarker(marker)
+    override fun setLoopCount(loopCount: UInt) = view.setLoopCount(loopCount)
+    override val audioVolume get() = view.audioVolume
+    override fun setAudioVolume(volume: Float) = view.setAudioVolume(volume)
     override fun setTheme(themeId: String) = view.setTheme(themeId)
     override fun setThemeData(themeData: String) = view.setThemeData(themeData)
     override fun resetTheme() = view.resetTheme()
     override fun setSlots(slots: String) = view.setSlots(slots)
+    override fun setSlot(slotId: String, json: String): Boolean = view.setSlot(slotId, json)
+    override fun setColorSlot(slotId: String, color: Int): Boolean = view.setColorSlot(slotId, color)
+    override fun setScalarSlot(slotId: String, value: Float): Boolean = view.setScalarSlot(slotId, value)
+    override fun setTextSlot(slotId: String, text: String): Boolean = view.setTextSlot(slotId, text)
+    override fun setVectorSlot(slotId: String, vector: PointF): Boolean = view.setVectorSlot(slotId, vector)
+    override fun setPositionSlot(slotId: String, position: PointF): Boolean = view.setPositionSlot(slotId, position)
+    override fun setImageSlotSrc(slotId: String, src: String): Boolean = view.setImageSlotSrc(slotId, src)
+    override fun setBezierPathSlot(
+        slotId: String,
+        vertices: List<PointF>,
+        closed: Boolean,
+        inTangents: List<PointF>?,
+        outTangents: List<PointF>?
+    ): Boolean = view.setBezierPathSlot(slotId, vertices, closed, inTangents, outTangents)
+    override fun clearSlot(slotId: String): Boolean = view.clearSlot(slotId)
+    override fun clearSlots(): Boolean = view.clearSlots()
+    override fun resetSlot(slotId: String): Boolean = view.resetSlot(slotId)
+    override fun resetSlots(): Boolean = view.resetSlots()
+    override fun getSlotIds(): List<String> = view.getSlotIds()
+    override fun getSlotType(slotId: String): String? = view.getSlotType(slotId)
+    override fun getSlot(slotId: String): String? = view.getSlot(slotId)
+    override fun getSlots(): String = view.getSlots()
     override fun loadAnimation(animationId: String) = view.loadAnimation(animationId)
     override fun resize(width: Int, height: Int) = view.resize(width, height)
     override fun setLayout(fit: Fit, alignX: Float, alignY: Float) = view.setLayout(fit, Pair(alignX, alignY))
     override fun manifest(): Manifest? = view.manifest()
 
     override fun stateMachineLoad(stateMachineId: String): Boolean = view.stateMachineLoad(stateMachineId)
+    override fun stateMachineLoadData(data: String): Boolean = view.stateMachineLoadData(data)
     override fun stateMachineStart(): Boolean = view.stateMachineStart()
     override fun stateMachineStop(): Boolean = view.stateMachineStop()
     override fun stateMachineFireEvent(event: String) = view.stateMachineFireEvent(event)
@@ -222,6 +315,12 @@ class GLPlayerAdapter(private val view: DotLottieGLAnimation) : DotLottiePlayerD
     override fun stateMachineGetStringInput(key: String): String? = view.stateMachineGetStringInput(key)
     override fun stateMachineGetBooleanInput(key: String): Boolean? = view.stateMachineGetBooleanInput(key)
     override fun stateMachineCurrentState(): String? = view.stateMachineCurrentState()
+    override fun stateMachineStatus(): String? = view.stateMachineStatus()
+    override fun stateMachineSetSeed(seed: Long): Boolean = view.stateMachineSetSeed(seed)
+    override fun stateMachineOverrideCurrentState(state: String, immediate: Boolean): Boolean = view.stateMachineOverrideCurrentState(state, immediate)
+    override fun stateMachineResetInput(key: String): Boolean = view.stateMachineResetInput(key)
+    override fun stateMachineGetInputs(): Map<String, String> = view.stateMachineGetInputs()
+    override fun getStateMachine(stateMachineId: String): String? = view.getStateMachine(stateMachineId)
 
     override fun addEventListener(listener: DotLottieEventListener) = view.addEventListener(listener)
     override fun addStateMachineEventListener(listener: StateMachineEventListener) = view.addStateMachineEventListener(listener)

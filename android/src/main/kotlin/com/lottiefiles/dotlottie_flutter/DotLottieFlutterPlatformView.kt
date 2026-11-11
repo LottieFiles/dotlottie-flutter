@@ -2,10 +2,12 @@ package com.lottiefiles.dotlottie_flutter
 
 import android.content.Context
 import android.graphics.Color
+import android.graphics.PointF
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.view.ViewGroup
+import com.dotlottie.dlplayer.AssetResolver
 import com.dotlottie.dlplayer.Fit
 import com.dotlottie.dlplayer.Mode
 import com.lottiefiles.dotlottie.core.util.LayoutUtil
@@ -60,6 +62,15 @@ class DotLottiePlatformView(
         val useFrameInterpolation = params["useFrameInterpolation"] as? Boolean ?: false
         val backgroundColor = params["backgroundColor"] as? String
         val stateMachineId = params["stateMachineId"] as? String ?: ""
+        val initialLoopCount = (params["loopCount"] as? Number)?.toInt() ?: 0
+        val marker = params["marker"] as? String
+        val themeId = params["themeId"] as? String
+        val externalAssets =
+                (params["externalAssets"] as? Map<*, *>)
+                        ?.mapNotNull { (src, bytes) ->
+                            if (src is String && bytes is ByteArray) src to bytes else null
+                        }
+                        ?.toMap()
 
         player.addEventListener(
                 object : DotLottieEventListener {
@@ -199,8 +210,7 @@ class DotLottiePlatformView(
 
                     override fun onInputFired(inputName: String) {
                         mainHandler.post {
-                            val args = mapOf("inputName" to inputName)
-                            methodChannel.invokeMethod("stateMachineOnInputFired", args)
+                            methodChannel.invokeMethod("stateMachineOnInputFired", inputName)
                         }
                     }
                 }
@@ -230,7 +240,7 @@ class DotLottiePlatformView(
                             "forward" -> Mode.FORWARD
                             "reverse" -> Mode.REVERSE
                             "bounce" -> Mode.BOUNCE
-                            "reverse-bounce" -> Mode.REVERSE_BOUNCE
+                            "reverse-bounce", "reversebounce" -> Mode.REVERSE_BOUNCE
                             else -> Mode.FORWARD
                         }
 
@@ -257,6 +267,18 @@ class DotLottiePlatformView(
 
                 fit?.let { f ->
                     configBuilder.layout(f, LayoutUtil.Alignment.Center)
+                }
+
+                if (initialLoopCount > 0) {
+                    configBuilder.loopCount(initialLoopCount.toUInt())
+                }
+                marker?.let { configBuilder.marker(it) }
+                themeId?.let { configBuilder.themeId(it) }
+                externalAssets?.let { assets ->
+                    // The core reports a relative asset path with a leading slash.
+                    configBuilder.assetResolver(
+                            AssetResolver { src -> assets[src] ?: assets[src.removePrefix("/")] }
+                    )
                 }
 
                 backgroundColor?.let {
@@ -414,7 +436,7 @@ class DotLottiePlatformView(
                                     "forward" -> Mode.FORWARD
                                     "reverse" -> Mode.REVERSE
                                     "bounce" -> Mode.BOUNCE
-                                    "reverseBounce" -> Mode.REVERSE_BOUNCE
+                                    "reverseBounce", "reverse-bounce" -> Mode.REVERSE_BOUNCE
                                     else -> Mode.FORWARD
                                 }
                         player.setPlayMode(mode)
@@ -431,6 +453,27 @@ class DotLottiePlatformView(
                     } else {
                         result.error("INVALID_ARGS", "Invalid frameInterpolation argument", null)
                     }
+                }
+                "setLoopCount" -> {
+                    val loopCount = call.argument<Number>("loopCount")?.toInt()
+                    if (loopCount != null && loopCount >= 0) {
+                        player.setLoopCount(loopCount.toUInt())
+                        result.success(true)
+                    } else {
+                        result.error("INVALID_ARGS", "Invalid loopCount argument", null)
+                    }
+                }
+                "setAudioVolume" -> {
+                    val volume = call.argument<Number>("volume")?.toFloat()
+                    if (volume != null) {
+                        player.setAudioVolume(volume)
+                        result.success(true)
+                    } else {
+                        result.error("INVALID_ARGS", "Invalid volume argument", null)
+                    }
+                }
+                "audioVolume" -> {
+                    result.success(player.audioVolume.toDouble())
                 }
                 "setBackgroundColor" -> {
                     val colorString = call.argument<String>("color")
@@ -449,8 +492,8 @@ class DotLottiePlatformView(
                 "setTheme" -> {
                     val themeId = call.argument<String>("themeId")
                     if (themeId != null) {
-                        val success = player.setTheme(themeId)
-                        result.success(success)
+                        player.setTheme(themeId)
+                        result.success(true)
                     } else {
                         result.error("INVALID_ARGS", "Invalid theme argument", null)
                     }
@@ -459,8 +502,8 @@ class DotLottiePlatformView(
                     val themeData = call.argument<String>("themeData")
                     if (themeData != null) {
                         try {
-                            val success = player.setThemeData(themeData)
-                            result.success(success)
+                            player.setThemeData(themeData)
+                            result.success(true)
                         } catch (e: Exception) {
                             Log.w("🔴 DotLottie", "setThemeData not available", e)
                             result.success(false)
@@ -517,8 +560,10 @@ class DotLottiePlatformView(
                                 markers.map { marker ->
                                     mapOf<String, Any>(
                                             "name" to marker.name,
-                                            "time" to marker.time,
-                                            "duration" to marker.duration
+                                            "start" to marker.start,
+                                            "end" to marker.end,
+                                            "time" to marker.start,
+                                            "duration" to (marker.end - marker.start)
                                     )
                                 }
                         result.success(markerList)
@@ -530,8 +575,8 @@ class DotLottiePlatformView(
                     val slots = call.argument<String>("slots")
                     if (slots != null) {
                         try {
-                            val success = player.setSlots(slots)
-                            result.success(success)
+                            player.setSlots(slots)
+                            result.success(true)
                         } catch (e: Exception) {
                             Log.w("🔴 DotLottie", "setSlots not available", e)
                             result.success(false)
@@ -539,6 +584,143 @@ class DotLottiePlatformView(
                     } else {
                         result.error("INVALID_ARGS", "Invalid slots argument", null)
                     }
+                }
+                "setSlot" -> {
+                    val slotId = call.argument<String>("slotId")
+                    val json = call.argument<String>("json")
+                    if (slotId != null && json != null) {
+                        result.success(player.setSlot(slotId, json))
+                    } else {
+                        result.error("INVALID_ARGS", "Invalid setSlot arguments", null)
+                    }
+                }
+                "setColorSlot" -> {
+                    val slotId = call.argument<String>("slotId")
+                    val r = call.argument<Number>("r")?.toFloat()
+                    val g = call.argument<Number>("g")?.toFloat()
+                    val b = call.argument<Number>("b")?.toFloat()
+                    if (slotId != null && r != null && g != null && b != null) {
+                        val color =
+                                Color.rgb(
+                                        Math.round(r.coerceIn(0f, 1f) * 255f),
+                                        Math.round(g.coerceIn(0f, 1f) * 255f),
+                                        Math.round(b.coerceIn(0f, 1f) * 255f)
+                                )
+                        result.success(player.setColorSlot(slotId, color))
+                    } else {
+                        result.error("INVALID_ARGS", "Invalid setColorSlot arguments", null)
+                    }
+                }
+                "setScalarSlot" -> {
+                    val slotId = call.argument<String>("slotId")
+                    val value = call.argument<Number>("value")?.toFloat()
+                    if (slotId != null && value != null) {
+                        result.success(player.setScalarSlot(slotId, value))
+                    } else {
+                        result.error("INVALID_ARGS", "Invalid setScalarSlot arguments", null)
+                    }
+                }
+                "setTextSlot" -> {
+                    val slotId = call.argument<String>("slotId")
+                    val text = call.argument<String>("text")
+                    if (slotId != null && text != null) {
+                        result.success(player.setTextSlot(slotId, text))
+                    } else {
+                        result.error("INVALID_ARGS", "Invalid setTextSlot arguments", null)
+                    }
+                }
+                "setVectorSlot" -> {
+                    val slotId = call.argument<String>("slotId")
+                    val x = call.argument<Number>("x")?.toFloat()
+                    val y = call.argument<Number>("y")?.toFloat()
+                    if (slotId != null && x != null && y != null) {
+                        result.success(player.setVectorSlot(slotId, PointF(x, y)))
+                    } else {
+                        result.error("INVALID_ARGS", "Invalid setVectorSlot arguments", null)
+                    }
+                }
+                "setPositionSlot" -> {
+                    val slotId = call.argument<String>("slotId")
+                    val x = call.argument<Number>("x")?.toFloat()
+                    val y = call.argument<Number>("y")?.toFloat()
+                    if (slotId != null && x != null && y != null) {
+                        result.success(player.setPositionSlot(slotId, PointF(x, y)))
+                    } else {
+                        result.error("INVALID_ARGS", "Invalid setPositionSlot arguments", null)
+                    }
+                }
+                "setImageSlot" -> {
+                    val slotId = call.argument<String>("slotId")
+                    val src = call.argument<String>("src")
+                    if (slotId != null && src != null) {
+                        result.success(player.setImageSlotSrc(slotId, src))
+                    } else {
+                        result.error("INVALID_ARGS", "Invalid setImageSlot arguments", null)
+                    }
+                }
+                "setBezierPathSlot" -> {
+                    val slotId = call.argument<String>("slotId")
+                    val vertices = toPointList(call.argument<List<*>>("vertices"))
+                    if (slotId != null && vertices != null) {
+                        val closed = call.argument<Boolean>("closed") ?: false
+                        val inTangents = toPointList(call.argument<List<*>>("inTangents"))
+                        val outTangents = toPointList(call.argument<List<*>>("outTangents"))
+                        result.success(
+                                player.setBezierPathSlot(
+                                        slotId,
+                                        vertices,
+                                        closed,
+                                        inTangents,
+                                        outTangents
+                                )
+                        )
+                    } else {
+                        result.error("INVALID_ARGS", "Invalid setBezierPathSlot arguments", null)
+                    }
+                }
+                "clearSlot" -> {
+                    val slotId = call.argument<String>("slotId")
+                    if (slotId != null) {
+                        result.success(player.clearSlot(slotId))
+                    } else {
+                        result.error("INVALID_ARGS", "Invalid slotId argument", null)
+                    }
+                }
+                "clearSlots" -> {
+                    result.success(player.clearSlots())
+                }
+                "resetSlot" -> {
+                    val slotId = call.argument<String>("slotId")
+                    if (slotId != null) {
+                        result.success(player.resetSlot(slotId))
+                    } else {
+                        result.error("INVALID_ARGS", "Invalid slotId argument", null)
+                    }
+                }
+                "resetSlots" -> {
+                    result.success(player.resetSlots())
+                }
+                "getSlotIds" -> {
+                    result.success(player.getSlotIds())
+                }
+                "getSlotType" -> {
+                    val slotId = call.argument<String>("slotId")
+                    if (slotId != null) {
+                        result.success(player.getSlotType(slotId))
+                    } else {
+                        result.error("INVALID_ARGS", "Invalid slotId argument", null)
+                    }
+                }
+                "getSlot" -> {
+                    val slotId = call.argument<String>("slotId")
+                    if (slotId != null) {
+                        result.success(player.getSlot(slotId))
+                    } else {
+                        result.error("INVALID_ARGS", "Invalid slotId argument", null)
+                    }
+                }
+                "getSlots" -> {
+                    result.success(player.getSlots())
                 }
                 "resize" -> {
                     val width = call.argument<Int>("width")
@@ -594,7 +776,18 @@ class DotLottiePlatformView(
                     }
                 }
                 "stateMachineLoadData" -> {
-                    result.success(false)
+                    val data = call.argument<String>("data")
+                    if (data != null) {
+                        try {
+                            val success = player.stateMachineLoadData(data)
+                            result.success(success)
+                        } catch (e: Exception) {
+                            Log.w("🔴 DotLottie", "loadStateMachineData not available", e)
+                            result.success(false)
+                        }
+                    } else {
+                        result.error("INVALID_ARGS", "Invalid data argument", null)
+                    }
                 }
                 "stateMachineStart" -> {
                     try {
@@ -739,13 +932,76 @@ class DotLottiePlatformView(
                         result.success(null)
                     }
                 }
-                "stateMachineGetInputs" -> result.success(emptyMap<String, String>())
-                "getStateMachine" -> result.success(null)
+                "stateMachineGetInputs" -> {
+                    try {
+                        result.success(player.stateMachineGetInputs())
+                    } catch (e: Exception) {
+                        result.success(emptyMap<String, String>())
+                    }
+                }
+                "stateMachineOverrideState" -> {
+                    val state = call.argument<String>("state")
+                    if (state != null) {
+                        val immediate = call.argument<Boolean>("immediate") ?: false
+                        try {
+                            result.success(
+                                    player.stateMachineOverrideCurrentState(state, immediate)
+                            )
+                        } catch (e: Exception) {
+                            result.success(false)
+                        }
+                    } else {
+                        result.error("INVALID_ARGS", "Invalid state argument", null)
+                    }
+                }
+                "stateMachineResetInput" -> {
+                    val key = call.argument<String>("key")
+                    if (key != null) {
+                        try {
+                            result.success(player.stateMachineResetInput(key))
+                        } catch (e: Exception) {
+                            result.success(false)
+                        }
+                    } else {
+                        result.error("INVALID_ARGS", "Invalid key argument", null)
+                    }
+                }
+                "getStateMachine" -> {
+                    val id = call.argument<String>("id")
+                    if (id != null) {
+                        try {
+                            result.success(player.getStateMachine(id))
+                        } catch (e: Exception) {
+                            result.success(null)
+                        }
+                    } else {
+                        result.error("INVALID_ARGS", "Invalid id argument", null)
+                    }
+                }
                 "stateMachineCurrentState" -> {
                     try {
                         result.success(player.stateMachineCurrentState())
                     } catch (e: Exception) {
                         result.success(null)
+                    }
+                }
+                "stateMachineStatus" -> {
+                    try {
+                        result.success(player.stateMachineStatus())
+                    } catch (e: Exception) {
+                        result.success(null)
+                    }
+                }
+                "stateMachineSetSeed" -> {
+                    val seed = call.argument<Number>("seed")?.toLong()
+                    if (seed != null) {
+                        try {
+                            result.success(player.stateMachineSetSeed(seed))
+                        } catch (e: Exception) {
+                            result.success(false)
+                        }
+                    } else {
+                        result.error("INVALID_ARGS", "Invalid seed argument", null)
                     }
                 }
                 "manifest" -> {
@@ -816,6 +1072,12 @@ class DotLottiePlatformView(
             result.error("ERROR", "Error handling method: ${call.method}", e.message)
         }
     }
+
+    private fun toPointList(raw: List<*>?): List<PointF>? =
+            raw?.map { point ->
+                val pair = point as List<*>
+                PointF((pair[0] as Number).toFloat(), (pair[1] as Number).toFloat())
+            }
 
     private fun parseColor(colorString: String): Int {
         val hex = colorString.trim().replace("#", "")
