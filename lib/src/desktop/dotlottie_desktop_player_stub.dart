@@ -38,6 +38,11 @@ class DotLottieFfiPlayer {
   bool setBackgroundColor(int r, int g, int b, int a) => false;
   bool setAudioVolume(double volume) => false;
   double? audioVolume() => null;
+  double speed() => 1.0;
+  bool loop() => false;
+  bool autoplay() => false;
+  bool useFrameInterpolation() => false;
+  String mode() => 'forward';
   bool seekFrame(double frame) => false;
   bool isPlaying() => false;
   bool isPaused() => false;
@@ -76,6 +81,14 @@ class DotLottieFfiPlayer {
   bool setVectorSlot(String slotId, double x, double y) => false;
   bool setPositionSlot(String slotId, double x, double y) => false;
   bool setImageSlot(String slotId, String src) => false;
+  bool setBezierPathSlot(
+    String slotId,
+    List<List<double>> vertices,
+    bool closed,
+    List<List<double>>? inTangents,
+    List<List<double>>? outTangents,
+  ) =>
+      false;
   bool clearSlot(String slotId) => false;
   bool clearSlots() => false;
   bool resetSlot(String slotId) => false;
@@ -120,6 +133,10 @@ class DotLottieFfiPlayer {
   bool? getBooleanInput(String key) => null;
   String? currentState() => null;
   String? stateMachineStatus() => null;
+  bool setSeed(int seed) => false;
+  bool resetInput(String key) => false;
+  bool overrideCurrentState(String state, bool immediate) => false;
+  Map<String, String> getInputs() => {};
   String? getStateMachine(String id) => null;
   int frameworkSetup() => 0;
   void pollStateMachineEvents({

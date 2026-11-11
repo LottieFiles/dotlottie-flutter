@@ -239,6 +239,13 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
             stateMachineId: stateMachineId
         )
         config.animationId = animationId
+
+        if let externalAssets = arguments["externalAssets"] as? [String: Any] {
+            let assets: [String: Data] = externalAssets.compactMapValues {
+                ($0 as? FlutterStandardTypedData)?.data
+            }
+            config.assetResolver = { src in assets[src] }
+        }
         
         if let w = width {
             config.width = w
@@ -580,6 +587,8 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
             let markerDicts = markers.map { marker -> [String: Any] in
                 return [
                     "name": marker.name,
+                    "start": marker.time,
+                    "end": marker.time + marker.duration,
                     "time": marker.time,
                     "duration": marker.duration
                 ]
@@ -864,6 +873,23 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
                 result(animation.stateMachineSetSeed(UInt64(bitPattern: Int64(seed))))
             } else {
                 result(FlutterError(code: "INVALID_ARGS", message: "Invalid seed argument", details: nil))
+            }
+
+        case "stateMachineOverrideState":
+            if let args = call.arguments as? [String: Any],
+               let state = args["state"] as? String {
+                let immediate = args["immediate"] as? Bool ?? false
+                result(animation.stateMachineOverrideCurrentState(state, immediate: immediate))
+            } else {
+                result(FlutterError(code: "INVALID_ARGS", message: "Invalid state argument", details: nil))
+            }
+
+        case "stateMachineResetInput":
+            if let args = call.arguments as? [String: Any],
+               let key = args["key"] as? String {
+                result(animation.stateMachineResetInput(key: key))
+            } else {
+                result(FlutterError(code: "INVALID_ARGS", message: "Invalid key argument", details: nil))
             }
 
         case "getStateMachine":

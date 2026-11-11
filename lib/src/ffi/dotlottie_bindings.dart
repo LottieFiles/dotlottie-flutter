@@ -40,10 +40,12 @@ const int kModeReverse = 1;
 const int kModeBounce = 2;
 const int kModeReverseBounce = 3;
 
-// dotlottiePlaybackStatus
-const int kStatusPlaying = 0;
-const int kStatusPaused = 1;
-const int kStatusStopped = 2;
+// dotlottieStatus
+const int kStatusIdle = 0;
+const int kStatusPlaying = 1;
+const int kStatusPaused = 2;
+const int kStatusStopped = 3;
+const int kStatusTweening = 4;
 
 // dotlottieFit
 const int kFitContain = 0;
@@ -237,13 +239,9 @@ final dotlottieStop =
         int Function(Pointer<DotLottiePlayer>)>('dotlottie_stop');
 
 // Status queries
-final dotlottieGetPlaybackStatus =
+final dotlottieStatus =
     _lib.lookupFunction<Int32 Function(Pointer<DotLottiePlayer>),
-        int Function(Pointer<DotLottiePlayer>)>('dotlottie_get_playback_status');
-
-final dotlottieIsLoaded =
-    _lib.lookupFunction<Bool Function(Pointer<DotLottiePlayer>),
-        bool Function(Pointer<DotLottiePlayer>)>('dotlottie_is_loaded');
+        int Function(Pointer<DotLottiePlayer>)>('dotlottie_status');
 
 final dotlottieGetCurrentFrame = _lib.lookupFunction<
     Int32 Function(Pointer<DotLottiePlayer>, Pointer<Float>),
@@ -264,6 +262,28 @@ final dotlottieGetCurrentLoopCount = _lib.lookupFunction<
     Int32 Function(Pointer<DotLottiePlayer>, Pointer<Uint32>),
     int Function(Pointer<DotLottiePlayer>,
         Pointer<Uint32>)>('dotlottie_get_current_loop_count');
+
+// Config getters
+final dotlottieGetSpeed =
+    _lib.lookupFunction<Float Function(Pointer<DotLottiePlayer>),
+        double Function(Pointer<DotLottiePlayer>)>('dotlottie_get_speed');
+
+final dotlottieGetLoop =
+    _lib.lookupFunction<Bool Function(Pointer<DotLottiePlayer>),
+        bool Function(Pointer<DotLottiePlayer>)>('dotlottie_get_loop');
+
+final dotlottieGetAutoplay =
+    _lib.lookupFunction<Bool Function(Pointer<DotLottiePlayer>),
+        bool Function(Pointer<DotLottiePlayer>)>('dotlottie_get_autoplay');
+
+final dotlottieGetMode =
+    _lib.lookupFunction<Int32 Function(Pointer<DotLottiePlayer>),
+        int Function(Pointer<DotLottiePlayer>)>('dotlottie_get_mode');
+
+final dotlottieGetUseFrameInterpolation = _lib.lookupFunction<
+    Bool Function(Pointer<DotLottiePlayer>),
+    bool Function(
+        Pointer<DotLottiePlayer>)>('dotlottie_get_use_frame_interpolation');
 
 // Config setters
 final dotlottieSetLoop = _lib.lookupFunction<
@@ -442,15 +462,19 @@ final dotlottieSetPositionSlot = _lib.lookupFunction<
     int Function(Pointer<DotLottiePlayer>, Pointer<Utf8>, double,
         double)>('dotlottie_set_position_slot');
 
-final dotlottieSetImageSlotPath = _lib.lookupFunction<
+final dotlottieSetImageSlotSrc = _lib.lookupFunction<
     Int32 Function(Pointer<DotLottiePlayer>, Pointer<Utf8>, Pointer<Utf8>),
     int Function(Pointer<DotLottiePlayer>, Pointer<Utf8>,
-        Pointer<Utf8>)>('dotlottie_set_image_slot_path');
+        Pointer<Utf8>)>('dotlottie_set_image_slot_src');
 
-final dotlottieSetImageSlotDataUrl = _lib.lookupFunction<
-    Int32 Function(Pointer<DotLottiePlayer>, Pointer<Utf8>, Pointer<Utf8>),
-    int Function(Pointer<DotLottiePlayer>, Pointer<Utf8>,
-        Pointer<Utf8>)>('dotlottie_set_image_slot_data_url');
+// `vertices`, `in_tangents` and `out_tangents` each hold `count` interleaved
+// x, y pairs; the tangent pointers may be null.
+final dotlottieSetBezierPathSlot = _lib.lookupFunction<
+    Int32 Function(Pointer<DotLottiePlayer>, Pointer<Utf8>, Pointer<Float>,
+        Pointer<Float>, Pointer<Float>, UintPtr, Bool),
+    int Function(Pointer<DotLottiePlayer>, Pointer<Utf8>, Pointer<Float>,
+        Pointer<Float>, Pointer<Float>, int,
+        bool)>('dotlottie_set_bezier_path_slot');
 
 final dotlottieGetSlotIdsCount = _lib.lookupFunction<
     Int32 Function(Pointer<DotLottiePlayer>, Pointer<Uint32>),
@@ -570,6 +594,38 @@ final dotlottieStateMachineSetBooleanInput = _lib.lookupFunction<
     Int32 Function(Pointer<DotLottieStateMachine>, Pointer<Utf8>, Bool),
     int Function(Pointer<DotLottieStateMachine>, Pointer<Utf8>,
         bool)>('dotlottie_state_machine_set_boolean_input');
+
+final dotlottieStateMachineSetSeed = _lib.lookupFunction<
+    Int32 Function(Pointer<DotLottieStateMachine>, Uint64),
+    int Function(Pointer<DotLottieStateMachine>,
+        int)>('dotlottie_state_machine_set_seed');
+
+final dotlottieStateMachineResetInput = _lib.lookupFunction<
+    Int32 Function(Pointer<DotLottieStateMachine>, Pointer<Utf8>),
+    int Function(Pointer<DotLottieStateMachine>,
+        Pointer<Utf8>)>('dotlottie_state_machine_reset_input');
+
+final dotlottieStateMachineOverrideCurrentState = _lib.lookupFunction<
+    Int32 Function(Pointer<DotLottieStateMachine>, Pointer<Utf8>, Bool),
+    int Function(Pointer<DotLottieStateMachine>, Pointer<Utf8>,
+        bool)>('dotlottie_state_machine_override_current_state');
+
+final dotlottieStateMachineGetInputsCount = _lib.lookupFunction<
+    Int32 Function(Pointer<DotLottieStateMachine>, Pointer<Uint32>),
+    int Function(Pointer<DotLottieStateMachine>,
+        Pointer<Uint32>)>('dotlottie_state_machine_get_inputs_count');
+
+final dotlottieStateMachineGetInputName = _lib.lookupFunction<
+    Int32 Function(Pointer<DotLottieStateMachine>, Uint32, Pointer<Uint8>,
+        Pointer<UintPtr>),
+    int Function(Pointer<DotLottieStateMachine>, int, Pointer<Uint8>,
+        Pointer<UintPtr>)>('dotlottie_state_machine_get_input_name');
+
+final dotlottieStateMachineGetInputType = _lib.lookupFunction<
+    Int32 Function(Pointer<DotLottieStateMachine>, Uint32, Pointer<Uint8>,
+        Pointer<UintPtr>),
+    int Function(Pointer<DotLottieStateMachine>, int, Pointer<Uint8>,
+        Pointer<UintPtr>)>('dotlottie_state_machine_get_input_type');
 
 final dotlottieStateMachineGetNumericInput = _lib.lookupFunction<
     Int32 Function(Pointer<DotLottieStateMachine>, Pointer<Utf8>, Pointer<Float>),

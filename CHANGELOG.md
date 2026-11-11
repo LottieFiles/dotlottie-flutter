@@ -5,16 +5,21 @@
   `setVectorSlot()`, `setPositionSlot()`, `setImageSlot()`, `setBezierPathSlot()`,
   `clearSlot()`, `clearSlots()`, `resetSlot()`, `resetSlots()`, `getSlotIds()`,
   `getSlotType()`, `getSlot()` and `getSlots()`
-* feat: state machines — `stateMachineStatus()` and `stateMachineSetSeed()`
+* feat: state machines — `stateMachineStatus()`, `stateMachineSetSeed()`,
+  `stateMachineOverrideState()` and `stateMachineResetInput()`
+* feat: `DotLottieView.externalAssets` supplies the bytes of assets the animation references
+  but does not embed (not supported on Windows/Linux, ignored on Android with `useOpenGL`)
 * feat: playback — `setLoopCount()` and `setBackgroundColor()`
-* feat(desktop): `setSlots()` is now wired to the FFI player. `setBezierPathSlot()` and
-  `stateMachineSetSeed()` return `false` on Windows/Linux until the bundled binary is updated
+* feat(desktop): `setSlots()`, `stateMachineGetInputs()` and the `speed()`, `loop()`,
+  `autoplay()`, `mode()` and `useFrameInterpolation()` getters are now wired to the FFI player
+* fix(android): `stateMachineGetInputs()` is implemented
+* fix: `stateMachineGetInputs()` no longer lists built-in inputs such as `@elapsedTime`
 * fix(android): `setTheme()`, `setThemeData()` and `setSlots()` no longer report failure;
   `stateMachineLoadData()` and `getStateMachine()` are implemented; the `loopCount`, `marker`
   and `themeId` properties are applied on load; `stateMachineOnInputFired` no longer throws
 * fix(web): `setSlots()`, `setSegments()`, `currentProgress()` and `stateMachineCurrentState()`
-* fix: `markers()` no longer throws when reading a marker. Markers on Android and web now
-  also carry `start` and `end` alongside `time` and `duration`
+* fix: `markers()` no longer throws when reading a marker. Markers now carry `name`, `start`,
+  `end`, `time` and `duration` on every platform
 * fix: `'reverse-bounce'` and `'reverseBounce'` are both accepted as the playback mode
 * chore: bumped dotlottie-android to 0.18.0, dotlottie-ios to 0.17.0 and dotlottie-web to 0.83.0
 

@@ -42,6 +42,15 @@ List<int>? _parseHexColor(String color) {
   return [(value >> 16) & 0xFF, (value >> 8) & 0xFF, value & 0xFF, alpha];
 }
 
+/// Returns [inputs] without the state machine's built-in inputs, whose names
+/// start with `@` (e.g. `@elapsedTime`).
+Map<String, String> _withoutBuiltInInputs(Map<String, String> inputs) {
+  return {
+    for (final entry in inputs.entries)
+      if (!entry.key.startsWith('@')) entry.key: entry.value,
+  };
+}
+
 /// A Flutter widget that renders a dotLottie or Lottie animation.
 ///
 /// Supports loading animations from a URL, an asset file, or a raw JSON string.
@@ -96,6 +105,14 @@ class DotLottieView extends StatefulWidget {
 
   /// ID of the animation to display when the file contains multiple animations.
   final String? animationId;
+
+  /// Bytes for assets the animation references but does not embed, keyed by
+  /// the asset's `src` exactly as written in the animation (e.g. a remote URL
+  /// or `textures/blue.png`).
+  ///
+  /// Read once when the view is created. Not supported on Windows and Linux,
+  /// and ignored on Android when [useOpenGL] is `true`.
+  final Map<String, Uint8List>? externalAssets;
 
   /// How [source] is interpreted. One of `'url'`, `'asset'`, or `'json'`.
   final String sourceType;
@@ -227,6 +244,7 @@ class DotLottieView extends StatefulWidget {
     this.themeId,
     this.stateMachineId,
     this.animationId,
+    this.externalAssets,
   });
 
   @override
@@ -379,6 +397,8 @@ class _DotLottieViewState extends State<DotLottieView> {
               if (widget.stateMachineId != null)
                 'stateMachineId': widget.stateMachineId,
               if (widget.animationId != null) 'animationId': widget.animationId,
+              if (widget.externalAssets != null)
+                'externalAssets': widget.externalAssets,
               'sourceType': widget.sourceType,
               'source': widget.source,
               if (widget.width != null) 'width': widget.width,
@@ -498,6 +518,8 @@ class _DotLottieViewState extends State<DotLottieView> {
       if (widget.stateMachineId != null)
         'stateMachineId': widget.stateMachineId,
       if (widget.animationId != null) 'animationId': widget.animationId,
+      if (widget.externalAssets != null)
+        'externalAssets': widget.externalAssets,
       if (widget.width != null) 'width': widget.width,
       if (widget.height != null) 'height': widget.height,
       if (widget.useOpenGL && defaultTargetPlatform == TargetPlatform.android)
@@ -1479,11 +1501,13 @@ class DotLottieViewController {
   }
 
   /// Returns a map of all current state machine input names to their type strings.
+  ///
+  /// Built-in inputs, whose names start with `@`, are left out.
   Future<Map<String, String>?> stateMachineGetInputs() async {
     try {
       final result = await _channel.invokeMethod('stateMachineGetInputs');
       if (result is Map) {
-        return result.cast<String, String>();
+        return _withoutBuiltInInputs(result.cast<String, String>());
       }
       return null;
     } catch (e) {
@@ -1509,6 +1533,37 @@ class DotLottieViewController {
     } catch (e) {
       debugPrint('Error calling stateMachineStatus: $e');
       return null;
+    }
+  }
+
+  /// Forces the state machine into [state], skipping transitions and guards. Returns `true` on success.
+  ///
+  /// With [immediate] set, the new state is evaluated right away instead of on
+  /// the next tick or input change.
+  Future<bool?> stateMachineOverrideState(
+    String state, {
+    bool immediate = false,
+  }) async {
+    try {
+      return await _channel.invokeMethod<bool>('stateMachineOverrideState', {
+        'state': state,
+        'immediate': immediate,
+      });
+    } catch (e) {
+      debugPrint('Error calling stateMachineOverrideState: $e');
+      return false;
+    }
+  }
+
+  /// Resets the state machine input [key] to its initial value. Returns `true` on success.
+  Future<bool?> stateMachineResetInput(String key) async {
+    try {
+      return await _channel.invokeMethod<bool>('stateMachineResetInput', {
+        'key': key,
+      });
+    } catch (e) {
+      debugPrint('Error calling stateMachineResetInput: $e');
+      return false;
     }
   }
 
@@ -2016,12 +2071,13 @@ class DotLottieDesktopViewController extends DotLottieViewController {
     return jsonDecode(json) as Map<String, dynamic>?;
   }
 
-  // Getters with no C API equivalent — return null silently
-  @override Future<double?> speed() async => null;
-  @override Future<bool?> loop() async => null;
-  @override Future<bool?> autoplay() async => null;
-  @override Future<bool?> useFrameInterpolation() async => null;
-  @override Future<String?> mode() async => null;
+  // Config getters
+  @override Future<double?> speed() async => _ffi.speed();
+  @override Future<bool?> loop() async => _ffi.loop();
+  @override Future<bool?> autoplay() async => _ffi.autoplay();
+  @override Future<bool?> useFrameInterpolation() async =>
+      _ffi.useFrameInterpolation();
+  @override Future<String?> mode() async => _ffi.mode();
 
   // Segments
   @override Future<List<double>?> segments() async => _ffi.getSegment();
@@ -2083,7 +2139,6 @@ class DotLottieDesktopViewController extends DotLottieViewController {
       _ffi.setPositionSlot(slotId, x, y);
   @override Future<bool?> setImageSlot(String slotId, String src) async =>
       _ffi.setImageSlot(slotId, src);
-  // No C API equivalent in the bundled dotlottie-rs binary.
   @override Future<bool?> setBezierPathSlot(
     String slotId, {
     required List<List<double>> vertices,
@@ -2091,7 +2146,7 @@ class DotLottieDesktopViewController extends DotLottieViewController {
     List<List<double>>? inTangents,
     List<List<double>>? outTangents,
   }) async =>
-      false;
+      _ffi.setBezierPathSlot(slotId, vertices, closed, inTangents, outTangents);
   @override Future<bool?> clearSlot(String slotId) async =>
       _ffi.clearSlot(slotId);
   @override Future<bool?> clearSlots() async => _ffi.clearSlots();
@@ -2130,11 +2185,18 @@ class DotLottieDesktopViewController extends DotLottieViewController {
   @override Future<double?> stateMachineGetNumericInput(String key) async => _ffi.getNumericInput(key);
   @override Future<String?> stateMachineGetStringInput(String key) async => _ffi.getStringInput(key);
   @override Future<bool?> stateMachineGetBooleanInput(String key) async => _ffi.getBooleanInput(key);
-  @override Future<Map<String, String>?> stateMachineGetInputs() async => null;
+  @override Future<Map<String, String>?> stateMachineGetInputs() async =>
+      _withoutBuiltInInputs(_ffi.getInputs());
   @override Future<String?> stateMachineCurrentState() async => _ffi.currentState();
   @override Future<String?> stateMachineStatus() async => _ffi.stateMachineStatus();
-  // No C API equivalent in the bundled dotlottie-rs binary.
-  @override Future<bool?> stateMachineSetSeed(int seed) async => false;
+  @override Future<bool?> stateMachineSetSeed(int seed) async => _ffi.setSeed(seed);
+  @override Future<bool?> stateMachineOverrideState(
+    String state, {
+    bool immediate = false,
+  }) async =>
+      _ffi.overrideCurrentState(state, immediate);
+  @override Future<bool?> stateMachineResetInput(String key) async =>
+      _ffi.resetInput(key);
   @override Future<String?> getStateMachine(String id) async => _ffi.getStateMachine(id);
 
   @override

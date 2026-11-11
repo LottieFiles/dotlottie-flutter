@@ -199,6 +199,7 @@ class _MyAppState extends State<MyApp> {
 |----------|------|-------------|
 | `themeId` | `String?` | ID of a theme to apply to the animation |
 | `stateMachineId` | `String?` | ID of a state machine to load and start automatically |
+| `externalAssets` | `Map<String, Uint8List>?` | Bytes for assets the animation references but does not embed, keyed by the asset's `src` as written in the animation. Not supported on Windows/Linux; ignored on Android with `useOpenGL: true` |
 
 ## Example Usage
 ```dart
@@ -362,6 +363,8 @@ await _controller?.play();
 | `stateMachineGetStringInput(String key)` | `Future<String?>` | Gets a string input value. |
 | `stateMachineGetBooleanInput(String key)` | `Future<bool?>` | Gets a boolean input value. |
 | `stateMachineGetInputs()` | `Future<Map<String, String>?>` | Gets all input names and their types. |
+| `stateMachineResetInput(String key)` | `Future<bool?>` | Resets an input to its initial value. |
+| `stateMachineOverrideState(String state, {bool immediate})` | `Future<bool?>` | Forces the state machine into a state, skipping transitions and guards. |
 | `stateMachineCurrentState()` | `Future<String?>` | Gets the current state name. |
 | `stateMachineStatus()` | `Future<String?>` | Gets the state machine status (e.g., `'Running'`, `'Stopped'`). |
 | `stateMachineSetSeed(int seed)` | `Future<bool?>` | Seeds the state machine's random number generator. |
@@ -435,7 +438,7 @@ The Windows and Linux implementations use [dotlottie-rs](https://github.com/Lott
 | State machine pointer interactivity (hover / click / drag) | ✅ |
 | Audio volume | ✅ |
 | Slots | ✅ |
-| `setBezierPathSlot`, `stateMachineSetSeed` | ❌ (not in the bundled dotlottie-rs binary; return `false`) |
+| External assets (`externalAssets`) | ❌ |
 
 Pointer events are forwarded to the state machine from Flutter directly (there is no
 native view managing them on desktop). To avoid unnecessary work, only the pointer

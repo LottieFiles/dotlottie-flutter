@@ -408,6 +408,17 @@ class DotLottieWebView {
         final seed = (call.arguments as Map)['seed'] as num;
         return stateMachineSetSeed(seed.toInt());
 
+      case 'stateMachineOverrideState':
+        final args = call.arguments as Map;
+        return stateMachineOverrideState(
+          args['state'] as String,
+          args['immediate'] as bool? ?? false,
+        );
+
+      case 'stateMachineResetInput':
+        final key = (call.arguments as Map)['key'] as String;
+        return stateMachineResetInput(key);
+
       case 'getStateMachine':
         final id = (call.arguments as Map)['id'] as String;
         return getStateMachine(id);
@@ -526,6 +537,20 @@ class DotLottieWebView {
 
       final animationId = config['animationId'] as String? ?? '';
       playerConfig['animationId'.toJS] = animationId.toJS;
+
+      final externalAssets = config['externalAssets'] as Map?;
+      if (externalAssets != null) {
+        final assets = <String, JSUint8Array>{};
+        externalAssets.forEach((src, bytes) {
+          if (src is String && bytes is Uint8List) {
+            assets[src] = bytes.toJS;
+          }
+        });
+        final assetResolver = ((JSString src) {
+          return assets[src.toDart];
+        }).toJS;
+        playerConfig['assetResolver'.toJS] = assetResolver;
+      }
 
       final fitString = config['fit'] as String?;
       if (fitString != null) {
@@ -1828,6 +1853,38 @@ class DotLottieWebView {
         final method = player['stateMachineSetSeed'.toJS] as JSFunction;
         final result = method.callAsFunction(player, seed.toJS);
         return (result as JSBoolean?)?.toDart ?? false;
+      } catch (e) {
+        return false;
+      }
+    }
+    return false;
+  }
+
+  bool stateMachineOverrideState(String state, bool immediate) {
+    if (dotLottiePlayer != null && !isDisposed) {
+      try {
+        final player = dotLottiePlayer as JSObject;
+        final method = player['stateMachineOverrideState'.toJS] as JSFunction;
+        final result = method.callAsFunction(
+          player,
+          state.toJS,
+          immediate.toJS,
+        );
+        return (result as JSBoolean?)?.toDart ?? false;
+      } catch (e) {
+        return false;
+      }
+    }
+    return false;
+  }
+
+  bool stateMachineResetInput(String key) {
+    if (dotLottiePlayer != null && !isDisposed) {
+      try {
+        final player = dotLottiePlayer as JSObject;
+        final method = player['stateMachineResetInput'.toJS] as JSFunction;
+        method.callAsFunction(player, key.toJS);
+        return true;
       } catch (e) {
         return false;
       }

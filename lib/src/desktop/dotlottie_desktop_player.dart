@@ -150,10 +150,16 @@ class DotLottieFfiPlayer {
     }
   }
 
-  bool isPlaying() => dotlottieGetPlaybackStatus(_ptr) == kStatusPlaying;
-  bool isPaused() => dotlottieGetPlaybackStatus(_ptr) == kStatusPaused;
-  bool isStopped() => dotlottieGetPlaybackStatus(_ptr) == kStatusStopped;
-  bool isLoaded() => dotlottieIsLoaded(_ptr);
+  bool isPlaying() => dotlottieStatus(_ptr) == kStatusPlaying;
+  bool isPaused() => dotlottieStatus(_ptr) == kStatusPaused;
+  bool isStopped() => dotlottieStatus(_ptr) == kStatusStopped;
+  bool isLoaded() => dotlottieStatus(_ptr) != kStatusIdle;
+
+  double speed() => dotlottieGetSpeed(_ptr);
+  bool loop() => dotlottieGetLoop(_ptr);
+  bool autoplay() => dotlottieGetAutoplay(_ptr);
+  bool useFrameInterpolation() => dotlottieGetUseFrameInterpolation(_ptr);
+  String mode() => _modeToString(dotlottieGetMode(_ptr));
 
   double currentFrame() {
     dotlottieGetCurrentFrame(_ptr, _floatOut);
@@ -338,20 +344,64 @@ class DotLottieFfiPlayer {
     }
   }
 
-  /// Sets an image slot from a `data:` URL or a file path.
   bool setImageSlot(String slotId, String src) {
     final idPtr = slotId.toNativeUtf8();
     final srcPtr = src.toNativeUtf8();
     try {
-      return _renderOnSuccess(
-        src.startsWith('data:')
-            ? dotlottieSetImageSlotDataUrl(_ptr, idPtr, srcPtr)
-            : dotlottieSetImageSlotPath(_ptr, idPtr, srcPtr),
-      );
+      return _renderOnSuccess(dotlottieSetImageSlotSrc(_ptr, idPtr, srcPtr));
     } finally {
       malloc.free(idPtr);
       malloc.free(srcPtr);
     }
+  }
+
+  /// Replaces the geometry of a path slot. Each list holds `[x, y]` pairs;
+  /// null tangents mean zero tangents (straight segments).
+  bool setBezierPathSlot(
+    String slotId,
+    List<List<double>> vertices,
+    bool closed,
+    List<List<double>>? inTangents,
+    List<List<double>>? outTangents,
+  ) {
+    final count = vertices.length;
+    if (count == 0) return false;
+    if (inTangents != null && inTangents.length != count) return false;
+    if (outTangents != null && outTangents.length != count) return false;
+    if (!_arePairs(vertices) ||
+        !_arePairs(inTangents) ||
+        !_arePairs(outTangents)) {
+      return false;
+    }
+
+    final idPtr = slotId.toNativeUtf8();
+    final verticesPtr = _flattenPoints(vertices);
+    final inPtr = _flattenPoints(inTangents);
+    final outPtr = _flattenPoints(outTangents);
+    try {
+      return _renderOnSuccess(dotlottieSetBezierPathSlot(
+          _ptr, idPtr, verticesPtr, inPtr, outPtr, count, closed));
+    } finally {
+      malloc.free(idPtr);
+      malloc.free(verticesPtr);
+      if (inPtr != nullptr) malloc.free(inPtr);
+      if (outPtr != nullptr) malloc.free(outPtr);
+    }
+  }
+
+  static bool _arePairs(List<List<double>>? points) =>
+      points == null || points.every((point) => point.length >= 2);
+
+  /// Copies `[x, y]` pairs into a native float array of interleaved x, y
+  /// values. Returns a null pointer when [points] is null.
+  Pointer<Float> _flattenPoints(List<List<double>>? points) {
+    if (points == null) return nullptr.cast<Float>();
+    final ptr = malloc<Float>(points.length * 2);
+    for (int i = 0; i < points.length; i++) {
+      ptr[i * 2] = points[i][0];
+      ptr[i * 2 + 1] = points[i][1];
+    }
+    return ptr;
   }
 
   bool clearSlot(String slotId) {
@@ -455,6 +505,8 @@ class DotLottieFfiPlayer {
             'name': namePtr.value.toDartString(),
             'start': startPtr.value,
             'end': endPtr.value,
+            'time': startPtr.value,
+            'duration': endPtr.value - startPtr.value,
           });
         }
       }
@@ -643,6 +695,56 @@ class DotLottieFfiPlayer {
     } finally {
       malloc.free(ptr);
     }
+  }
+
+  bool setSeed(int seed) {
+    if (!stateMachineActive) return false;
+    return dotlottieStateMachineSetSeed(_sm!, seed) == kResultSuccess;
+  }
+
+  bool resetInput(String key) {
+    if (!stateMachineActive) return false;
+    final ptr = key.toNativeUtf8();
+    try {
+      return dotlottieStateMachineResetInput(_sm!, ptr) == kResultSuccess;
+    } finally {
+      malloc.free(ptr);
+    }
+  }
+
+  bool overrideCurrentState(String state, bool immediate) {
+    if (!stateMachineActive) return false;
+    final ptr = state.toNativeUtf8();
+    try {
+      return dotlottieStateMachineOverrideCurrentState(_sm!, ptr, immediate) ==
+          kResultSuccess;
+    } finally {
+      malloc.free(ptr);
+    }
+  }
+
+  /// Returns every input name mapped to its type (`Numeric`, `Boolean`,
+  /// `String` or `Event`), including the built-in inputs.
+  Map<String, String> getInputs() {
+    final inputs = <String, String>{};
+    if (!stateMachineActive) return inputs;
+    if (dotlottieStateMachineGetInputsCount(_sm!, _uint32Out) !=
+        kResultSuccess) {
+      return inputs;
+    }
+    final count = _uint32Out.value;
+    for (int i = 0; i < count; i++) {
+      final name = _readNativeString(
+        (buf, sizeOut) =>
+            dotlottieStateMachineGetInputName(_sm!, i, buf, sizeOut),
+      );
+      final type = _readNativeString(
+        (buf, sizeOut) =>
+            dotlottieStateMachineGetInputType(_sm!, i, buf, sizeOut),
+      );
+      if (name != null && type != null) inputs[name] = type;
+    }
+    return inputs;
   }
 
   double? getNumericInput(String key) {
@@ -839,6 +941,13 @@ class DotLottieFfiPlayer {
     'bounce'        => kModeBounce,
     'reverseBounce' || 'reverse-bounce' => kModeReverseBounce,
     _               => kModeForward,
+  };
+
+  static String _modeToString(int mode) => switch (mode) {
+    kModeReverse       => 'reverse',
+    kModeBounce        => 'bounce',
+    kModeReverseBounce => 'reverseBounce',
+    _                  => 'forward',
   };
 
   static int _fitFromString(String fit) => switch (fit) {

@@ -7,6 +7,7 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.view.ViewGroup
+import com.dotlottie.dlplayer.AssetResolver
 import com.dotlottie.dlplayer.Fit
 import com.dotlottie.dlplayer.Mode
 import com.lottiefiles.dotlottie.core.util.LayoutUtil
@@ -64,6 +65,12 @@ class DotLottiePlatformView(
         val initialLoopCount = (params["loopCount"] as? Number)?.toInt() ?: 0
         val marker = params["marker"] as? String
         val themeId = params["themeId"] as? String
+        val externalAssets =
+                (params["externalAssets"] as? Map<*, *>)
+                        ?.mapNotNull { (src, bytes) ->
+                            if (src is String && bytes is ByteArray) src to bytes else null
+                        }
+                        ?.toMap()
 
         player.addEventListener(
                 object : DotLottieEventListener {
@@ -267,6 +274,9 @@ class DotLottiePlatformView(
                 }
                 marker?.let { configBuilder.marker(it) }
                 themeId?.let { configBuilder.themeId(it) }
+                externalAssets?.let { assets ->
+                    configBuilder.assetResolver(AssetResolver { src -> assets[src] })
+                }
 
                 backgroundColor?.let {
                     try {
@@ -919,7 +929,40 @@ class DotLottiePlatformView(
                         result.success(null)
                     }
                 }
-                "stateMachineGetInputs" -> result.success(emptyMap<String, String>())
+                "stateMachineGetInputs" -> {
+                    try {
+                        result.success(player.stateMachineGetInputs())
+                    } catch (e: Exception) {
+                        result.success(emptyMap<String, String>())
+                    }
+                }
+                "stateMachineOverrideState" -> {
+                    val state = call.argument<String>("state")
+                    if (state != null) {
+                        val immediate = call.argument<Boolean>("immediate") ?: false
+                        try {
+                            result.success(
+                                    player.stateMachineOverrideCurrentState(state, immediate)
+                            )
+                        } catch (e: Exception) {
+                            result.success(false)
+                        }
+                    } else {
+                        result.error("INVALID_ARGS", "Invalid state argument", null)
+                    }
+                }
+                "stateMachineResetInput" -> {
+                    val key = call.argument<String>("key")
+                    if (key != null) {
+                        try {
+                            result.success(player.stateMachineResetInput(key))
+                        } catch (e: Exception) {
+                            result.success(false)
+                        }
+                    } else {
+                        result.error("INVALID_ARGS", "Invalid key argument", null)
+                    }
+                }
                 "getStateMachine" -> {
                     val id = call.argument<String>("id")
                     if (id != null) {

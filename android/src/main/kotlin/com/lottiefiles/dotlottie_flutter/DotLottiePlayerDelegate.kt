@@ -117,6 +117,9 @@ interface DotLottiePlayerDelegate {
     fun stateMachineCurrentState(): String?
     fun stateMachineStatus(): String?
     fun stateMachineSetSeed(seed: Long): Boolean
+    fun stateMachineOverrideCurrentState(state: String, immediate: Boolean): Boolean
+    fun stateMachineResetInput(key: String): Boolean
+    fun stateMachineGetInputs(): Map<String, String>
     fun getStateMachine(stateMachineId: String): String?
 
     // Event listeners
@@ -214,6 +217,9 @@ class StandardPlayerAdapter(private val view: DotLottieAnimation) : DotLottiePla
     override fun stateMachineCurrentState(): String? = view.stateMachineCurrentState()
     override fun stateMachineStatus(): String? = view.stateMachineStatus()
     override fun stateMachineSetSeed(seed: Long): Boolean = view.stateMachineSetSeed(seed)
+    override fun stateMachineOverrideCurrentState(state: String, immediate: Boolean): Boolean = view.stateMachineOverrideCurrentState(state, immediate)
+    override fun stateMachineResetInput(key: String): Boolean = view.stateMachineResetInput(key)
+    override fun stateMachineGetInputs(): Map<String, String> = view.stateMachineGetInputs()
     override fun getStateMachine(stateMachineId: String): String? = view.getStateMachine(stateMachineId)
 
     override fun addEventListener(listener: DotLottieEventListener) = view.addEventListener(listener)
@@ -311,6 +317,9 @@ class GLPlayerAdapter(private val view: DotLottieGLAnimation) : DotLottiePlayerD
     override fun stateMachineCurrentState(): String? = view.stateMachineCurrentState()
     override fun stateMachineStatus(): String? = view.stateMachineStatus()
     override fun stateMachineSetSeed(seed: Long): Boolean = view.stateMachineSetSeed(seed)
+    override fun stateMachineOverrideCurrentState(state: String, immediate: Boolean): Boolean = view.stateMachineOverrideCurrentState(state, immediate)
+    override fun stateMachineResetInput(key: String): Boolean = view.stateMachineResetInput(key)
+    override fun stateMachineGetInputs(): Map<String, String> = view.stateMachineGetInputs()
     override fun getStateMachine(stateMachineId: String): String? = view.getStateMachine(stateMachineId)
 
     override fun addEventListener(listener: DotLottieEventListener) = view.addEventListener(listener)
