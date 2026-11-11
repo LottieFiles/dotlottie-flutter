@@ -547,7 +547,10 @@ class DotLottieWebView {
           }
         });
         final assetResolver = ((JSString src) {
-          return assets[src.toDart];
+          // The core reports a relative asset path with a leading slash.
+          final key = src.toDart;
+          return assets[key] ??
+              (key.startsWith('/') ? assets[key.substring(1)] : null);
         }).toJS;
         playerConfig['assetResolver'.toJS] = assetResolver;
       }

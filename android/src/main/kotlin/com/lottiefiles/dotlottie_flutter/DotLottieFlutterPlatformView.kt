@@ -275,7 +275,10 @@ class DotLottiePlatformView(
                 marker?.let { configBuilder.marker(it) }
                 themeId?.let { configBuilder.themeId(it) }
                 externalAssets?.let { assets ->
-                    configBuilder.assetResolver(AssetResolver { src -> assets[src] })
+                    // The core reports a relative asset path with a leading slash.
+                    configBuilder.assetResolver(
+                            AssetResolver { src -> assets[src] ?: assets[src.removePrefix("/")] }
+                    )
                 }
 
                 backgroundColor?.let {

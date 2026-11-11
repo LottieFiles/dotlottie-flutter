@@ -244,7 +244,8 @@ class DotLottieFlutterPlatformView: NSObject, FlutterPlatformView {
             let assets: [String: Data] = externalAssets.compactMapValues {
                 ($0 as? FlutterStandardTypedData)?.data
             }
-            config.assetResolver = { src in assets[src] }
+            // The core reports a relative asset path with a leading slash.
+            config.assetResolver = { src in assets[src] ?? (src.hasPrefix("/") ? assets[String(src.dropFirst())] : nil) }
         }
         
         if let w = width {
