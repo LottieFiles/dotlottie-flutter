@@ -1920,7 +1920,7 @@ class DotLottieWebView {
           final manifestMap = _jsObjectToMap(result as JSObject);
           return manifestMap;
         }
-      } catch (e, _) {
+      } catch (e) {
         return null;
       }
     }

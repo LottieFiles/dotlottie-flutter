@@ -1,4 +1,4 @@
-## Unreleased
+## 0.2.0
 
 * feat: audio volume — `DotLottieViewController.setAudioVolume()` and `audioVolume()`
 * feat: slots — `setSlot()`, `setColorSlot()`, `setScalarSlot()`, `setTextSlot()`,
