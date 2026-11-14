@@ -26,7 +26,9 @@ class DotLottiePlatformView(
         context: Context,
         private val viewId: Int,
         creationParams: Map<String, Any>?,
-        useOpenGL: Boolean = false
+        useOpenGL: Boolean = false,
+        messenger: io.flutter.plugin.common.BinaryMessenger,
+        private val onDisposed: (Int) -> Unit,
 ) : PlatformView {
     private val player: DotLottiePlayerDelegate = createPlayer(context, useOpenGL)
     private val methodChannel: MethodChannel
@@ -35,7 +37,7 @@ class DotLottiePlatformView(
 
     init {
         methodChannel =
-                MethodChannel(DotLottieFlutterPlugin.binaryMessenger, "dotlottie_view_$viewId")
+                MethodChannel(messenger, "dotlottie_view_$viewId")
 
         methodChannel.setMethodCallHandler { call, result -> handleMethodCall(call, result) }
 
@@ -1106,7 +1108,7 @@ class DotLottiePlatformView(
 
         player.stop()
         player.onPause()
-        DotLottieFlutterPlugin.platformViews.remove(viewId)
+        onDisposed(viewId)
     }
 
     companion object {

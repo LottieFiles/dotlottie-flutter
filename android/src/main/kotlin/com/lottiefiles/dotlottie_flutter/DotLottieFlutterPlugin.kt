@@ -37,21 +37,18 @@ class DotLottieFlutterPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
         override fun onActivityDestroyed(a: Activity) {}
     }
 
-    // Store references to platform views
-    companion object {
-        lateinit var binaryMessenger: io.flutter.plugin.common.BinaryMessenger
-        val platformViews = mutableMapOf<Int, DotLottiePlatformView>()
-    }
+    // Per plugin instance, i.e. per engine. A process can host several engines (a
+    // background isolate, or a second activity starting before the first is destroyed);
+    // shared state here would route one engine's view channels to another engine.
+    private val platformViews = mutableMapOf<Int, DotLottiePlatformView>()
 
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
-        binaryMessenger = flutterPluginBinding.binaryMessenger
-
         channel = MethodChannel(flutterPluginBinding.binaryMessenger, "dotlottie_flutter")
         channel.setMethodCallHandler(this)
 
         flutterPluginBinding.platformViewRegistry.registerViewFactory(
             "dotlottie_view",
-            DotLottieViewFactory()
+            DotLottieViewFactory(flutterPluginBinding.binaryMessenger, platformViews)
         )
     }
 
