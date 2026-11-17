@@ -1,5 +1,9 @@
-## Unreleased
+## 0.3.0
 
+* feat: `sourceType: 'file'` loads a `.lottie` or `.json` animation from a path on the local
+  file system (Android, iOS, macOS, Windows and Linux; not supported on web) (#49)
+* fix: a source that cannot be read (a missing asset or file) now reports `onLoadError`
+  instead of leaving the view empty without a signal
 * fix(android): method calls no longer fail with `MissingPluginException` when the app runs more
   than one Flutter engine (e.g. a `firebase_messaging` background isolate, or a new activity starting
   before the old one is destroyed). Each engine now uses its own messenger and view registry (#46)
