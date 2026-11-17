@@ -117,6 +117,21 @@ class DotLottieFfiPlayer {
   void setFrameInterpolation(bool use) =>
       dotlottieSetUseFrameInterpolation(_ptr, use);
 
+  bool setLoopCount(int loopCount) =>
+      dotlottieSetLoopCount(_ptr, loopCount) == kResultSuccess;
+
+  /// Sets the background color from 0..255 RGBA components.
+  bool setBackgroundColor(int r, int g, int b, int a) =>
+      _renderOnSuccess(dotlottieSetBackground(_ptr, r, g, b, a));
+
+  bool setAudioVolume(double volume) =>
+      dotlottieSetAudioVolume(_ptr, volume) == kResultSuccess;
+
+  double? audioVolume() {
+    if (dotlottieGetAudioVolume(_ptr, _floatOut) != kResultSuccess) return null;
+    return _floatOut.value;
+  }
+
   /// Updates how the animation is fitted and aligned within the render target.
   /// [fit] is the same camelCase string used across the platform channel
   /// (`contain`, `cover`, `fill`, `fitWidth`, `fitHeight`, `none`); [alignX]
@@ -135,10 +150,16 @@ class DotLottieFfiPlayer {
     }
   }
 
-  bool isPlaying() => dotlottieGetPlaybackStatus(_ptr) == kStatusPlaying;
-  bool isPaused() => dotlottieGetPlaybackStatus(_ptr) == kStatusPaused;
-  bool isStopped() => dotlottieGetPlaybackStatus(_ptr) == kStatusStopped;
-  bool isLoaded() => dotlottieIsLoaded(_ptr);
+  bool isPlaying() => dotlottieStatus(_ptr) == kStatusPlaying;
+  bool isPaused() => dotlottieStatus(_ptr) == kStatusPaused;
+  bool isStopped() => dotlottieStatus(_ptr) == kStatusStopped;
+  bool isLoaded() => dotlottieStatus(_ptr) != kStatusIdle;
+
+  double speed() => dotlottieGetSpeed(_ptr);
+  bool loop() => dotlottieGetLoop(_ptr);
+  bool autoplay() => dotlottieGetAutoplay(_ptr);
+  bool useFrameInterpolation() => dotlottieGetUseFrameInterpolation(_ptr);
+  String mode() => _modeToString(dotlottieGetMode(_ptr));
 
   double currentFrame() {
     dotlottieGetCurrentFrame(_ptr, _floatOut);
@@ -253,6 +274,202 @@ class DotLottieFfiPlayer {
       );
 
   // ---------------------------------------------------------------------------
+  // Slots
+  // ---------------------------------------------------------------------------
+
+  bool setSlots(String slots) {
+    final ptr = slots.toNativeUtf8();
+    try {
+      return _renderOnSuccess(dotlottieSetSlotsStr(_ptr, ptr));
+    } finally {
+      malloc.free(ptr);
+    }
+  }
+
+  bool setSlot(String slotId, String json) {
+    final idPtr = slotId.toNativeUtf8();
+    final valPtr = json.toNativeUtf8();
+    try {
+      return _renderOnSuccess(dotlottieSetSlotStr(_ptr, idPtr, valPtr));
+    } finally {
+      malloc.free(idPtr);
+      malloc.free(valPtr);
+    }
+  }
+
+  bool setColorSlot(String slotId, double r, double g, double b) {
+    final ptr = slotId.toNativeUtf8();
+    try {
+      return _renderOnSuccess(dotlottieSetColorSlot(_ptr, ptr, r, g, b));
+    } finally {
+      malloc.free(ptr);
+    }
+  }
+
+  bool setScalarSlot(String slotId, double value) {
+    final ptr = slotId.toNativeUtf8();
+    try {
+      return _renderOnSuccess(dotlottieSetScalarSlot(_ptr, ptr, value));
+    } finally {
+      malloc.free(ptr);
+    }
+  }
+
+  bool setTextSlot(String slotId, String text) {
+    final idPtr = slotId.toNativeUtf8();
+    final valPtr = text.toNativeUtf8();
+    try {
+      return _renderOnSuccess(dotlottieSetTextSlot(_ptr, idPtr, valPtr));
+    } finally {
+      malloc.free(idPtr);
+      malloc.free(valPtr);
+    }
+  }
+
+  bool setVectorSlot(String slotId, double x, double y) {
+    final ptr = slotId.toNativeUtf8();
+    try {
+      return _renderOnSuccess(dotlottieSetVectorSlot(_ptr, ptr, x, y));
+    } finally {
+      malloc.free(ptr);
+    }
+  }
+
+  bool setPositionSlot(String slotId, double x, double y) {
+    final ptr = slotId.toNativeUtf8();
+    try {
+      return _renderOnSuccess(dotlottieSetPositionSlot(_ptr, ptr, x, y));
+    } finally {
+      malloc.free(ptr);
+    }
+  }
+
+  bool setImageSlot(String slotId, String src) {
+    final idPtr = slotId.toNativeUtf8();
+    final srcPtr = src.toNativeUtf8();
+    try {
+      return _renderOnSuccess(dotlottieSetImageSlotSrc(_ptr, idPtr, srcPtr));
+    } finally {
+      malloc.free(idPtr);
+      malloc.free(srcPtr);
+    }
+  }
+
+  /// Replaces the geometry of a path slot. Each list holds `[x, y]` pairs;
+  /// null tangents mean zero tangents (straight segments).
+  bool setBezierPathSlot(
+    String slotId,
+    List<List<double>> vertices,
+    bool closed,
+    List<List<double>>? inTangents,
+    List<List<double>>? outTangents,
+  ) {
+    final count = vertices.length;
+    if (count == 0) return false;
+    if (inTangents != null && inTangents.length != count) return false;
+    if (outTangents != null && outTangents.length != count) return false;
+    if (!_arePairs(vertices) ||
+        !_arePairs(inTangents) ||
+        !_arePairs(outTangents)) {
+      return false;
+    }
+
+    final idPtr = slotId.toNativeUtf8();
+    final verticesPtr = _flattenPoints(vertices);
+    final inPtr = _flattenPoints(inTangents);
+    final outPtr = _flattenPoints(outTangents);
+    try {
+      return _renderOnSuccess(dotlottieSetBezierPathSlot(
+          _ptr, idPtr, verticesPtr, inPtr, outPtr, count, closed));
+    } finally {
+      malloc.free(idPtr);
+      malloc.free(verticesPtr);
+      if (inPtr != nullptr) malloc.free(inPtr);
+      if (outPtr != nullptr) malloc.free(outPtr);
+    }
+  }
+
+  static bool _arePairs(List<List<double>>? points) =>
+      points == null || points.every((point) => point.length >= 2);
+
+  /// Copies `[x, y]` pairs into a native float array of interleaved x, y
+  /// values. Returns a null pointer when [points] is null.
+  Pointer<Float> _flattenPoints(List<List<double>>? points) {
+    if (points == null) return nullptr.cast<Float>();
+    final ptr = malloc<Float>(points.length * 2);
+    for (int i = 0; i < points.length; i++) {
+      ptr[i * 2] = points[i][0];
+      ptr[i * 2 + 1] = points[i][1];
+    }
+    return ptr;
+  }
+
+  bool clearSlot(String slotId) {
+    final ptr = slotId.toNativeUtf8();
+    try {
+      return _renderOnSuccess(dotlottieClearSlot(_ptr, ptr));
+    } finally {
+      malloc.free(ptr);
+    }
+  }
+
+  bool clearSlots() => _renderOnSuccess(dotlottieClearSlots(_ptr));
+
+  bool resetSlot(String slotId) {
+    final ptr = slotId.toNativeUtf8();
+    try {
+      return _renderOnSuccess(dotlottieResetSlot(_ptr, ptr));
+    } finally {
+      malloc.free(ptr);
+    }
+  }
+
+  bool resetSlots() => _renderOnSuccess(dotlottieResetSlots(_ptr));
+
+  List<String> getSlotIds() {
+    if (dotlottieGetSlotIdsCount(_ptr, _uint32Out) != kResultSuccess) {
+      return [];
+    }
+    final count = _uint32Out.value;
+    final ids = <String>[];
+    for (int i = 0; i < count; i++) {
+      final id = _readNativeString(
+        (buf, sizeOut) => dotlottieGetSlotId(_ptr, i, buf, sizeOut),
+      );
+      if (id != null) ids.add(id);
+    }
+    return ids;
+  }
+
+  String? getSlotType(String slotId) {
+    final idPtr = slotId.toNativeUtf8();
+    try {
+      final value = _readNativeString(
+        (buf, sizeOut) => dotlottieGetSlotType(_ptr, idPtr, buf, sizeOut),
+      );
+      return (value == null || value.isEmpty) ? null : value;
+    } finally {
+      malloc.free(idPtr);
+    }
+  }
+
+  String? getSlot(String slotId) {
+    final idPtr = slotId.toNativeUtf8();
+    try {
+      final value = _readNativeString(
+        (buf, sizeOut) => dotlottieGetSlotStr(_ptr, idPtr, buf, sizeOut),
+      );
+      return (value == null || value.isEmpty) ? null : value;
+    } finally {
+      malloc.free(idPtr);
+    }
+  }
+
+  String? getSlots() => _readNativeString(
+        (buf, sizeOut) => dotlottieGetSlotsStr(_ptr, buf, sizeOut),
+      );
+
+  // ---------------------------------------------------------------------------
   // Markers
   // ---------------------------------------------------------------------------
 
@@ -288,6 +505,8 @@ class DotLottieFfiPlayer {
             'name': namePtr.value.toDartString(),
             'start': startPtr.value,
             'end': endPtr.value,
+            'time': startPtr.value,
+            'duration': endPtr.value - startPtr.value,
           });
         }
       }
@@ -478,6 +697,56 @@ class DotLottieFfiPlayer {
     }
   }
 
+  bool setSeed(int seed) {
+    if (!stateMachineActive) return false;
+    return dotlottieStateMachineSetSeed(_sm!, seed) == kResultSuccess;
+  }
+
+  bool resetInput(String key) {
+    if (!stateMachineActive) return false;
+    final ptr = key.toNativeUtf8();
+    try {
+      return dotlottieStateMachineResetInput(_sm!, ptr) == kResultSuccess;
+    } finally {
+      malloc.free(ptr);
+    }
+  }
+
+  bool overrideCurrentState(String state, bool immediate) {
+    if (!stateMachineActive) return false;
+    final ptr = state.toNativeUtf8();
+    try {
+      return dotlottieStateMachineOverrideCurrentState(_sm!, ptr, immediate) ==
+          kResultSuccess;
+    } finally {
+      malloc.free(ptr);
+    }
+  }
+
+  /// Returns every input name mapped to its type (`Numeric`, `Boolean`,
+  /// `String` or `Event`), including the built-in inputs.
+  Map<String, String> getInputs() {
+    final inputs = <String, String>{};
+    if (!stateMachineActive) return inputs;
+    if (dotlottieStateMachineGetInputsCount(_sm!, _uint32Out) !=
+        kResultSuccess) {
+      return inputs;
+    }
+    final count = _uint32Out.value;
+    for (int i = 0; i < count; i++) {
+      final name = _readNativeString(
+        (buf, sizeOut) =>
+            dotlottieStateMachineGetInputName(_sm!, i, buf, sizeOut),
+      );
+      final type = _readNativeString(
+        (buf, sizeOut) =>
+            dotlottieStateMachineGetInputType(_sm!, i, buf, sizeOut),
+      );
+      if (name != null && type != null) inputs[name] = type;
+    }
+    return inputs;
+  }
+
   double? getNumericInput(String key) {
     if (!stateMachineActive) return null;
     final ptr = key.toNativeUtf8();
@@ -524,6 +793,13 @@ class DotLottieFfiPlayer {
     return _readNativeString(
       (buf, sizeOut) =>
           dotlottieStateMachineGetCurrentState(_sm!, buf, sizeOut),
+    );
+  }
+
+  String? stateMachineStatus() {
+    if (!stateMachineActive) return null;
+    return _readNativeString(
+      (buf, sizeOut) => dotlottieStateMachineGetStatus(_sm!, buf, sizeOut),
     );
   }
 
@@ -616,6 +892,15 @@ class DotLottieFfiPlayer {
   // Private helpers
   // ---------------------------------------------------------------------------
 
+  /// Re-renders after a successful change so it is visible even while paused.
+  /// Returns whether [result] was a success.
+  bool _renderOnSuccess(int result) {
+    if (result != kResultSuccess) return false;
+    dotlottieRender(_ptr);
+    _seekPending = true;
+    return true;
+  }
+
   /// Two-pass pattern for C functions that write a string into a caller-allocated buffer.
   /// First call with null buffer to get required size, then allocate and read.
   String? _readNativeString(
@@ -654,8 +939,15 @@ class DotLottieFfiPlayer {
   static int _modeFromString(String mode) => switch (mode) {
     'reverse'       => kModeReverse,
     'bounce'        => kModeBounce,
-    'reverseBounce' => kModeReverseBounce,
+    'reverseBounce' || 'reverse-bounce' => kModeReverseBounce,
     _               => kModeForward,
+  };
+
+  static String _modeToString(int mode) => switch (mode) {
+    kModeReverse       => 'reverse',
+    kModeBounce        => 'bounce',
+    kModeReverseBounce => 'reverseBounce',
+    _                  => 'forward',
   };
 
   static int _fitFromString(String fit) => switch (fit) {
