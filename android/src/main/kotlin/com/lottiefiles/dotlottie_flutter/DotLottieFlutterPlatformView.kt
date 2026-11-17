@@ -28,7 +28,7 @@ class DotLottiePlatformView(
         creationParams: Map<String, Any>?,
         useOpenGL: Boolean = false,
         messenger: io.flutter.plugin.common.BinaryMessenger,
-        private val onDisposed: (Int) -> Unit,
+        private val onDisposed: (DotLottiePlatformView) -> Unit,
 ) : PlatformView {
     private val player: DotLottiePlayerDelegate = createPlayer(context, useOpenGL)
     private val methodChannel: MethodChannel
@@ -1108,7 +1108,7 @@ class DotLottiePlatformView(
 
         player.stop()
         player.onPause()
-        onDisposed(viewId)
+        onDisposed(this)
     }
 
     companion object {

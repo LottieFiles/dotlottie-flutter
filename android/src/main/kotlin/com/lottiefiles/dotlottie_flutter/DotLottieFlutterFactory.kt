@@ -19,7 +19,9 @@ class DotLottieViewFactory(
 
         val view = DotLottiePlatformView(
             context, viewId, creationParams, useOpenGL, messenger,
-            onDisposed = { id -> platformViews.remove(id) },
+            // Only if still registered: a stale dispose must not evict a newer view
+            // that reused the id.
+            onDisposed = { disposed -> platformViews.remove(viewId, disposed) },
         )
         platformViews[viewId] = view
         return view

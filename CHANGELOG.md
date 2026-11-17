@@ -3,6 +3,9 @@
 * fix(android): method calls no longer fail with `MissingPluginException` when the app runs more
   than one Flutter engine (e.g. a `firebase_messaging` background isolate, or a new activity starting
   before the old one is destroyed). Each engine now uses its own messenger and view registry (#46)
+* **Breaking (Android, native only)**: the `DotLottieFlutterPlugin.binaryMessenger` and
+  `DotLottieFlutterPlugin.platformViews` companion members are removed. They were never part of
+  the Dart API; native code that read them must use its own engine's messenger instead
 
 ## 0.2.0
 

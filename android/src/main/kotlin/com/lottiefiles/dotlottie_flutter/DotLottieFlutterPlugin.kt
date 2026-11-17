@@ -80,5 +80,8 @@ class DotLottieFlutterPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         channel.setMethodCallHandler(null)
         activity = null
+        // Don't keep views (and their GL surfaces) reachable if the engine goes away
+        // without disposing them.
+        platformViews.clear()
     }
 }
