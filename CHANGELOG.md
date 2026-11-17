@@ -1,3 +1,10 @@
+## Unreleased
+
+* feat: `sourceType: 'file'` loads a `.lottie` or `.json` animation from a path on the local
+  file system (Android, iOS, macOS, Windows and Linux; not supported on web) (#49)
+* fix: a source that cannot be read (a missing asset or file) now reports `onLoadError`
+  instead of leaving the view empty without a signal
+
 ## 0.2.0
 
 * feat: audio volume — `DotLottieViewController.setAudioVolume()` and `audioVolume()`

@@ -1,17 +1,10 @@
-import 'package:flutter_test/flutter_test.dart';
-import 'package:dotlottie_flutter/dotlottie_flutter.dart';
-import 'package:dotlottie_flutter/dotlottie_flutter_platform_interface.dart';
 import 'package:dotlottie_flutter/dotlottie_flutter_method_channel.dart';
-import 'package:plugin_platform_interface/plugin_platform_interface.dart';
-
-class MockDotLottieFlutterPlatform
-    with MockPlatformInterfaceMixin
-    implements DotLottieFlutterPlatform {
-  @override
-  Future<String?> getPlatformVersion() => Future.value('42');
-}
+import 'package:dotlottie_flutter/dotlottie_flutter_platform_interface.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   final DotLottieFlutterPlatform initialPlatform =
       DotLottieFlutterPlatform.instance;
 
