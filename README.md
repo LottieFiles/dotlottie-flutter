@@ -163,8 +163,8 @@ class _MyAppState extends State<MyApp> {
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `source` | `String` | The source of the animation (URL, asset path, or JSON string) |
-| `sourceType` | `String` | Type of source: `'url'`, `'asset'`, or `'json'` |
+| `source` | `String` | The source of the animation (URL, asset path, local file path, or JSON string) |
+| `sourceType` | `String` | Type of source: `'url'`, `'asset'`, `'file'`, or `'json'`. `'file'` takes an absolute path on the local file system and is not supported on web |
 
 ### Playback Properties
 
@@ -217,6 +217,23 @@ DotLottieView(
   },
 )
 ```
+
+## Loading From a Local File
+```dart
+// e.g. a file downloaded to the app's documents directory, or picked by the user.
+DotLottieView(
+  source: '/absolute/path/to/animation.lottie',
+  sourceType: 'file',
+  autoplay: true,
+  loop: true,
+  onLoadError: () {
+    // The file is missing or could not be read.
+  },
+)
+```
+
+`.json` files are loaded as Lottie JSON; anything else is loaded as a dotLottie archive.
+Not supported on web.
 
 ## State Machine Example
 ```dart

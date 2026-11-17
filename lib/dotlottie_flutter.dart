@@ -13,6 +13,7 @@ import 'package:flutter/scheduler.dart';
 
 import 'src/desktop/dotlottie_desktop_player_stub.dart'
     if (dart.library.ffi) 'src/desktop/dotlottie_desktop_player.dart';
+import 'src/file_loader_stub.dart' if (dart.library.io) 'src/file_loader_io.dart';
 import 'src/state_machine_interactions.dart';
 
 /// Maps a Flutter [BoxFit] to the fit string understood by the native players.
@@ -53,7 +54,8 @@ Map<String, String> _withoutBuiltInInputs(Map<String, String> inputs) {
 
 /// A Flutter widget that renders a dotLottie or Lottie animation.
 ///
-/// Supports loading animations from a URL, an asset file, or a raw JSON string.
+/// Supports loading animations from a URL, an asset file, a local file path,
+/// or a raw JSON string.
 /// Use [onViewCreated] to obtain a [DotLottieViewController] for programmatic
 /// playback control after the native view is ready.
 ///
@@ -114,10 +116,14 @@ class DotLottieView extends StatefulWidget {
   /// and ignored on Android when [useOpenGL] is `true`.
   final Map<String, Uint8List>? externalAssets;
 
-  /// How [source] is interpreted. One of `'url'`, `'asset'`, or `'json'`.
+  /// How [source] is interpreted. One of `'url'`, `'asset'`, `'file'`, or `'json'`.
+  ///
+  /// `'file'` reads [source] as a path on the local file system and is not
+  /// supported on web, where it reports [onLoadError].
   final String sourceType;
 
-  /// The animation source — a URL, asset path relative to `assets/`, or raw JSON string.
+  /// The animation source — a URL, asset path relative to `assets/`, an absolute
+  /// local file path (when [sourceType] is `'file'`), or raw JSON string.
   final String source;
 
   /// Enables GPU-accelerated OpenGL rendering on Android via [DotLottieGLAnimation].
@@ -260,7 +266,7 @@ class _DotLottieViewState extends State<DotLottieView> {
   @override
   void initState() {
     super.initState();
-    _creationParamsFuture = _getCreationParams();
+    _creationParamsFuture = _loadCreationParams();
   }
 
   @override
@@ -268,7 +274,7 @@ class _DotLottieViewState extends State<DotLottieView> {
     super.reassemble();
     setState(() {
       _platformViewGeneration++;
-      _creationParamsFuture = _getCreationParams();
+      _creationParamsFuture = _loadCreationParams();
     });
   }
 
@@ -279,7 +285,7 @@ class _DotLottieViewState extends State<DotLottieView> {
         oldWidget.sourceType != widget.sourceType) {
       setState(() {
         _platformViewGeneration++;
-        _creationParamsFuture = _getCreationParams();
+        _creationParamsFuture = _loadCreationParams();
       });
     } else if (oldWidget.fit != widget.fit && widget.fit != null) {
       // A live fit change doesn't require rebuilding the platform view — push it
@@ -501,6 +507,22 @@ class _DotLottieViewState extends State<DotLottieView> {
     );
   }
 
+  /// Resolves the creation params and reports a source that cannot be read
+  /// (a missing asset or file, or `'file'` on web) through [DotLottieView.onLoadError].
+  /// Without this the failure is swallowed and the view just stays empty.
+  Future<Map<String, dynamic>> _loadCreationParams() {
+    final future = _getCreationParams();
+    future.then<void>((_) {}, onError: (Object error) {
+      debugPrint(
+          'dotlottie: failed to load ${widget.sourceType} source: $error');
+      // Skip a result that a newer source has already replaced.
+      if (mounted && identical(future, _creationParamsFuture)) {
+        widget.onLoadError?.call();
+      }
+    });
+    return future;
+  }
+
   Future<Map<String, dynamic>> _getCreationParams() async {
     Map<String, dynamic> params = {
       'autoplay': widget.autoplay,
@@ -534,6 +556,19 @@ class _DotLottieViewState extends State<DotLottieView> {
       // Check if it's a JSON file
       if (widget.source.toLowerCase().endsWith('.json')) {
         // Convert bytes to string for JSON
+        final String jsonString = utf8.decode(bytes);
+        params['sourceType'] = 'json';
+        params['source'] = jsonString;
+      } else {
+        // It's a .lottie file (binary)
+        params['sourceType'] = 'data';
+        params['source'] = bytes;
+      }
+    } else if (widget.sourceType == 'file') {
+      final Uint8List bytes = await readFileBytes(widget.source);
+
+      // Check if it's a JSON file
+      if (widget.source.toLowerCase().endsWith('.json')) {
         final String jsonString = utf8.decode(bytes);
         params['sourceType'] = 'json';
         params['source'] = jsonString;
@@ -2405,6 +2440,17 @@ class _DotLottieDesktopWidgetState extends State<_DotLottieDesktopWidget>
           }
         } catch (e) {
           debugPrint('dotlottie: failed to load asset ${widget.source}: $e');
+        }
+      case 'file':
+        try {
+          final bytes = await readFileBytes(widget.source);
+          if (widget.source.toLowerCase().endsWith('.json')) {
+            _ffi.loadJson(utf8.decode(bytes));
+          } else {
+            _ffi.loadBytes(bytes);
+          }
+        } catch (e) {
+          debugPrint('dotlottie: failed to load file ${widget.source}: $e');
         }
     }
   }

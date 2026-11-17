@@ -1,6 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:dotlottie_flutter/dotlottie_flutter.dart';
+import 'package:flutter/material.dart';
+
 import 'carousel_page.dart';
+import 'file_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -194,6 +196,18 @@ class _MyAppState extends State<MyApp> {
                       ),
                       icon: const Icon(Icons.view_carousel),
                       label: const Text('Carousel Example'),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Builder(
+                    builder: (ctx) => ElevatedButton.icon(
+                      onPressed: () => Navigator.of(ctx).push(
+                        MaterialPageRoute(builder: (_) => const FilePage()),
+                      ),
+                      icon: const Icon(Icons.folder_open),
+                      label: const Text('Local File Example'),
                     ),
                   ),
                 ),
