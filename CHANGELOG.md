@@ -1,3 +1,9 @@
+## 0.3.1
+
+* chore: bumped dotlottie-ios to 0.18.0, which no longer bundles the WebGPU renderer. iOS and
+  macOS apps stop embedding `WgpuNative.framework` (about 6.6 MB smaller on iOS). The plugin
+  never used that renderer, so nothing else changes
+
 ## 0.3.0
 
 * feat: `sourceType: 'file'` loads a `.lottie` or `.json` animation from a path on the local
